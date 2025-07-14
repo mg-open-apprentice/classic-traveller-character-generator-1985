@@ -1,0 +1,451 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Traveller Character Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            height: 100vh;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        
+        .terminal-container {
+            display: grid;
+            grid-template-areas: 
+                "header header"
+                "sidebar right-top"
+                "sidebar right-middle"
+                "sidebar right-bottom";
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: auto 1fr 1fr 1fr;
+            height: 100vh;
+            gap: 2px;
+            background: #000;
+        }
+        
+        .panel {
+            background: #000;
+            border: 1px solid #0f0;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            grid-area: header;
+            text-align: center;
+            font-family: 'Orbitron', 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: 900;
+            padding: 10px;
+            border-bottom: 2px solid #0f0;
+            letter-spacing: 2px;
+        }
+        
+        .sidebar {
+            grid-area: sidebar;
+            border-right: 2px solid #0f0;
+        }
+        
+        .right-top {
+            grid-area: right-top;
+        }
+        
+        .right-middle {
+            grid-area: right-middle;
+            border-top: 2px solid #0f0;
+        }
+        
+        .right-bottom {
+            grid-area: right-bottom;
+            border-top: 2px solid #0f0;
+        }
+        
+        .card {
+            border: 1px solid #0f0;
+            margin: 10px 0;
+            padding: 20px;
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-content {
+            padding: 0;
+        }
+        
+        .section {
+            border-bottom: 1px solid #666;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            text-align: center;
+            border-bottom: 1px solid #666;
+            padding-bottom: 5px;
+        }
+        
+        .btn {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 8px 16px;
+            margin: 3px 0;
+            width: 100%;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: #0f0;
+            color: #000;
+        }
+        
+        .character-record {
+            color: #0f0;
+            font-size: 14px;
+        }
+        
+        .character-header {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #666;
+            padding-bottom: 10px;
+        }
+        
+        .character-name-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .title-rank-name {
+            font-weight: bold;
+        }
+        
+        .upp-age-terms {
+            font-family: 'Courier New', monospace;
+        }
+        
+        .character-section {
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        
+        .section-label {
+            color: #fff;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
+        }
+        
+        .event-record {
+            color: #0f0;
+            font-size: 14px;
+        }
+        
+        .event-section {
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        
+        .event-label {
+            color: #fff;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
+        }
+        
+        .term-record {
+            color: #0f0;
+            font-size: 14px;
+        }
+        
+        .term-header {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #666;
+            padding-bottom: 10px;
+        }
+        
+        .term-title {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .term-section {
+            margin-bottom: 20px;
+        }
+        
+        .term-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .term-action {
+            color: #fff;
+        }
+        
+        .term-outcome {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .muster-header {
+            border-top: 1px solid #666;
+            padding-top: 10px;
+        }
+        
+        .muster-title {
+            color: #fff;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 3px;
+        }
+        
+        .muster-section {
+            margin-top: 15px;
+        }
+        
+        .muster-item {
+            color: #fff;
+            margin-bottom: 8px;
+            padding: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <!-- Header -->
+        <div class="header">
+            Classic Traveller Character Generator
+        </div>
+        
+        <!-- Left Sidebar -->
+        <div class="panel sidebar">
+            <div class="sidebar-content">
+
+                <!-- Create Character -->
+                <div class="section">
+                    <button class="btn" id="create-character-btn">Create Character</button>
+                </div>
+                
+                <!-- Characteristics -->
+                <div class="section" id="characteristics-section">
+                    <div class="section-title">Characteristics</div>
+                    <button class="btn" id="strength-btn">Strength</button>
+                    <button class="btn" id="dexterity-btn">Dexterity</button>
+                    <button class="btn" id="endurance-btn">Endurance</button>
+                    <button class="btn" id="intelligence-btn">Intelligence</button>
+                    <button class="btn" id="education-btn">Education</button>
+                    <button class="btn" id="social-btn">Social</button>
+                </div>
+                
+                <!-- Enlistment -->
+                <div class="section">
+                    <div class="section-title">Enlistment</div>
+                    <button class="btn" id="navy-btn">Navy</button>
+                    <button class="btn" id="marines-btn">Marines</button>
+                    <button class="btn" id="army-btn">Army</button>
+                    <button class="btn" id="scouts-btn">Scouts</button>
+                    <button class="btn" id="merchants-btn">Merchants</button>
+                    <button class="btn" id="others-btn">Others</button>
+                </div>
+                
+                <!-- Term -->
+                <div class="section">
+                    <div class="section-title">Term</div>
+                    <button class="btn" id="survival-btn">Survival</button>
+                    <button class="btn" id="commission-btn">Commission</button>
+                    <button class="btn" id="promotion-btn">Promotion</button>
+                </div>
+                
+                <!-- Skills -->
+                <div class="section">
+                    <div class="section-title">Skills</div>
+                    <button class="btn" id="personal-btn">Personal</button>
+                    <button class="btn" id="service-btn">Service</button>
+                    <button class="btn" id="advanced-btn">Advanced</button>
+                    <button class="btn" id="education-skill-btn">Education</button>
+                </div>
+                
+                <!-- Ageing & Reenlist -->
+                <div class="section" id="reenlist-section">
+                    <div class="section-title">Reenlistment</div>
+                    <button class="btn" id="reenlist-btn">Reenlist</button>
+                    <button class="btn" id="leave-retire-btn">Leave</button>
+                </div>
+                <div class="section">
+                    <button class="btn" id="ageing-btn" style="display: none;">Ageing</button>
+                </div>
+                <!-- Mustering Out -->
+                <div class="section" id="mustering-section">
+                    <div class="section-title">Mustering Out</div>
+                    <button class="btn" id="mustering-info-btn">Mustering Info</button>
+                    <button class="btn" id="mustering-out-btn">Muster Out</button>
+                </div>
+                
+                <!-- Delete Character -->
+                <div class="section">
+                    <button class="btn" id="delete-character-btn">Delete Character</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Top -->
+        <div class="panel right-top">
+            <div class="character-record" id="character-record">
+                <div class="character-header">
+                    <div class="character-name-line">
+                        <span id="char-rank" style="margin-right: 6px;"></span>
+                        <span class="title-rank-name" id="char-name">Title, Rank, Name</span>
+                        <span id="char-service" style="margin-left: 10px;">Service</span>
+                        <span class="upp-profile" style="font-family:'Courier New',monospace;">
+                            <span id="upp-label">UPP</span>
+                            <span id="upp-string">______</span>
+                            <span class="upp-age" id="char-age">Age</span>
+                            <span class="upp-terms" id="char-terms">Terms</span>
+                        </span>
+                        <span id="char-rank-number" style="margin-left: 12px;"></span>
+                        <span id="top-skill-eligibility" style="margin-left: 12px; color: #0ff; font-size: 16px; font-weight: bold;"></span>
+                    </div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Skills</div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Mustering Out</div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Credits</div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Retirement Income</div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Possessions</div>
+                </div>
+                
+                <div class="character-section">
+                    <div class="section-label">Benefits</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Middle -->
+        <div class="panel right-middle">
+            <div class="event-record">
+                <div class="event-section">
+                    <div class="event-label">Conditions</div>
+                </div>
+                
+                <div class="event-section">
+                    <div class="event-label">Test</div>
+                </div>
+                
+                <div class="event-section">
+                    <div class="event-label">Target</div>
+                </div>
+                
+                <div class="event-section">
+                    <div class="event-label">Roll</div>
+                </div>
+                
+                <div class="event-section">
+                    <div class="event-label">Modifiers</div>
+                </div>
+                
+                <div class="event-section">
+                    <div class="event-label">Outcome</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Bottom -->
+        <div class="panel right-bottom">
+            <div class="term-record">
+                <!-- Current Term Layout -->
+                <div class="term-display">
+                    <div class="term-header">
+                        <div class="term-title">Current Term</div>
+                    </div>
+                    
+                    <div class="term-section">
+                        <div class="term-item">
+                            <span class="term-action">Survival</span>
+                            <span class="term-outcome">&lt;outcome&gt;</span>
+                        </div>
+                        <div class="term-item">
+                            <span class="term-action">Commission</span>
+                            <span class="term-outcome">&lt;outcome&gt;</span>
+                        </div>
+                        <div class="term-item">
+                            <span class="term-action">Promotion</span>
+                            <span class="term-outcome">&lt;outcome&gt;</span>
+                        </div>
+                        <div class="term-item">
+                            <span class="term-action">Skills</span>
+                            <span class="term-outcome">&lt;outcomes&gt;</span>
+                        </div>
+                        <div class="term-item">
+                            <span class="term-action">Ageing</span>
+                            <span class="term-outcome">&lt;outcomes&gt;</span>
+                        </div>
+                        <div class="term-item">
+                            <span class="term-action">Reenlistment</span>
+                            <span class="term-outcome">&lt;outcome&gt;</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Alternative: Mustering Out Layout -->
+                <div class="muster-display" style="display: none;">
+                    <div class="muster-header">
+                        <div class="muster-title">Mustering Out</div>
+                    </div>
+                    
+                    <div class="muster-section">
+                        <div class="muster-item">Cash</div>
+                        <div class="muster-item">Pension</div>
+                        <div class="muster-item">Acquisitions</div>
+                        <div class="muster-item">Benefits</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/script.js"></script>
+</body>
+</html>
