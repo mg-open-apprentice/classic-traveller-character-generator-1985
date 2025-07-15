@@ -1196,15 +1196,18 @@ def get_next_phase(character_record: dict) -> str:
     """
     Determine the next phase for the character after skills are exhausted.
     Returns one of: 'skills', 'ageing', 'reenlistment'
+    
+    Ageing ALWAYS happens after skills and before reenlistment, regardless of age.
+    The only effect before age 34 is age increase (no characteristic loss checks).
     """
     skill_eligibility = character_record.get('skill_eligibility', 0)
-    age = character_record.get('age', 18)
     # If there are still skills to roll, stay in skills phase
     if skill_eligibility > 0:
         return 'skills'
-    # Classic Traveller: Ageing starts at 34+
-    if age >= 34:
+    # Always do ageing after skills, before reenlistment
+    if not character_record.get('ready_for_ageing', False):
         return 'ageing'
+    # After ageing, proceed to reenlistment
     return 'reenlistment'
 
 def calculate_mustering_out_info(character_record: dict[str, Any]) -> dict[str, Any]:

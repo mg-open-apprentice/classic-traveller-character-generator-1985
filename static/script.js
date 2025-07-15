@@ -407,6 +407,10 @@ function setupSkillButton(btnId, tableChoice) {
                 if (!data.ready_for_skills) {
                     document.querySelector('.section:has(#personal-btn)').style.display = 'none';
                 }
+                // Update age in UI if present in response
+                if (data.character && data.character.age !== undefined) {
+                    document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                }
             } else {
                 alert(data.error || 'Skill resolution failed.');
             }
