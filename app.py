@@ -358,12 +358,22 @@ def api_resolve_skill():
             skill_event = event
             break
 
+    # Check if ready for ageing and, if so, advance to ageing automatically
+    ageing_report = None
+    if current_character.get("ready_for_ageing", False):
+        current_character = chargen.check_ageing(rng, current_character)
+        save_character_to_file()
+        # Find the latest ageing event for reporting
+        ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
+        ageing_report = ageing_events[-1] if ageing_events else None
+
     return jsonify({
         "success": True,
         "skill_event": skill_event,
         "skill_eligibility": current_character.get("skill_eligibility", 0),
         "ready_for_skills": current_character.get("ready_for_skills", False),
         "ready_for_ageing": current_character.get("ready_for_ageing", False),
+        "ageing_report": ageing_report,
         "character": current_character
     })
 
@@ -374,6 +384,30 @@ def api_available_skill_tables():
         return jsonify({"success": False, "error": "No character created yet"}), 400
     available_tables = chargen.get_available_skill_tables(current_character)
     return jsonify({"success": True, "available_tables": available_tables})
+
+@app.route('/api/ageing', methods=['POST'])
+def api_ageing():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+
+    # Use a consistent seed for now (should be improved for real randomness/persistence)
+    rng = chargen.set_seed(77)
+
+    # Call the ageing logic
+    current_character = chargen.check_ageing(rng, current_character)
+    save_character_to_file()
+
+    # Find the latest ageing event for reporting
+    ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
+    latest_ageing = ageing_events[-1] if ageing_events else {}
+
+    return jsonify({
+        "success": True,
+        "age": current_character.get("age"),
+        "ageing_report": latest_ageing,
+        "character": current_character
+    })
 
 if __name__ == '__main__':
     # No character is loaded at startup, as we don't know the name
