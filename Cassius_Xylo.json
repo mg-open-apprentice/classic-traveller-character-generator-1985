@@ -1,57 +1,59 @@
 {
-  "name": "Elara Stardust",
+  "name": "Cassius Xylo",
   "age": 22,
   "terms_served": 1,
   "characteristics": {
-    "strength": 4,
+    "strength": 3,
     "dexterity": 8,
-    "endurance": 7,
-    "intelligence": 3,
-    "education": 7,
-    "social": 4
+    "endurance": 8,
+    "intelligence": 9,
+    "education": 4,
+    "social": 3
   },
   "skills": {
-    "Gun Combat": 2,
-    "Electronic": 1
+    "Blade Combat": 1,
+    "Steward": 2,
+    "Navigation": 1
   },
   "career_history": [
     {
       "event_type": "enlistment_attempt",
-      "service": "Army",
-      "roll": 6,
-      "modifier": 3,
+      "service": "Merchants",
+      "roll": 10,
+      "modifier": 2,
       "modifier_details": [
-        "Dexterity 8\u22656 (+1)",
-        "Endurance 6\u22655 (+2)"
+        "Intelligence 9\u22656 (+2)"
       ],
-      "target": 5,
-      "total": 9,
+      "target": 7,
+      "total": 12,
       "success": true,
       "outcome": "enlisted",
-      "assigned_service": "Army"
+      "assigned_service": "Merchants"
     },
     {
       "event_type": "survival_check",
-      "career": "Army",
-      "roll": 6,
+      "career": "Merchants",
+      "roll": 10,
       "modifier": 2,
       "modifier_details": [
-        "Education 7\u22656 (+2)"
+        "Intelligence 9\u22657 (+2)"
       ],
       "target": 5,
-      "total": 8,
+      "total": 12,
       "success": true,
       "outcome": "survived"
     },
     {
       "event_type": "commission_check",
-      "career": "Army",
+      "career": "Merchants",
       "applicable": true,
-      "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 6,
-      "total": 6,
+      "target": 4,
+      "modifier": 1,
+      "modifier_details": [
+        "Intelligence 9\u22659 (+1)"
+      ],
+      "roll": 10,
+      "total": 11,
       "success": true,
       "rank": 1,
       "outcome": "commissioned as officer",
@@ -59,16 +61,16 @@
     },
     {
       "event_type": "promotion_check",
-      "career": "Army",
+      "career": "Merchants",
       "current_rank": 1,
       "applicable": true,
-      "target": 6,
+      "target": 10,
       "modifier": 1,
       "modifier_details": [
-        "Education 7\u22657 (+1)"
+        "Intelligence 9\u22659 (+1)"
       ],
-      "roll": 6,
-      "total": 7,
+      "roll": 10,
+      "total": 11,
       "success": true,
       "rank": 2,
       "outcome": "promoted to rank 2",
@@ -76,7 +78,7 @@
     },
     {
       "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Merchants",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -85,18 +87,15 @@
       },
       "table_choice_method": "player",
       "table_choice": "personal",
-      "roll": 3,
-      "skill_gained": "+1 END",
-      "result_type": "characteristic_increase",
-      "characteristic": "endurance",
-      "old_value": 6,
-      "new_value": 7,
+      "roll": 4,
+      "skill_gained": "Blade Combat",
+      "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 3
     },
     {
       "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Merchants",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -105,15 +104,15 @@
       },
       "table_choice_method": "player",
       "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
+      "roll": 4,
+      "skill_gained": "Steward",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 2
     },
     {
       "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Merchants",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -122,15 +121,15 @@
       },
       "table_choice_method": "player",
       "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
+      "roll": 4,
+      "skill_gained": "Navigation",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 1
     },
     {
       "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Merchants",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -139,8 +138,8 @@
       },
       "table_choice_method": "player",
       "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
+      "roll": 4,
+      "skill_gained": "Steward",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
@@ -156,24 +155,24 @@
     },
     {
       "event_type": "reenlistment_attempt",
-      "career": "Army",
+      "career": "Merchants",
       "age": 22,
       "preference": "reenlist",
-      "roll": 6,
-      "target": 7,
-      "outcome": "discharged",
-      "status_text": "military discharge",
-      "continue_career": false
+      "roll": 10,
+      "target": 4,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true
     }
   ],
   "skill_eligibility": 0,
   "ready_for_skills": false,
   "ready_for_ageing": false,
-  "survival_outcome": "survived",
-  "seed": 77,
+  "seed": 12345,
   "random_state": null,
-  "upp": "486374",
-  "career": "Army",
+  "upp": "388943",
+  "career": "Merchants",
+  "survival_outcome": null,
   "commissioned": true,
   "rank": 2
 }

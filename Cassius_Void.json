@@ -1,31 +1,32 @@
 {
-  "name": "Elara Stardust",
+  "name": "Cassius Void",
   "age": 22,
   "terms_served": 1,
   "characteristics": {
-    "strength": 4,
-    "dexterity": 8,
-    "endurance": 7,
-    "intelligence": 3,
+    "strength": 6,
+    "dexterity": 12,
+    "endurance": 11,
+    "intelligence": 6,
     "education": 7,
-    "social": 4
+    "social": 9
   },
   "skills": {
-    "Gun Combat": 2,
-    "Electronic": 1
+    "Gambling": 2,
+    "Forward Observer": 1,
+    "Tactics": 1
   },
   "career_history": [
     {
       "event_type": "enlistment_attempt",
       "service": "Army",
-      "roll": 6,
+      "roll": 7,
       "modifier": 3,
       "modifier_details": [
-        "Dexterity 8\u22656 (+1)",
-        "Endurance 6\u22655 (+2)"
+        "Dexterity 12\u22656 (+1)",
+        "Endurance 11\u22655 (+2)"
       ],
       "target": 5,
-      "total": 9,
+      "total": 10,
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
@@ -33,13 +34,13 @@
     {
       "event_type": "survival_check",
       "career": "Army",
-      "roll": 6,
+      "roll": 7,
       "modifier": 2,
       "modifier_details": [
         "Education 7\u22656 (+2)"
       ],
       "target": 5,
-      "total": 8,
+      "total": 9,
       "success": true,
       "outcome": "survived"
     },
@@ -48,10 +49,12 @@
       "career": "Army",
       "applicable": true,
       "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 6,
-      "total": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Endurance 11\u22657 (+1)"
+      ],
+      "roll": 7,
+      "total": 8,
       "success": true,
       "rank": 1,
       "outcome": "commissioned as officer",
@@ -67,8 +70,8 @@
       "modifier_details": [
         "Education 7\u22657 (+1)"
       ],
-      "roll": 6,
-      "total": 7,
+      "roll": 7,
+      "total": 8,
       "success": true,
       "rank": 2,
       "outcome": "promoted to rank 2",
@@ -85,12 +88,9 @@
       },
       "table_choice_method": "player",
       "table_choice": "personal",
-      "roll": 3,
-      "skill_gained": "+1 END",
-      "result_type": "characteristic_increase",
-      "characteristic": "endurance",
-      "old_value": 6,
-      "new_value": 7,
+      "roll": 4,
+      "skill_gained": "Gambling",
+      "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 3
     },
@@ -105,8 +105,8 @@
       },
       "table_choice_method": "player",
       "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
+      "roll": 4,
+      "skill_gained": "Forward Observer",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 2
@@ -122,8 +122,8 @@
       },
       "table_choice_method": "player",
       "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
+      "roll": 4,
+      "skill_gained": "Tactics",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 1
@@ -138,9 +138,9 @@
         "education": false
       },
       "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
+      "table_choice": "personal",
+      "roll": 4,
+      "skill_gained": "Gambling",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
@@ -159,20 +159,20 @@
       "career": "Army",
       "age": 22,
       "preference": "reenlist",
-      "roll": 6,
+      "roll": 7,
       "target": 7,
-      "outcome": "discharged",
-      "status_text": "military discharge",
-      "continue_career": false
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true
     }
   ],
   "skill_eligibility": 0,
   "ready_for_skills": false,
   "ready_for_ageing": false,
-  "survival_outcome": "survived",
-  "seed": 77,
+  "survival_outcome": "pending",
+  "seed": 100002,
   "random_state": null,
-  "upp": "486374",
+  "upp": "6CB679",
   "career": "Army",
   "commissioned": true,
   "rank": 2

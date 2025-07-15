@@ -3,8 +3,17 @@ import character_generation_rules as chargen
 import json
 import os
 import re
+import argparse
 
 app = Flask(__name__)
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Classic Traveller Character Generator')
+parser.add_argument('--seed', type=int, default=77, help='Random seed for character generation (default: 77)')
+args = parser.parse_args()
+
+# Global seed for this run
+GLOBAL_SEED = args.seed
 
 # Temporary storage for the current character (in a real app, this would be persistent)
 current_character = None
@@ -29,6 +38,10 @@ def load_character_from_file(name):
             current_character = json.load(f)
     else:
         current_character = None
+
+# Helper function to get RNG with global seed
+def get_rng():
+    return chargen.set_seed(GLOBAL_SEED)
 
 # Helper function to determine if commission button should be shown
 
@@ -71,9 +84,8 @@ def can_show_promotion_button(character_record):
     career = character_record.get('career', '').lower()
     if career in ['scouts', 'others']:
         return False
-    # 4. Must be commissioned
-    if not character_record.get('commissioned', False):
-        return False
+    # 4. Promotion is available to both commissioned and non-commissioned characters
+    # (Non-commissioned characters can be promoted to enlisted ranks)
     return True
 
 @app.route('/')
@@ -84,10 +96,11 @@ def index():
 def api_create_character():
     global current_character
     
-    rng = chargen.set_seed(77)  # Or use a random seed if desired
+    rng = get_rng()
     current_character = chargen.create_character_record()
     current_character["name"] = chargen.generate_character_name(rng)
     current_character["upp"] = "______"  # Reset UPP for new character
+    current_character["seed"] = GLOBAL_SEED  # Store the seed used for this character
     save_character_to_file()
     
     return jsonify({
@@ -125,7 +138,7 @@ def api_generate_characteristic():
         return jsonify({"success": False, "error": "Invalid characteristic"}), 400
     
     # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
     
     # Generate the characteristic value
     value = chargen.generate_characteristic(rng, characteristic)
@@ -164,7 +177,7 @@ def api_enlist():
         return jsonify({"success": False, "error": "Service not specified"}), 400
     
     # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
     
     # Attempt enlistment
     current_character = chargen.attempt_enlistment(rng, current_character, service)
@@ -202,7 +215,7 @@ def api_survival():
         return jsonify({"success": False, "error": "No character created yet"}), 400
     
     # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
     
     # Check survival
     current_character = chargen.check_survival(rng, current_character)
@@ -240,7 +253,8 @@ def api_survival():
         "ready_for_skills": ready_for_skills,
         "show_commission": show_commission,
         "show_promotion": show_promotion,
-        "show_medical": show_medical
+        "show_medical": show_medical,
+        "character": current_character  # Include character data for frontend updates
     }
     
     return jsonify(response_data)
@@ -253,7 +267,7 @@ def api_commission():
         return jsonify({"success": False, "error": "No character created yet"}), 400
     
     # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
     
     # Check commission
     current_character = chargen.check_commission(rng, current_character)
@@ -285,7 +299,8 @@ def api_commission():
         },
         "skill_eligibility": skill_eligibility,
         "show_commission": show_commission,
-        "show_promotion": show_promotion
+        "show_promotion": show_promotion,
+        "character": current_character  # Include character data for frontend updates
     }
     
     return jsonify(response_data)
@@ -298,7 +313,7 @@ def api_promotion():
         return jsonify({"success": False, "error": "No character created yet"}), 400
 
     # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
 
     # Check promotion
     current_character = chargen.check_promotion(rng, current_character)
@@ -327,7 +342,8 @@ def api_promotion():
             "career": promotion_result.get("career")
         },
         "skill_eligibility": skill_eligibility,
-        "show_promotion": show_promotion
+        "show_promotion": show_promotion,
+        "character": current_character  # Include character data for frontend updates
     }
 
     return jsonify(response_data)
@@ -343,7 +359,7 @@ def api_resolve_skill():
     table_choice = data.get('table_choice')  # Optional
 
     # Use the same RNG as elsewhere
-    rng = chargen.set_seed(77)
+    rng = get_rng()
 
     try:
         current_character = chargen.resolve_skill(rng, current_character, table_choice)
@@ -360,12 +376,15 @@ def api_resolve_skill():
 
     # Check if ready for ageing and, if so, advance to ageing automatically
     ageing_report = None
+    available_options = None
     if current_character.get("ready_for_ageing", False):
         current_character = chargen.check_ageing(rng, current_character)
         save_character_to_file()
         # Find the latest ageing event for reporting
         ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
         ageing_report = ageing_events[-1] if ageing_events else None
+        # Get reenlistment options after ageing is complete
+        available_options = chargen.get_available_reenlistment_options(current_character)
 
     return jsonify({
         "success": True,
@@ -374,7 +393,8 @@ def api_resolve_skill():
         "ready_for_skills": current_character.get("ready_for_skills", False),
         "ready_for_ageing": current_character.get("ready_for_ageing", False),
         "ageing_report": ageing_report,
-        "character": current_character
+        "character": current_character,
+        "available_options": available_options
     })
 
 @app.route('/api/available_skill_tables', methods=['GET'])
@@ -392,7 +412,7 @@ def api_ageing():
         return jsonify({"success": False, "error": "No character created yet"}), 400
 
     # Use a consistent seed for now (should be improved for real randomness/persistence)
-    rng = chargen.set_seed(77)
+    rng = get_rng()
 
     # Call the ageing logic
     current_character = chargen.check_ageing(rng, current_character)
@@ -402,13 +422,69 @@ def api_ageing():
     ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
     latest_ageing = ageing_events[-1] if ageing_events else {}
 
+    # Get reenlistment options after ageing is complete
+    available_options = chargen.get_available_reenlistment_options(current_character)
+
     return jsonify({
         "success": True,
         "age": current_character.get("age"),
         "ageing_report": latest_ageing,
-        "character": current_character
+        "character": current_character,
+        "available_options": available_options
+    })
+
+@app.route('/api/reenlist', methods=['POST'])
+def api_reenlist():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+
+    data = request.get_json() or {}
+    preference = data.get('preference', 'reenlist')
+
+    rng = get_rng()
+    try:
+        current_character = chargen.attempt_reenlistment(rng, current_character, preference)
+        
+        # Get the last reenlistment event for feedback
+        reenlistment_result = None
+        for event in reversed(current_character.get("career_history", [])):
+            if event.get("event_type") == "reenlistment_attempt":
+                reenlistment_result = event
+                break
+        
+        # If successfully reenlisted, reset term progression flags
+        if reenlistment_result and reenlistment_result.get("continue_career", False):
+            # Reset term-specific flags for new term
+            current_character["ready_for_skills"] = False
+            current_character["ready_for_ageing"] = False
+            current_character["skill_eligibility"] = 0
+            current_character["survival_outcome"] = "pending"
+            
+            # Add clear signal for new term
+            reenlistment_result["new_term_started"] = True
+        
+        save_character_to_file()
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+    available_options = chargen.get_available_reenlistment_options(current_character)
+
+    return jsonify({
+        "success": True,
+        "reenlistment_result": reenlistment_result,
+        "character": current_character,
+        "available_options": available_options,
+        "new_term": reenlistment_result and reenlistment_result.get("continue_career", False),
+        "term_number": current_character.get("terms_served", 0)
     })
 
 if __name__ == '__main__':
+    print(f"Classic Traveller Character Generator starting with seed: {GLOBAL_SEED}")
+    print("To use a different seed, run: python app.py --seed <number>")
+    print("Example: python app.py --seed 42")
+    print("Example: python app.py --seed 12345")
+    print("Default seed is 77 if not specified")
+    print("-" * 50)
     # No character is loaded at startup, as we don't know the name
     app.run(debug=True) 

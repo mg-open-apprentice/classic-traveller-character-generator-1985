@@ -1,5 +1,3 @@
-// Remove mock character data and mock functions
-
 // Helper to update the UPP string in the UI
 function updateUPPSlot(index, hexChar) {
     let upp = document.getElementById('upp-string').textContent.split('');
@@ -20,7 +18,11 @@ document.getElementById('create-character-btn').onclick = function() {
             document.getElementById('char-terms').textContent = 'Terms: ' + data.terms_served;
             document.getElementById('upp-string').textContent = data.upp || '______';
             document.getElementById('char-service').textContent = 'Service';
-
+            
+            // Update term panel if character data is provided
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
         });
 };
 
@@ -55,7 +57,8 @@ function setupCharacteristicButton(btnId, charName) {
                             document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
                             // Optionally show the skills section if at least one is available
                             const anyAvailable = available.personal || available.service || available.advanced || available.education;
-                            document.querySelector('.section:has(#personal-btn)').style.display = anyAvailable ? 'block' : 'none';
+                            const skillsSection = getSkillsSection();
+                            if (skillsSection) skillsSection.style.display = anyAvailable ? 'block' : 'none';
                         }
                     });
             }
@@ -134,8 +137,6 @@ function updateRankDisplay(rank, rankTitle) {
     document.getElementById('char-rank-number').textContent = (rank && rank > 0) ? `Rank: ${rank}` : '';
 }
 
-
-
 // Add click handlers for demonstration purposes
 const buttons = document.querySelectorAll('.btn');
 buttons.forEach(button => {
@@ -194,13 +195,29 @@ document.getElementById('survival-btn').onclick = function() {
                 document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
             }
             
-            // Show/hide skill buttons based on backend available_tables
-            if (data.ready_for_skills && data.survival_result && data.survival_result.available_tables) {
-                const available = data.survival_result.available_tables;
-                document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
-                document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
-                document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
-                document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
+            // Show/hide skill buttons based on ready_for_skills flag
+            if (data.ready_for_skills) {
+                // Fetch available skill tables from the API
+                fetch('/api/available_skill_tables')
+                    .then(res => res.json())
+                    .then(tableData => {
+                        if (tableData.success && tableData.available_tables) {
+                            const available = tableData.available_tables;
+                            document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
+                            document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
+                            document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
+                            document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
+                            
+                            // Show the skills section
+                            const anyAvailable = available.personal || available.service || available.advanced || available.education;
+                            const skillsSection = getSkillsSection();
+                            if (skillsSection) skillsSection.style.display = anyAvailable ? 'block' : 'none';
+                        }
+                    });
+            } else {
+                // Hide the skills section if not ready for skills
+                const skillsSection = getSkillsSection();
+                if (skillsSection) skillsSection.style.display = 'none';
             }
 
             // Hide commission and promotion buttons if needed
@@ -242,6 +259,22 @@ document.getElementById('survival-btn').onclick = function() {
                 // If not injured, remove the medical button if it exists
                 var medicalBtn = document.getElementById('medical-btn');
                 if (medicalBtn) medicalBtn.remove();
+            }
+
+            // Update character display if character data is provided
+            if (data.character) {
+                if (data.character.age !== undefined) {
+                    document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                }
+                if (data.character.terms_served !== undefined) {
+                    document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
+                }
+            }
+            
+            // Update rank display if character has rank information
+            if (data.character && data.character.rank !== undefined) {
+                const career = data.character.career || '';
+                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
             }
 
             // Update terms served if survived
@@ -302,6 +335,22 @@ document.getElementById('commission-btn').onclick = function() {
             // Update skill eligibility counter if present
             if (data.skill_eligibility !== undefined) {
                 document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
+            }
+            
+            // Update character display if character data is provided
+            if (data.character) {
+                if (data.character.age !== undefined) {
+                    document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                }
+                if (data.character.terms_served !== undefined) {
+                    document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
+                }
+            }
+            
+            // Update rank display if character has rank information
+            if (data.character && data.character.rank !== undefined) {
+                const career = data.character.career || '';
+                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
             }
         } else {
             alert(data.error || "Commission check failed.");
@@ -365,6 +414,22 @@ document.getElementById('promotion-btn').onclick = function() {
             if (data.skill_eligibility !== undefined) {
                 document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
             }
+            
+            // Update character display if character data is provided
+            if (data.character) {
+                if (data.character.age !== undefined) {
+                    document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                }
+                if (data.character.terms_served !== undefined) {
+                    document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
+                }
+            }
+            
+            // Update rank display if character has rank information
+            if (data.character && data.character.rank !== undefined) {
+                const career = data.character.career || '';
+                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+            }
         } else {
             alert(data.error || "Promotion check failed.");
         }
@@ -405,11 +470,37 @@ function setupSkillButton(btnId, tableChoice) {
                 }
                 // Hide skills section if no more eligibilities
                 if (!data.ready_for_skills) {
-                    document.querySelector('.section:has(#personal-btn)').style.display = 'none';
+                    const skillsSection = getSkillsSection();
+                    if (skillsSection) skillsSection.style.display = 'none';
                 }
                 // Update age in UI if present in response
                 if (data.character && data.character.age !== undefined) {
                     document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                }
+                // Update term panel and skills display
+                if (data.character) {
+                    updateTermPanel(data.character);
+                }
+                
+                // Show reenlistment options if ageing was completed
+                if (data.available_options && data.available_options.length > 0) {
+                    updateReenlistmentButtons(data.character, data.available_options);
+                }
+                
+                // Update character display if character data is provided
+                if (data.character) {
+                    if (data.character.age !== undefined) {
+                        document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                    }
+                    if (data.character.terms_served !== undefined) {
+                        document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
+                    }
+                }
+                
+                // Update rank display if character has rank information
+                if (data.character && data.character.rank !== undefined) {
+                    const career = data.character.career || '';
+                    updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
                 }
             } else {
                 alert(data.error || 'Skill resolution failed.');
@@ -422,3 +513,296 @@ setupSkillButton('personal-btn', 'personal');
 setupSkillButton('service-btn', 'service');
 setupSkillButton('advanced-btn', 'advanced');
 setupSkillButton('education-skill-btn', 'education'); 
+
+function updateReenlistmentButtons(character, availableOptions) {
+    const reenlistBtn = document.getElementById('reenlist-btn');
+    const leaveRetireBtn = document.getElementById('leave-retire-btn');
+    let medicalBtn = document.getElementById('medical-btn');
+
+    // Hide all by default
+    reenlistBtn.style.display = 'none';
+    leaveRetireBtn.style.display = 'none';
+    if (medicalBtn) medicalBtn.style.display = 'none';
+
+    if (!availableOptions) return;
+
+    if (availableOptions.includes('reenlist')) {
+        reenlistBtn.style.display = 'inline-block';
+    }
+    if (availableOptions.includes('leave')) {
+        leaveRetireBtn.textContent = 'Leave';
+        leaveRetireBtn.style.display = 'inline-block';
+    }
+    if (availableOptions.includes('retire')) {
+        leaveRetireBtn.textContent = 'Retire';
+        leaveRetireBtn.style.display = 'inline-block';
+    }
+    if (availableOptions.includes('medical')) {
+        if (!medicalBtn) {
+            medicalBtn = document.createElement('button');
+            medicalBtn.id = 'medical-btn';
+            medicalBtn.className = 'btn';
+            medicalBtn.textContent = 'Medical';
+            medicalBtn.onclick = function() {
+                fetch('/api/reenlist', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({preference: 'discharge'})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.reenlistment_result) {
+                        alert('Medical discharge: ' + (data.reenlistment_result.status_text || ''));
+                        if (data.character && data.available_options) {
+                            updateReenlistmentButtons(data.character, data.available_options);
+                        }
+                    } else {
+                        alert(data.error || 'Medical discharge failed.');
+                    }
+                });
+            };
+            leaveRetireBtn.parentNode.appendChild(medicalBtn);
+        }
+        medicalBtn.style.display = 'inline-block';
+    }
+}
+
+document.getElementById('reenlist-btn').onclick = function() {
+    fetch('/api/reenlist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({preference: 'reenlist'})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.reenlistment_result) {
+            // When receiving reenlistment response
+            if (data.new_term) {
+                // Reset all term-specific state variables
+                // Note: These would be Vue.js reactive variables in a Vue app
+                // For vanilla JS, we'll reset the UI state directly
+                
+                // Update current term number
+                if (data.term_number !== undefined) {
+                    document.getElementById('char-terms').textContent = 'Terms: ' + data.term_number;
+                }
+                
+                // Reset UI workflow - show survival button, hide others
+                document.getElementById('survival-btn').style.display = 'inline-block';
+                document.getElementById('commission-btn').style.display = 'none';
+                document.getElementById('promotion-btn').style.display = 'none';
+                const skillsSection = getSkillsSection();
+                if (skillsSection) skillsSection.style.display = 'none'; // Hide skills section
+                
+                // Hide reenlistment buttons since we're starting a new term
+                document.getElementById('reenlist-btn').style.display = 'none';
+                document.getElementById('leave-retire-btn').style.display = 'none';
+                let medicalBtn = document.getElementById('medical-btn');
+                if (medicalBtn) medicalBtn.style.display = 'none';
+                
+                // Update success message to indicate new term (no popup)
+                console.log(`Successfully reenlisted! Beginning term ${data.term_number}.`);
+            }
+            
+            if (data.character && data.available_options) updateReenlistmentButtons(data.character, data.available_options);
+            // Hide reenlist and leave/retire buttons after outcome
+            document.getElementById('reenlist-btn').style.display = 'none';
+            document.getElementById('leave-retire-btn').style.display = 'none';
+            let medicalBtn = document.getElementById('medical-btn');
+            if (medicalBtn) medicalBtn.style.display = 'none';
+            // Update term panel
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
+        } else {
+            alert(data.error || 'Reenlistment failed.');
+        }
+    });
+};
+
+document.getElementById('leave-retire-btn').onclick = function() {
+    // Use 'retire' if button says Retire, otherwise 'leave'
+    const pref = this.textContent === 'Retire' ? 'retire' : 'leave';
+    fetch('/api/reenlist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({preference: pref})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.reenlistment_result) {
+            // When receiving reenlistment response
+            if (data.new_term) {
+                // Reset all term-specific state variables
+                // Note: These would be Vue.js reactive variables in a Vue app
+                // For vanilla JS, we'll reset the UI state directly
+                
+                // Update current term number
+                if (data.term_number !== undefined) {
+                    document.getElementById('char-terms').textContent = 'Terms: ' + data.term_number;
+                }
+                
+                // Reset UI workflow - show survival button, hide others
+                document.getElementById('survival-btn').style.display = 'inline-block';
+                document.getElementById('commission-btn').style.display = 'none';
+                document.getElementById('promotion-btn').style.display = 'none';
+                const skillsSection = getSkillsSection();
+                if (skillsSection) skillsSection.style.display = 'none'; // Hide skills section
+                
+                // Hide reenlistment buttons since we're starting a new term
+                document.getElementById('reenlist-btn').style.display = 'none';
+                document.getElementById('leave-retire-btn').style.display = 'none';
+                let medicalBtn = document.getElementById('medical-btn');
+                if (medicalBtn) medicalBtn.style.display = 'none';
+                
+                // Update success message to indicate new term
+                console.log(`Successfully reenlisted! Beginning term ${data.term_number}.`);
+            }
+            
+            if (data.character && data.available_options) updateReenlistmentButtons(data.character, data.available_options);
+            // Hide reenlist and leave/retire buttons after outcome
+            document.getElementById('reenlist-btn').style.display = 'none';
+            document.getElementById('leave-retire-btn').style.display = 'none';
+            let medicalBtn = document.getElementById('medical-btn');
+            if (medicalBtn) medicalBtn.style.display = 'none';
+            // Update term panel
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
+        } else {
+            alert(data.error || (pref === 'retire' ? 'Retirement failed.' : 'Leave failed.'));
+        }
+    });
+}; 
+
+function updateTermPanel(character) {
+    // This function updates the term panel with character information
+    // Implementation depends on your HTML structure
+    console.log('Updating term panel for character:', character);
+    
+    // Update skills display in top panel
+    updateSkillsDisplay(character);
+    
+    // Update term outcomes in bottom panel
+    updateTermOutcomes(character);
+}
+
+function updateSkillsDisplay(character) {
+    // Extract all skills from the character's career history
+    const skills = [];
+    const skillCounts = {};
+    
+    if (character.career_history) {
+        character.career_history.forEach(event => {
+            if (event.event_type === 'skill_resolution' && event.result_type === 'skill_gain' && event.skill_gained) {
+                const skill = event.skill_gained;
+                skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+            }
+        });
+    }
+    
+    // Format skills for display
+    const skillList = Object.entries(skillCounts).map(([skill, count]) => {
+        return count > 1 ? `${skill}-${count}` : skill;
+    });
+    
+    const skillsDisplay = document.getElementById('skills-display');
+    if (skillsDisplay) {
+        if (skillList.length > 0) {
+            skillsDisplay.textContent = skillList.join(', ');
+        } else {
+            skillsDisplay.textContent = 'None';
+        }
+    }
+}
+
+function updateTermOutcomes(character) {
+    // Get the current term number
+    const currentTerm = character.terms_served || 0;
+    
+    // Find events for the current term
+    const termEvents = {
+        survival: null,
+        commission: null,
+        promotion: null,
+        skills: [],
+        ageing: null,
+        reenlistment: null
+    };
+    
+    if (character.career_history) {
+        character.career_history.forEach(event => {
+            // Determine which term this event belongs to
+            // This is a simplified approach - you might need to refine this logic
+            if (event.event_type === 'survival_check') {
+                termEvents.survival = event;
+            } else if (event.event_type === 'commission_check') {
+                termEvents.commission = event;
+            } else if (event.event_type === 'promotion_check') {
+                termEvents.promotion = event;
+            } else if (event.event_type === 'skill_resolution' && event.result_type === 'skill_gain') {
+                termEvents.skills.push(event);
+            } else if (event.event_type === 'ageing_check') {
+                termEvents.ageing = event;
+            } else if (event.event_type === 'reenlistment_attempt') {
+                termEvents.reenlistment = event;
+            }
+        });
+    }
+    
+    // Update the term outcomes in the bottom panel
+    updateTermItem('Survival', termEvents.survival);
+    updateTermItem('Commission', termEvents.commission);
+    updateTermItem('Promotion', termEvents.promotion);
+    updateTermItem('Skills', termEvents.skills);
+    updateTermItem('Ageing', termEvents.ageing);
+    updateTermItem('Reenlistment', termEvents.reenlistment);
+}
+
+function updateTermItem(actionName, event) {
+    const termItems = document.querySelectorAll('.term-item');
+    let targetItem = null;
+    
+    // Find the matching term item
+    termItems.forEach(item => {
+        const actionSpan = item.querySelector('.term-action');
+        if (actionSpan && actionSpan.textContent === actionName) {
+            targetItem = item;
+        }
+    });
+    
+    if (targetItem) {
+        const outcomeSpan = targetItem.querySelector('.term-outcome');
+        if (outcomeSpan) {
+            if (Array.isArray(event)) {
+                // Handle skills array
+                if (event.length > 0) {
+                    const skillNames = event.map(e => e.skill_gained).filter(s => s);
+                    outcomeSpan.textContent = skillNames.join(', ');
+                } else {
+                    outcomeSpan.textContent = 'None';
+                }
+            } else if (event) {
+                // Handle single events
+                if (event.outcome) {
+                    outcomeSpan.textContent = event.outcome;
+                } else if (event.status_text) {
+                    outcomeSpan.textContent = event.status_text;
+                } else {
+                    outcomeSpan.textContent = 'Completed';
+                }
+            } else {
+                outcomeSpan.textContent = '<outcome>';
+            }
+        }
+    }
+}
+
+// Helper function to get the skills section reliably
+function getSkillsSection() {
+    const personalBtn = document.getElementById('personal-btn');
+    if (personalBtn && personalBtn.parentElement) {
+        return personalBtn.parentElement;
+    }
+    return null;
+}

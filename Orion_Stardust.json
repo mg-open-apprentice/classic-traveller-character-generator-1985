@@ -1,31 +1,30 @@
 {
-  "name": "Elara Stardust",
+  "name": "Orion Stardust",
   "age": 22,
-  "terms_served": 1,
+  "terms_served": 0,
   "characteristics": {
-    "strength": 4,
-    "dexterity": 8,
-    "endurance": 7,
-    "intelligence": 3,
+    "strength": 9,
+    "dexterity": 7,
+    "endurance": 11,
+    "intelligence": 10,
     "education": 7,
-    "social": 4
+    "social": 7
   },
   "skills": {
-    "Gun Combat": 2,
-    "Electronic": 1
+    "Vehicle": 2
   },
   "career_history": [
     {
       "event_type": "enlistment_attempt",
       "service": "Army",
-      "roll": 6,
+      "roll": 4,
       "modifier": 3,
       "modifier_details": [
-        "Dexterity 8\u22656 (+1)",
-        "Endurance 6\u22655 (+2)"
+        "Dexterity 7\u22656 (+1)",
+        "Endurance 11\u22655 (+2)"
       ],
       "target": 5,
-      "total": 9,
+      "total": 7,
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
@@ -33,13 +32,13 @@
     {
       "event_type": "survival_check",
       "career": "Army",
-      "roll": 6,
+      "roll": 4,
       "modifier": 2,
       "modifier_details": [
         "Education 7\u22656 (+2)"
       ],
       "target": 5,
-      "total": 8,
+      "total": 6,
       "success": true,
       "outcome": "survived"
     },
@@ -48,10 +47,12 @@
       "career": "Army",
       "applicable": true,
       "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 6,
-      "total": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Endurance 11\u22657 (+1)"
+      ],
+      "roll": 4,
+      "total": 5,
       "success": true,
       "rank": 1,
       "outcome": "commissioned as officer",
@@ -67,12 +68,12 @@
       "modifier_details": [
         "Education 7\u22657 (+1)"
       ],
-      "roll": 6,
-      "total": 7,
-      "success": true,
-      "rank": 2,
-      "outcome": "promoted to rank 2",
-      "skill_eligibilities_granted": 1
+      "roll": 4,
+      "total": 5,
+      "success": false,
+      "rank": 1,
+      "outcome": "not promoted",
+      "skill_eligibilities_granted": 0
     },
     {
       "event_type": "skill_resolution",
@@ -85,29 +86,12 @@
       },
       "table_choice_method": "player",
       "table_choice": "personal",
-      "roll": 3,
-      "skill_gained": "+1 END",
+      "roll": 1,
+      "skill_gained": "+1 STR",
       "result_type": "characteristic_increase",
-      "characteristic": "endurance",
-      "old_value": 6,
-      "new_value": 7,
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 3
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
-      "result_type": "skill_gain",
+      "characteristic": "strength",
+      "old_value": 8,
+      "new_value": 9,
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 2
     },
@@ -121,9 +105,9 @@
         "education": false
       },
       "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
+      "table_choice": "service",
+      "roll": 1,
+      "skill_gained": "Vehicle",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 1
@@ -138,9 +122,9 @@
         "education": false
       },
       "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 3,
-      "skill_gained": "Gun Combat",
+      "table_choice": "advanced",
+      "roll": 1,
+      "skill_gained": "Vehicle",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
@@ -159,7 +143,7 @@
       "career": "Army",
       "age": 22,
       "preference": "reenlist",
-      "roll": 6,
+      "roll": 4,
       "target": 7,
       "outcome": "discharged",
       "status_text": "military discharge",
@@ -170,10 +154,10 @@
   "ready_for_skills": false,
   "ready_for_ageing": false,
   "survival_outcome": "survived",
-  "seed": 77,
+  "seed": 100004,
   "random_state": null,
-  "upp": "486374",
+  "upp": "87BA77",
   "career": "Army",
   "commissioned": true,
-  "rank": 2
+  "rank": 1
 }

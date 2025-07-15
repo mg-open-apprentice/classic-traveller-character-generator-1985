@@ -157,6 +157,17 @@ body {
     padding-bottom: 3px;
 }
 
+.section-content {
+    color: #0f0;
+    font-size: 12px;
+    margin-top: 5px;
+    padding: 5px;
+    background: rgba(0, 255, 0, 0.1);
+    border: 1px solid #333;
+    min-height: 20px;
+    word-wrap: break-word;
+}
+
 .event-record {
     color: #0f0;
     font-size: 14px;

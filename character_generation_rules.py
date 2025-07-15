@@ -119,6 +119,7 @@ def create_character_record() -> dict[str, Any]:
         "skill_eligibility": 0,  # Track available skill points
         "ready_for_skills": False,  # Flag to indicate if character is ready for skill resolution
         "ready_for_ageing": False,  # Flag to indicate if character is ready for ageing
+        "survival_outcome": "pending",  # "pending", "survived", or "injured"
         "seed": 77,
         "random_state": None,  # Store random generator state for consistent sequences
     }
@@ -555,16 +556,8 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
     }
     
     # Check if character is eligible for promotion
-    if not character_record.get("commissioned", False):
-        # Character must be commissioned to be promoted
-        promotion_result["applicable"] = False
-        promotion_result["reason"] = "Character is not commissioned"
-        promotion_result["success"] = False
-        promotion_result["outcome"] = "not applicable"
-        
-        # Add the promotion check to the character's career history
-        character_record["career_history"].append(promotion_result)
-        return character_record
+    # Note: Promotion is available to both commissioned and non-commissioned characters
+    # Non-commissioned characters can be promoted to enlisted ranks
     
     if career in ['Scouts', 'Others']:
         # These careers don't have rank structure
@@ -647,8 +640,14 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         character_record["rank"] = new_rank
         promotion_result["rank"] = new_rank
         promotion_result["career"] = career
-        promotion_result["outcome"] = f"promoted to rank {new_rank}"
-        # Grant +1 skill eligibility for successful promotion
+        
+        # Determine promotion outcome text based on commission status
+        if character_record.get("commissioned", False):
+            promotion_result["outcome"] = f"promoted to rank {new_rank}"
+        else:
+            promotion_result["outcome"] = f"promoted to enlisted rank {new_rank}"
+        
+        # Grant +1 skill eligibility for successful promotion (regardless of commission status)
         character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + 1
         promotion_result["skill_eligibilities_granted"] = 1
     else:
@@ -798,16 +797,35 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         }
         character_record["career_history"].append(status_change_event)
     
-    # Check survival outcome and increment terms_served only if survived
-    survival_outcome = character_record.get("survival_outcome", "survived")
-    if survival_outcome == "survived":
-        # Only increment terms_served if character survived the term
-        complete_term(character_record)
-    # If injured, do not increment terms_served - term was not completed
-    
-    # Reset ageing flag for new term if continuing
+    # If continuing career, reset term progression
     if continue_career:
-        character_record["ready_for_ageing"] = False  # Reset ageing flag for new term
+        # Increment terms_served and age as you already do
+        character_record["terms_served"] = character_record.get("terms_served", 0) + 1
+        character_record["age"] = character_record.get("age", 18) + 4
+        
+        # Explicitly reset term progression flags for new term
+        character_record["ready_for_skills"] = False  # After reenlistment, character must perform a survival check to begin the new term
+        character_record["ready_for_ageing"] = False
+        character_record["skill_eligibility"] = 0
+        character_record["survival_outcome"] = "pending"
+        
+        # Increment skill eligibility for the new term
+        increment_skill_eligibility_for_term(character_record)
+        
+        # Create a new term record if you're tracking terms as objects
+        if "terms" not in character_record:
+            character_record["terms"] = []
+        
+        # Start a new term record
+        character_record["terms"].append({
+            "term_number": character_record["terms_served"],  # This is now the correct term number
+            "start_age": character_record["age"],
+            "completed": False,
+            # Other term-specific data
+        })
+        
+        # Ensure the character is ready to start the new term with survival check
+        # This is critical for proper term progression
 
     return character_record
 
@@ -883,6 +901,11 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
     
     # Reset the ready_for_ageing flag after ageing is completed
     character_record["ready_for_ageing"] = False
+    
+    # Mark the current term as completed if we have a terms array
+    if "terms" in character_record and character_record["terms"]:
+        # Mark the last term as completed
+        character_record["terms"][-1]["completed"] = True
     
     return character_record
 
@@ -1534,6 +1557,32 @@ def increment_skill_eligibility_for_term(character_record: dict) -> None:
         skill_eligibilities_granted = 2 if career == "Scouts" else 1
     
     character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + skill_eligibilities_granted
+
+def get_available_reenlistment_options(character_record):
+    options = []
+    
+    # Check if character is ready for reenlistment (after ageing is complete)
+    # Character should be ready for reenlistment if:
+    # 1. They have survived and completed their term (ready_for_ageing is False after ageing)
+    # 2. They are injured and need medical discharge
+    ready_for_reenlistment = (
+        not character_record.get('ready_for_ageing', False) and  # Ageing is complete
+        not character_record.get('ready_for_skills', False)      # Skills are complete
+    )
+    
+    if not ready_for_reenlistment:
+        return options  # Empty list - character not ready for reenlistment
+    
+    if character_record.get('survival_outcome') == 'injured':
+        options = ['medical']
+    else:
+        terms_served = character_record.get('terms_served', 0)
+        if terms_served >= 4:
+            options.append('retire')  # 5th term or later
+        else:
+            options.append('leave')   # Before 5th term
+        options.append('reenlist')    # Always allow reenlist
+    return options
 
 SERVICE_RANK_TITLES = {
     "Navy":       ["", "Ensign", "Lieutenant", "Lt Cmdr", "Commander", "Captain", "Admiral"],

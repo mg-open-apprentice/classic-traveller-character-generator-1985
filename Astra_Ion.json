@@ -1,0 +1,545 @@
+{
+  "name": "Astra Ion",
+  "age": 50,
+  "terms_served": 4,
+  "characteristics": {
+    "strength": 10,
+    "dexterity": 8,
+    "endurance": 12,
+    "intelligence": 6,
+    "education": 11,
+    "social": 9
+  },
+  "skills": {
+    "Gambling": 2,
+    "Forward Observer": 3,
+    "Tactics": 2,
+    "Computer": 2
+  },
+  "career_history": [
+    {
+      "event_type": "enlistment_attempt",
+      "service": "Army",
+      "roll": 9,
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 10\u22656 (+1)",
+        "Endurance 12\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 12,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 11\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 11,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "commission_check",
+      "career": "Army",
+      "applicable": true,
+      "target": 5,
+      "modifier": 1,
+      "modifier_details": [
+        "Endurance 12\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 1,
+      "outcome": "commissioned as officer",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 1,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 11\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 2,
+      "outcome": "promoted to rank 2",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "personal",
+      "roll": 4,
+      "skill_gained": "Gambling",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 3
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 4,
+      "skill_gained": "Forward Observer",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 2
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 4,
+      "skill_gained": "Tactics",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "education",
+      "roll": 4,
+      "skill_gained": "Computer",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 18,
+      "current_age": 22,
+      "age_increase": 4,
+      "checks_performed": [],
+      "ageing_effects": [],
+      "total_effects": 0
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 22,
+      "preference": "reenlist",
+      "roll": 9,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 11\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 11,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 2,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 11\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 3,
+      "outcome": "promoted to rank 3",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 4,
+      "skill_gained": "Tactics",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "education",
+      "roll": 4,
+      "skill_gained": "Computer",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 26,
+      "current_age": 30,
+      "age_increase": 4,
+      "checks_performed": [],
+      "ageing_effects": [],
+      "total_effects": 0
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 30,
+      "preference": "reenlist",
+      "roll": 9,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 11\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 11,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 4,
+      "skill_gained": "Forward Observer",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "STRENGTH",
+      "roll": 8,
+      "target": 8,
+      "old_value": 10,
+      "new_value": 10,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "DEXTERITY",
+      "roll": 5,
+      "target": 7,
+      "old_value": 10,
+      "new_value": 9,
+      "loss": 1,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "ENDURANCE",
+      "roll": 8,
+      "target": 8,
+      "old_value": 12,
+      "new_value": 12,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 34,
+      "current_age": 38,
+      "age_increase": 4,
+      "checks_performed": [
+        38
+      ],
+      "ageing_effects": [
+        "-1 DEXTERITY"
+      ],
+      "total_effects": 1
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 3,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 11\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 4,
+      "outcome": "promoted to rank 4",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 38,
+      "preference": "reenlist",
+      "roll": 9,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 11\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 11,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 4,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 11\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 5,
+      "outcome": "promoted to rank 5",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 4,
+      "skill_gained": "Forward Observer",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": true
+      },
+      "table_choice_method": "player",
+      "table_choice": "personal",
+      "roll": 4,
+      "skill_gained": "Gambling",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 46,
+      "stat": "STRENGTH",
+      "roll": 8,
+      "target": 8,
+      "old_value": 10,
+      "new_value": 10,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 46,
+      "stat": "DEXTERITY",
+      "roll": 5,
+      "target": 7,
+      "old_value": 9,
+      "new_value": 8,
+      "loss": 1,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 46,
+      "stat": "ENDURANCE",
+      "roll": 8,
+      "target": 8,
+      "old_value": 12,
+      "new_value": 12,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 42,
+      "current_age": 46,
+      "age_increase": 4,
+      "checks_performed": [
+        46
+      ],
+      "ageing_effects": [
+        "-1 DEXTERITY"
+      ],
+      "total_effects": 1
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 46,
+      "preference": "reenlist",
+      "roll": 9,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 11\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 11,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 5,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 11\u22657 (+1)"
+      ],
+      "roll": 9,
+      "total": 10,
+      "success": true,
+      "rank": 6,
+      "outcome": "promoted to rank 6",
+      "skill_eligibilities_granted": 1
+    }
+  ],
+  "skill_eligibility": 2,
+  "ready_for_skills": true,
+  "ready_for_ageing": false,
+  "survival_outcome": "survived",
+  "seed": 9,
+  "random_state": null,
+  "upp": "AAC6B9",
+  "career": "Army",
+  "commissioned": true,
+  "rank": 6,
+  "terms": [
+    {
+      "term_number": 1,
+      "start_age": 26,
+      "completed": true
+    },
+    {
+      "term_number": 2,
+      "start_age": 34,
+      "completed": true
+    },
+    {
+      "term_number": 3,
+      "start_age": 42,
+      "completed": true
+    },
+    {
+      "term_number": 4,
+      "start_age": 50,
+      "completed": false
+    }
+  ]
+}
