@@ -1,0 +1,162 @@
+{
+  "name": "Elara Stardust",
+  "age": 18,
+  "terms_served": 0,
+  "characteristics": {
+    "strength": 4,
+    "dexterity": 8,
+    "endurance": 8,
+    "intelligence": 3,
+    "education": 7,
+    "social": 4
+  },
+  "skills": {
+    "Gun Combat": 1,
+    "Electronic": 1
+  },
+  "career_history": [
+    {
+      "event_type": "enlistment_attempt",
+      "service": "Army",
+      "roll": 6,
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 8\u22656 (+1)",
+        "Endurance 6\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 9,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 6,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 8,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "commission_check",
+      "career": "Army",
+      "applicable": true,
+      "target": 5,
+      "modifier": 0,
+      "modifier_details": [],
+      "roll": 6,
+      "total": 6,
+      "success": true,
+      "rank": 1,
+      "outcome": "commissioned as officer",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 1,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 7\u22657 (+1)"
+      ],
+      "roll": 6,
+      "total": 7,
+      "success": true,
+      "rank": 2,
+      "outcome": "promoted to rank 2",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "personal",
+      "roll": 3,
+      "skill_gained": "+1 END",
+      "result_type": "characteristic_increase",
+      "characteristic": "endurance",
+      "old_value": 6,
+      "new_value": 7,
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 3
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 3,
+      "skill_gained": "Gun Combat",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 2
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 3,
+      "skill_gained": "Electronic",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "personal",
+      "roll": 3,
+      "skill_gained": "+1 END",
+      "result_type": "characteristic_increase",
+      "characteristic": "endurance",
+      "old_value": 7,
+      "new_value": 8,
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    }
+  ],
+  "skill_eligibility": 0,
+  "ready_for_skills": false,
+  "ready_for_ageing": true,
+  "seed": 77,
+  "random_state": null,
+  "upp": "486374",
+  "career": "Army",
+  "survival_outcome": "survived",
+  "commissioned": true,
+  "rank": 2
+}
