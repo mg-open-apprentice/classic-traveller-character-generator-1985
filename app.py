@@ -472,13 +472,21 @@ def api_reenlist():
 
     available_options = chargen.get_available_reenlistment_options(current_character)
 
+    # Determine routing based on outcome
+    route = "continue"
+    if reenlistment_result:
+        outcome = reenlistment_result.get("outcome")
+        if outcome in ["discharged", "retired", "medical_discharge"]:
+            route = "mustering_out"
+
     return jsonify({
         "success": True,
         "reenlistment_result": reenlistment_result,
         "character": current_character,
         "available_options": available_options,
         "new_term": reenlistment_result and reenlistment_result.get("continue_career", False),
-        "term_number": current_character.get("terms_served", 0)
+        "term_number": current_character.get("terms_served", 0),
+        "route": route
     })
 
 if __name__ == '__main__':

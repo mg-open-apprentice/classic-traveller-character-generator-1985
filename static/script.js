@@ -812,3 +812,43 @@ function getSkillsSection() {
     }
     return null;
 }
+
+document.getElementById('mustering-out-btn').onclick = function() {
+    // Remove the Muster Out button
+    const musteringSection = document.getElementById('mustering-section');
+    const musterOutBtn = document.getElementById('mustering-out-btn');
+    if (musterOutBtn) musteringSection.removeChild(musterOutBtn);
+
+    // Create select dropdown for cash rolls
+    const label = document.createElement('label');
+    label.setAttribute('for', 'cash-rolls');
+    label.textContent = 'Number of Cash Rolls:';
+    label.style.marginRight = '8px';
+
+    const select = document.createElement('select');
+    select.id = 'cash-rolls';
+    select.name = 'cash-rolls';
+    for (let i = 0; i <= 3; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        select.appendChild(option);
+    }
+    select.style.marginRight = '8px';
+
+    // Create confirm button
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'btn';
+    confirmBtn.id = 'confirm-mustering-btn';
+    confirmBtn.textContent = 'Confirm Mustering Out';
+    confirmBtn.onclick = function() {
+        const cashRolls = select.value;
+        console.log('Confirm Mustering Out pressed. Cash rolls:', cashRolls);
+        // TODO: Call backend endpoint for mustering out with cashRolls
+    };
+
+    // Add elements to the mustering section
+    musteringSection.appendChild(label);
+    musteringSection.appendChild(select);
+    musteringSection.appendChild(confirmBtn);
+};

@@ -1,6 +1,6 @@
 {
   "name": "Elara Stardust",
-  "age": 22,
+  "age": 18,
   "terms_served": 0,
   "characteristics": {
     "strength": 4,
@@ -12,7 +12,7 @@
   },
   "skills": {
     "Gun Combat": 1,
-    "Electronic": 2
+    "Electronic": 1
   },
   "career_history": [
     {
@@ -129,35 +129,9 @@
       "skill_eligibilities_remaining": 1
     },
     {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check",
-      "previous_age": 18,
-      "current_age": 22,
-      "age_increase": 4,
-      "checks_performed": [],
-      "ageing_effects": [],
-      "total_effects": 0
-    },
-    {
       "event_type": "reenlistment_attempt",
       "career": "Army",
-      "age": 22,
+      "age": 18,
       "preference": "reenlist",
       "roll": 6,
       "target": 7,
@@ -166,8 +140,8 @@
       "continue_career": false
     }
   ],
-  "skill_eligibility": 0,
-  "ready_for_skills": false,
+  "skill_eligibility": 1,
+  "ready_for_skills": true,
   "ready_for_ageing": false,
   "survival_outcome": "survived",
   "seed": 77,
