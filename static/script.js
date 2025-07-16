@@ -18,7 +18,7 @@ document.getElementById('create-character-btn').onclick = function() {
             document.getElementById('char-terms').textContent = 'Terms: ' + data.terms_served;
             document.getElementById('upp-string').textContent = data.upp || '______';
             document.getElementById('char-service').textContent = 'Service';
-            
+
             // Update term panel if character data is provided
             if (data.character) {
                 updateTermPanel(data.character);
@@ -203,10 +203,10 @@ document.getElementById('survival-btn').onclick = function() {
                     .then(tableData => {
                         if (tableData.success && tableData.available_tables) {
                             const available = tableData.available_tables;
-                            document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
-                            document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
-                            document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
-                            document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
+                document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
+                document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
+                document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
+                document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
                             
                             // Show the skills section
                             const anyAvailable = available.personal || available.service || available.advanced || available.education;
@@ -331,12 +331,10 @@ document.getElementById('commission-btn').onclick = function() {
                 // Show promotion button
                 document.getElementById('promotion-btn').style.display = 'inline-block';
             }
-
             // Update skill eligibility counter if present
             if (data.skill_eligibility !== undefined) {
                 document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
             }
-            
             // Update character display if character data is provided
             if (data.character) {
                 if (data.character.age !== undefined) {
@@ -345,12 +343,20 @@ document.getElementById('commission-btn').onclick = function() {
                 if (data.character.terms_served !== undefined) {
                     document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
                 }
+                // Update service/status display: show 'Commissioned' if commissioned, else 'Enlisted'
+                if (data.character.career) {
+                    let status = data.character.commissioned ? 'Commissioned' : 'Enlisted';
+                    document.getElementById('char-service').textContent = `${data.character.career} ${status}`;
+                }
             }
-            
             // Update rank display if character has rank information
             if (data.character && data.character.rank !== undefined) {
                 const career = data.character.career || '';
                 updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+            }
+            // Ensure promotion button visibility matches backend after commission attempt
+            if (typeof data.show_promotion !== 'undefined') {
+                document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
             }
         } else {
             alert(data.error || "Commission check failed.");

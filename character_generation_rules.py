@@ -122,6 +122,8 @@ def create_character_record() -> dict[str, Any]:
         "survival_outcome": "pending",  # "pending", "survived", or "injured"
         "seed": 77,
         "random_state": None,  # Store random generator state for consistent sequences
+        "commission_attempted_this_term": False, # Flag to track if a commission attempt was made in the current term
+        "commission_failed_this_term": False, # Flag to track if a commission attempt failed in the current term
     }
 
 def get_current_term_number(character_record: dict[str, Any]) -> int:
@@ -521,15 +523,17 @@ def check_commission(random_generator: random.Random, character_record: dict[str
         # Grant +1 skill eligibility for successful commission
         character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + 1
         commission_result["skill_eligibilities_granted"] = 1
+        character_record["commission_failed_this_term"] = False
     else:
         commission_result["rank"] = 0  # No rank if not commissioned
         commission_result["career"] = career
         commission_result["outcome"] = "not commissioned"
         commission_result["skill_eligibilities_granted"] = 0
+        character_record["commission_failed_this_term"] = True
     
     # Add the commission check to the character's career history
     character_record["career_history"].append(commission_result)
-    
+    character_record["commission_attempted_this_term"] = True
     return character_record
 
 def check_promotion(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
@@ -717,9 +721,7 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         # Add the reenlistment attempt to the character's career history
         character_record["career_history"].append(reenlistment_result)
         
-        # Complete the term (medical discharge still counts as completing the term)
-        complete_term(character_record)
-        
+        # Do NOT increment terms_served for medical discharge due to injury
         return character_record
     
     # Define reenlistment target numbers
@@ -737,7 +739,7 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
     
     # Roll for reenlistment
     roll = roll_2d6(random_generator)
-    
+
     # Create the reenlistment result structure
     reenlistment_result = {
         "event_type": "reenlistment_attempt",
@@ -747,6 +749,27 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         "roll": roll,
         "target": target
     }
+
+    # Special rule: In the 7th term (terms_served == 6), only a roll of 12 allows reenlistment
+    if character_record.get("terms_served", 0) >= 6:
+        if roll == 12:
+            # Only a roll of 12 allows reenlistment (mandatory retention)
+            outcome = "retained"
+            status_text = "retained (mandatory, 7th term+)"
+            continue_career = True
+        else:
+            outcome = "discharged"
+            status_text = "discharged (max terms reached)"
+            continue_career = False
+
+        # Add outcome information to the result
+        reenlistment_result["outcome"] = outcome
+        reenlistment_result["status_text"] = status_text
+        reenlistment_result["continue_career"] = continue_career
+
+        # Add the reenlistment attempt to the character's career history
+        character_record["career_history"].append(reenlistment_result)
+        return character_record
     
     # Determine outcome based on preference and roll
     if roll == 12:
@@ -801,13 +824,14 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
     if continue_career:
         # Increment terms_served and age as you already do
         character_record["terms_served"] = character_record.get("terms_served", 0) + 1
-        character_record["age"] = character_record.get("age", 18) + 4
-        
         # Explicitly reset term progression flags for new term
         character_record["ready_for_skills"] = False  # After reenlistment, character must perform a survival check to begin the new term
         character_record["ready_for_ageing"] = False
         character_record["skill_eligibility"] = 0
         character_record["survival_outcome"] = "pending"
+        # Reset commission attempt flag for new term
+        character_record["commission_attempted_this_term"] = False
+        character_record["commission_failed_this_term"] = False
         
         # Increment skill eligibility for the new term
         increment_skill_eligibility_for_term(character_record)
@@ -1287,7 +1311,8 @@ def calculate_mustering_out_info(character_record: dict[str, Any]) -> dict[str, 
     career_benefit_table = benefit_table.get(current_career, benefit_table['Other'])
     
     # Calculate bonuses
-    rank_bonus = 1 if rank >= 5 else 0
+    # For benefits: +1 only if rank == 5 or rank == 6
+    benefit_rank_bonus = 1 if rank in (5, 6) else 0
     
     return {
         'career': current_career,
@@ -1295,7 +1320,7 @@ def calculate_mustering_out_info(character_record: dict[str, Any]) -> dict[str, 
         'rank': rank,
         'total_rolls': total_rolls,
         'max_cash_rolls': min(3, total_rolls),
-        'rank_bonus': rank_bonus,
+        'benefit_rank_bonus': benefit_rank_bonus,
         'cash_table': career_cash_table,
         'benefit_table': career_benefit_table,
         'requires_mustering_out': True
@@ -1379,7 +1404,8 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     career_benefit_table = benefit_table.get(current_career, benefit_table['Other'])
     
     # Calculate bonuses
-    rank_bonus = 1 if rank >= 5 else 0
+    # For benefits: +1 only if rank == 5 or rank == 6
+    benefit_rank_bonus = 1 if rank in (5, 6) else 0
     
     # Track results
     cash_total = 0
@@ -1391,7 +1417,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     # Roll for cash
     for i in range(cash_rolls):
         base_roll = random_generator.randint(1, 6)
-        total_roll = base_roll + rank_bonus + gambling_skill
+        total_roll = base_roll + gambling_skill  # No rank bonus for cash
         total_roll = min(7, total_roll)  # Cap at 7 for table lookup
         
         amount = career_cash_table.get(total_roll, 0)
@@ -1400,7 +1426,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         roll_detail = {
             'roll_number': i + 1,
             'base_roll': base_roll,
-            'rank_bonus': rank_bonus,
+            'rank_bonus': 0,  # No rank bonus for cash
             'gambling_bonus': gambling_skill,
             'total_roll': total_roll,
             'amount': amount
@@ -1411,8 +1437,8 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         character_record['career_history'].append({
             'event_type': 'mustering_out_cash_roll',
             'roll': base_roll,
-            'modifier': rank_bonus + gambling_skill,
-            'modifier_details': _build_modifier_details(rank_bonus, gambling_skill),
+            'modifier': gambling_skill,  # No rank bonus for cash
+            'modifier_details': _build_modifier_details(0, gambling_skill),
             'target': None,
             'result': f"Cr{amount:,}",
             'total_roll': total_roll,
@@ -1423,7 +1449,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     # Roll for benefits
     for i in range(benefit_rolls):
         base_roll = random_generator.randint(1, 6)
-        total_roll = base_roll + rank_bonus
+        total_roll = base_roll + benefit_rank_bonus
         total_roll = min(7, total_roll)  # Cap at 7 for table lookup
         
         benefit = career_benefit_table.get(total_roll, 'Low Psg')
@@ -1431,7 +1457,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         roll_detail = {
             'roll_number': i + 1,
             'base_roll': base_roll,
-            'rank_bonus': rank_bonus,
+            'rank_bonus': benefit_rank_bonus,
             'total_roll': total_roll,
             'benefit': benefit
         }
@@ -1499,8 +1525,8 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         character_record['career_history'].append({
             'event_type': 'mustering_out_benefit_roll',
             'roll': base_roll,
-            'modifier': rank_bonus,
-            'modifier_details': _build_modifier_details(rank_bonus, 0),
+            'modifier': benefit_rank_bonus,
+            'modifier_details': _build_modifier_details(benefit_rank_bonus, 0),
             'target': None,
             'result': benefit,
             'total_roll': total_roll,
@@ -1527,7 +1553,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         'total_cash': cash_total,
         'items': items,
         'characteristic_boosts': characteristic_boosts,
-        'rank_bonus': rank_bonus,
+        'benefit_rank_bonus': benefit_rank_bonus,
         'gambling_skill': gambling_skill
     })
     
@@ -1537,7 +1563,7 @@ def _build_modifier_details(rank_bonus: int, gambling_bonus: int) -> List[str]:
     """Helper function to build modifier details for mustering out"""
     details = []
     if rank_bonus > 0:
-        details.append(f"Rank 5+ (+{rank_bonus})")
+        details.append(f"Rank 5/6 on benefits (+{rank_bonus})")
     if gambling_bonus > 0:
         details.append(f"Gambling skill (+{gambling_bonus})")
     return details

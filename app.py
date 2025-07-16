@@ -84,8 +84,10 @@ def can_show_promotion_button(character_record):
     career = character_record.get('career', '').lower()
     if career in ['scouts', 'others']:
         return False
-    # 4. Promotion is available to both commissioned and non-commissioned characters
-    # (Non-commissioned characters can be promoted to enlisted ranks)
+    # 4. If commission was attempted and failed this term, cannot promote
+    if character_record.get('commission_failed_this_term', False):
+        return False
+    # 5. Promotion is available to both commissioned and non-commissioned characters
     return True
 
 @app.route('/')

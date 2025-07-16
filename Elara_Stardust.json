@@ -1,7 +1,7 @@
 {
   "name": "Elara Stardust",
   "age": 22,
-  "terms_served": 1,
+  "terms_served": 0,
   "characteristics": {
     "strength": 4,
     "dexterity": 8,
@@ -11,8 +11,8 @@
     "social": 4
   },
   "skills": {
-    "Gun Combat": 2,
-    "Electronic": 1
+    "Gun Combat": 1,
+    "Electronic": 2
   },
   "career_history": [
     {
@@ -138,9 +138,9 @@
         "education": false
       },
       "table_choice_method": "player",
-      "table_choice": "service",
+      "table_choice": "advanced",
       "roll": 3,
-      "skill_gained": "Gun Combat",
+      "skill_gained": "Electronic",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
@@ -172,6 +172,8 @@
   "survival_outcome": "survived",
   "seed": 77,
   "random_state": null,
+  "commission_attempted_this_term": true,
+  "commission_failed_this_term": false,
   "upp": "486374",
   "career": "Army",
   "commissioned": true,
