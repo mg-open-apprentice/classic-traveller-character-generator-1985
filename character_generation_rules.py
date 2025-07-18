@@ -820,10 +820,12 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         }
         character_record["career_history"].append(status_change_event)
     
+    # Increment terms_served for all outcomes except medical discharge
+    if outcome != "medical_discharge":
+        character_record["terms_served"] = character_record.get("terms_served", 0) + 1
+
     # If continuing career, reset term progression
     if continue_career:
-        # Increment terms_served and age as you already do
-        character_record["terms_served"] = character_record.get("terms_served", 0) + 1
         # Explicitly reset term progression flags for new term
         character_record["ready_for_skills"] = False  # After reenlistment, character must perform a survival check to begin the new term
         character_record["ready_for_ageing"] = False

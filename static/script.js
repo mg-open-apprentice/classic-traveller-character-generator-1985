@@ -523,24 +523,32 @@ setupSkillButton('education-skill-btn', 'education');
 function updateReenlistmentButtons(character, availableOptions) {
     const reenlistBtn = document.getElementById('reenlist-btn');
     const leaveRetireBtn = document.getElementById('leave-retire-btn');
+    const ageingBtn = document.getElementById('ageing-btn');
     let medicalBtn = document.getElementById('medical-btn');
 
     // Hide all by default
     reenlistBtn.style.display = 'none';
     leaveRetireBtn.style.display = 'none';
     if (medicalBtn) medicalBtn.style.display = 'none';
+    if (ageingBtn) ageingBtn.style.display = 'none';
+
+    // If character is ready for ageing, only show the Ageing button
+    if (character.ready_for_ageing) {
+        if (ageingBtn) ageingBtn.style.display = 'inline-block';
+        return; // Don't show reenlist/leave/retire until ageing is done
+    }
 
     if (!availableOptions) return;
 
     if (availableOptions.includes('reenlist')) {
         reenlistBtn.style.display = 'inline-block';
     }
-    if (availableOptions.includes('leave')) {
-        leaveRetireBtn.textContent = 'Leave';
-        leaveRetireBtn.style.display = 'inline-block';
-    }
+    // Only show 'Retire' if availableOptions includes 'retire', otherwise show 'Leave'
     if (availableOptions.includes('retire')) {
         leaveRetireBtn.textContent = 'Retire';
+        leaveRetireBtn.style.display = 'inline-block';
+    } else if (availableOptions.includes('leave')) {
+        leaveRetireBtn.textContent = 'Leave';
         leaveRetireBtn.style.display = 'inline-block';
     }
     if (availableOptions.includes('medical')) {
@@ -689,7 +697,79 @@ function updateTermPanel(character) {
     // Update skills display in top panel
     updateSkillsDisplay(character);
     
-    // Update term outcomes in bottom panel
+    // Always update terms served in the UI
+    if (character.terms_served !== undefined) {
+        document.getElementById('char-terms').textContent = 'Terms: ' + character.terms_served;
+    }
+
+    // Display mustering out rolls in pink next to skill eligibility (cyan)
+    let musteringRolls = null;
+    if (character.mustering_out_benefits && character.mustering_out_benefits.cash_roll_details && character.mustering_out_benefits.benefit_roll_details) {
+        musteringRolls = character.mustering_out_benefits.cash_roll_details.length + character.mustering_out_benefits.benefit_roll_details.length;
+    } else if (character.terms_served !== undefined && character.rank !== undefined) {
+        let totalRolls = parseInt(character.terms_served);
+        const rank = parseInt(character.rank) || 0;
+        if (rank >= 1 && rank <= 2) totalRolls += 1;
+        else if (rank >= 3 && rank <= 4) totalRolls += 2;
+        else if (rank >= 5 && rank <= 6) totalRolls += 3;
+        musteringRolls = totalRolls;
+    }
+    const skillEl = document.getElementById('top-skill-eligibility');
+    let moEl = document.getElementById('top-mustering-rolls');
+    if (!moEl) {
+        moEl = document.createElement('span');
+        moEl.id = 'top-mustering-rolls';
+        moEl.style.marginLeft = '8px';
+        skillEl.parentNode.insertBefore(moEl, skillEl.nextSibling);
+    }
+    if (musteringRolls !== null && !isNaN(musteringRolls)) {
+        moEl.innerHTML = `<span style="color:pink; font-size: 16px; font-weight: bold;">${musteringRolls}</span>`;
+    } else {
+        moEl.innerHTML = '';
+    }
+
+    // If mustering out, replace the term report with the mustering out report
+    const termRecord = document.querySelector('.term-record');
+    let moDiv = document.getElementById('mustering-out-summary');
+    if (character.mustering_out_benefits) {
+        // Remove all children from termRecord except the mustering out summary
+        Array.from(termRecord.children).forEach(child => {
+            if (child.id !== 'mustering-out-summary') termRecord.removeChild(child);
+        });
+        if (!moDiv) {
+            moDiv = document.createElement('div');
+            moDiv.id = 'mustering-out-summary';
+            moDiv.className = 'section';
+            termRecord.appendChild(moDiv);
+        }
+        // Format the mustering out report
+        const mo = character.mustering_out_benefits;
+        let summary = `<strong>Mustering Out Results:</strong><br>`;
+        summary += `Cash: <span style="color:lime;">Cr${mo.cash ? mo.cash.toLocaleString() : 0}</span><br>`;
+        if (mo.items && mo.items.length > 0) {
+            summary += `Items: <span style="color:cyan;">${mo.items.join(', ')}</span><br>`;
+        }
+        if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
+            summary += `Stat Boosts: <span style="color:orange;">`;
+            summary += Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat}+${val}`).join(', ');
+            summary += `</span><br>`;
+        }
+        if (mo.cash_roll_details && mo.cash_roll_details.length > 0) {
+            summary += `<em>Cash Rolls:</em> `;
+            summary += mo.cash_roll_details.map(r => r.total_roll).join(', ') + '<br>';
+        }
+        if (mo.benefit_roll_details && mo.benefit_roll_details.length > 0) {
+            summary += `<em>Benefit Rolls:</em> `;
+            summary += mo.benefit_roll_details.map(r => r.benefit).join(', ') + '<br>';
+        }
+        moDiv.innerHTML = summary;
+        return;
+    } else {
+        // If not mustered out, remove the mustering out summary if present
+        if (moDiv) moDiv.remove();
+    }
+
+    // Update term outcomes in bottom panel (only if not mustered out)
     updateTermOutcomes(character);
 }
 
@@ -843,8 +923,54 @@ document.getElementById('mustering-out-btn').onclick = function() {
     confirmBtn.textContent = 'Confirm Mustering Out';
     confirmBtn.onclick = function() {
         const cashRolls = select.value;
-        console.log('Confirm Mustering Out pressed. Cash rolls:', cashRolls);
-        // TODO: Call backend endpoint for mustering out with cashRolls
+        fetch('/api/muster_out', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cash_rolls: cashRolls})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Format the mustering out results
+                const mo = data.mustering_out || {};
+                let summary = `<strong>Mustering Out Results:</strong><br>`;
+                summary += `Cash: <span style="color:lime;">Cr${mo.cash ? mo.cash.toLocaleString() : 0}</span><br>`;
+                if (mo.items && mo.items.length > 0) {
+                    summary += `Items: <span style="color:cyan;">${mo.items.join(', ')}</span><br>`;
+                }
+                if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
+                    summary += `Stat Boosts: <span style="color:orange;">`;
+                    summary += Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat}+${val}`).join(', ');
+                    summary += `</span><br>`;
+                }
+                if (mo.cash_roll_details && mo.cash_roll_details.length > 0) {
+                    summary += `<em>Cash Rolls:</em> `;
+                    summary += mo.cash_roll_details.map(r => r.total_roll).join(', ') + '<br>';
+                }
+                if (mo.benefit_roll_details && mo.benefit_roll_details.length > 0) {
+                    summary += `<em>Benefit Rolls:</em> `;
+                    summary += mo.benefit_roll_details.map(r => r.benefit).join(', ') + '<br>';
+                }
+
+                // Display in the bottom panel (or wherever you want)
+                const termRecord = document.querySelector('.term-record');
+                let moDiv = document.getElementById('mustering-out-summary');
+                if (!moDiv) {
+                    moDiv = document.createElement('div');
+                    moDiv.id = 'mustering-out-summary';
+                    moDiv.className = 'section';
+                    termRecord.appendChild(moDiv);
+                }
+                moDiv.innerHTML = summary;
+
+                // Optionally, update the character display as well
+                if (data.character) {
+                    updateTermPanel(data.character);
+                }
+            } else {
+                alert(data.error || 'Mustering out failed.');
+            }
+        });
     };
 
     // Add elements to the mustering section

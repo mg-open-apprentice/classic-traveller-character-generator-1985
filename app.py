@@ -97,14 +97,13 @@ def index():
 @app.route('/api/create_character', methods=['POST'])
 def api_create_character():
     global current_character
-    
     rng = get_rng()
     current_character = chargen.create_character_record()
     current_character["name"] = chargen.generate_character_name(rng)
     current_character["upp"] = "______"  # Reset UPP for new character
     current_character["seed"] = GLOBAL_SEED  # Store the seed used for this character
+    chargen.save_random_state(current_character, rng)  # Initialize RNG state
     save_character_to_file()
-    
     return jsonify({
         "success": True,
         "name": current_character["name"],
@@ -116,17 +115,12 @@ def api_create_character():
 @app.route('/api/generate_characteristic', methods=['POST'])
 def api_generate_characteristic():
     global current_character
-    
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-    
     data = request.get_json()
     characteristic = data.get('characteristic')
-    
     if not characteristic:
         return jsonify({"success": False, "error": "Characteristic not specified"}), 400
-    
-    # Map characteristic to UPP position
     char_to_upp_index = {
         'strength': 0,
         'dexterity': 1,
@@ -135,28 +129,17 @@ def api_generate_characteristic():
         'education': 4,
         'social': 5
     }
-    
     if characteristic not in char_to_upp_index:
         return jsonify({"success": False, "error": "Invalid characteristic"}), 400
-    
-    # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = get_rng()
-    
-    # Generate the characteristic value
+    rng = chargen.get_random_generator(current_character)
     value = chargen.generate_characteristic(rng, characteristic)
-    
-    # Store in character record
+    chargen.save_random_state(current_character, rng)
     current_character["characteristics"][characteristic] = value
-    
-    # Convert to hex (10=A, 11=B, 12=C)
     hex_char = str(value) if value < 10 else chr(65 + value - 10)
-    
-    # Update the UPP string in current_character
     upp_list = list(current_character["upp"])
     upp_list[char_to_upp_index[characteristic]] = hex_char
     current_character["upp"] = ''.join(upp_list)
     save_character_to_file()
-    
     return jsonify({
         "success": True,
         "characteristic": characteristic,
@@ -168,31 +151,19 @@ def api_generate_characteristic():
 @app.route('/api/enlist', methods=['POST'])
 def api_enlist():
     global current_character
-    
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-    
     data = request.get_json()
     service = data.get('service')
-    
     if not service:
         return jsonify({"success": False, "error": "Service not specified"}), 400
-    
-    # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = get_rng()
-    
-    # Attempt enlistment
+    rng = chargen.get_random_generator(current_character)
     current_character = chargen.attempt_enlistment(rng, current_character, service)
+    chargen.save_random_state(current_character, rng)
     save_character_to_file()
-    
-    # Get the enlistment result from the character's career history
-    enlistment_result = current_character["career_history"][-1]  # Last entry
-
-    # Determine if commission/promotion buttons should be shown
+    enlistment_result = current_character["career_history"][-1]
     show_commission = can_show_commission_button(current_character)
     show_promotion = can_show_promotion_button(current_character)
-    
-    # Format response for frontend
     response_data = {
         "success": True,
         "enlistment_result": {
@@ -206,32 +177,21 @@ def api_enlist():
         "show_commission": show_commission,
         "show_promotion": show_promotion
     }
-    
     return jsonify(response_data)
 
 @app.route('/api/survival', methods=['POST'])
 def api_survival():
     global current_character
-    
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-    
-    # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = get_rng()
-    
-    # Check survival
+    rng = chargen.get_random_generator(current_character)
     current_character = chargen.check_survival(rng, current_character)
+    chargen.save_random_state(current_character, rng)
     save_character_to_file()
-    
-    # Get the survival result from the character's career history
-    survival_result = current_character["career_history"][-1]  # Last entry
+    survival_result = current_character["career_history"][-1]
     outcome = survival_result.get("outcome", "")
-    
-    # Get skill eligibility count
     skill_eligibility = current_character.get("skill_eligibility", 0)
     ready_for_skills = current_character.get("ready_for_skills", False)
-
-    # Determine if commission/promotion buttons should be shown, and if medical button should be shown
     if outcome == "injured":
         show_commission = False
         show_promotion = False
@@ -240,8 +200,6 @@ def api_survival():
         show_commission = can_show_commission_button(current_character)
         show_promotion = can_show_promotion_button(current_character)
         show_medical = False
-    
-    # Format response for frontend
     response_data = {
         "success": True,
         "survival_result": {
@@ -256,37 +214,23 @@ def api_survival():
         "show_commission": show_commission,
         "show_promotion": show_promotion,
         "show_medical": show_medical,
-        "character": current_character  # Include character data for frontend updates
+        "character": current_character
     }
-    
     return jsonify(response_data)
 
 @app.route('/api/commission', methods=['POST'])
 def api_commission():
     global current_character
-    
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-    
-    # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = get_rng()
-    
-    # Check commission
+    rng = chargen.get_random_generator(current_character)
     current_character = chargen.check_commission(rng, current_character)
+    chargen.save_random_state(current_character, rng)
     save_character_to_file()
-    
-    # Get the commission result from the character's career history
-    commission_result = current_character["career_history"][-1]  # Last entry
-    
-    # Get skill eligibility count
+    commission_result = current_character["career_history"][-1]
     skill_eligibility = current_character.get("skill_eligibility", 0)
-
-    # Determine if commission button should be shown
     show_commission = can_show_commission_button(current_character)
-    # Determine if promotion button should be shown
     show_promotion = can_show_promotion_button(current_character)
-    
-    # Format response for frontend
     response_data = {
         "success": True,
         "commission_result": {
@@ -302,35 +246,22 @@ def api_commission():
         "skill_eligibility": skill_eligibility,
         "show_commission": show_commission,
         "show_promotion": show_promotion,
-        "character": current_character  # Include character data for frontend updates
+        "character": current_character
     }
-    
     return jsonify(response_data)
 
 @app.route('/api/promotion', methods=['POST'])
 def api_promotion():
     global current_character
-
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-
-    # For now, create a fresh RNG (we'll need persistence for proper state management)
-    rng = get_rng()
-
-    # Check promotion
+    rng = chargen.get_random_generator(current_character)
     current_character = chargen.check_promotion(rng, current_character)
+    chargen.save_random_state(current_character, rng)
     save_character_to_file()
-
-    # Get the promotion result from the character's career history
-    promotion_result = current_character["career_history"][-1]  # Last entry
-
-    # Get skill eligibility count
+    promotion_result = current_character["career_history"][-1]
     skill_eligibility = current_character.get("skill_eligibility", 0)
-
-    # Determine if promotion button should be shown
     show_promotion = can_show_promotion_button(current_character)
-
-    # Format response for frontend
     response_data = {
         "success": True,
         "promotion_result": {
@@ -345,49 +276,39 @@ def api_promotion():
         },
         "skill_eligibility": skill_eligibility,
         "show_promotion": show_promotion,
-        "character": current_character  # Include character data for frontend updates
+        "character": current_character
     }
-
     return jsonify(response_data)
 
 @app.route('/api/resolve_skill', methods=['POST'])
 def api_resolve_skill():
     global current_character
-
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-
     data = request.get_json() or {}
-    table_choice = data.get('table_choice')  # Optional
-
-    # Use the same RNG as elsewhere
-    rng = get_rng()
-
+    table_choice = data.get('table_choice')
+    rng = chargen.get_random_generator(current_character)
     try:
         current_character = chargen.resolve_skill(rng, current_character, table_choice)
+        chargen.save_random_state(current_character, rng)
         save_character_to_file()
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
-
-    # Get the last skill event for feedback
     skill_event = None
     for event in reversed(current_character.get("career_history", [])):
         if event.get("event_type") == "skill_resolution":
             skill_event = event
             break
-
-    # Check if ready for ageing and, if so, advance to ageing automatically
     ageing_report = None
     available_options = None
     if current_character.get("ready_for_ageing", False):
+        rng = chargen.get_random_generator(current_character)
         current_character = chargen.check_ageing(rng, current_character)
+        chargen.save_random_state(current_character, rng)
         save_character_to_file()
-        # Find the latest ageing event for reporting
         ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
         ageing_report = ageing_events[-1] if ageing_events else None
-        # Get reenlistment options after ageing is complete
         available_options = chargen.get_available_reenlistment_options(current_character)
-
     return jsonify({
         "success": True,
         "skill_event": skill_event,
@@ -412,21 +333,13 @@ def api_ageing():
     global current_character
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-
-    # Use a consistent seed for now (should be improved for real randomness/persistence)
-    rng = get_rng()
-
-    # Call the ageing logic
+    rng = chargen.get_random_generator(current_character)
     current_character = chargen.check_ageing(rng, current_character)
+    chargen.save_random_state(current_character, rng)
     save_character_to_file()
-
-    # Find the latest ageing event for reporting
     ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
     latest_ageing = ageing_events[-1] if ageing_events else {}
-
-    # Get reenlistment options after ageing is complete
     available_options = chargen.get_available_reenlistment_options(current_character)
-
     return jsonify({
         "success": True,
         "age": current_character.get("age"),
@@ -438,47 +351,38 @@ def api_ageing():
 @app.route('/api/reenlist', methods=['POST'])
 def api_reenlist():
     global current_character
+    print(f"[DEBUG] current_character: {current_character}")
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-
+    print(f"[DEBUG] Character age at reenlist: {current_character.get('age', 'MISSING')}")
+    print(f"[DEBUG] Character career at reenlist: {current_character.get('career', 'MISSING')}")
     data = request.get_json() or {}
     preference = data.get('preference', 'reenlist')
-
-    rng = get_rng()
+    rng = chargen.get_random_generator(current_character)
     try:
         current_character = chargen.attempt_reenlistment(rng, current_character, preference)
-        
+        chargen.save_random_state(current_character, rng)
         # Get the last reenlistment event for feedback
         reenlistment_result = None
         for event in reversed(current_character.get("career_history", [])):
             if event.get("event_type") == "reenlistment_attempt":
                 reenlistment_result = event
                 break
-        
-        # If successfully reenlisted, reset term progression flags
         if reenlistment_result and reenlistment_result.get("continue_career", False):
-            # Reset term-specific flags for new term
             current_character["ready_for_skills"] = False
             current_character["ready_for_ageing"] = False
             current_character["skill_eligibility"] = 0
             current_character["survival_outcome"] = "pending"
-            
-            # Add clear signal for new term
             reenlistment_result["new_term_started"] = True
-        
         save_character_to_file()
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
-
     available_options = chargen.get_available_reenlistment_options(current_character)
-
-    # Determine routing based on outcome
     route = "continue"
-    if reenlistment_result:
+    if reenlistment_result is not None:
         outcome = reenlistment_result.get("outcome")
         if outcome in ["discharged", "retired", "medical_discharge"]:
             route = "mustering_out"
-
     return jsonify({
         "success": True,
         "reenlistment_result": reenlistment_result,
@@ -487,6 +391,26 @@ def api_reenlist():
         "new_term": reenlistment_result and reenlistment_result.get("continue_career", False),
         "term_number": current_character.get("terms_served", 0),
         "route": route
+    })
+
+@app.route('/api/muster_out', methods=['POST'])
+def api_muster_out():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    data = request.get_json() or {}
+    cash_rolls = int(data.get('cash_rolls', 0))
+    rng = chargen.get_random_generator(current_character)
+    try:
+        current_character = chargen.perform_mustering_out(rng, current_character, cash_rolls)
+        chargen.save_random_state(current_character, rng)
+        save_character_to_file()
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    return jsonify({
+        "success": True,
+        "character": current_character,
+        "mustering_out": current_character.get("mustering_out_benefits", {})
     })
 
 if __name__ == '__main__':
