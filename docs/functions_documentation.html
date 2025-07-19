@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Generation Rules - Function Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .category {
+            margin-bottom: 40px;
+        }
+        
+        .category h2 {
+            color: #34495e;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .function {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .function:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .function-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .function-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .line-number {
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+        
+        .function-signature {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border-left: 4px solid #3498db;
+            margin-bottom: 10px;
+            overflow-x: auto;
+        }
+        
+        .function-description {
+            color: #555;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        
+        .function-usage {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .usage-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .external {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .internal {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .unused {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .callers {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .callers strong {
+            color: #2c3e50;
+        }
+        
+        .filter-controls {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .filter-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background: #2980b9;
+        }
+        
+        .filter-btn.active {
+            background: #27ae60;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Character Generation Rules - Function Documentation</h1>
+        
+        <div class="summary">
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number">34</span>
+                    <span class="stat-label">Total Functions</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">15</span>
+                    <span class="stat-label">External API</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">13</span>
+                    <span class="stat-label">Internal Only</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">6</span>
+                    <span class="stat-label">Unused</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filter-controls">
+            <button class="filter-btn active" onclick="filterFunctions('all')">All Functions</button>
+            <button class="filter-btn" onclick="filterFunctions('external')">External API</button>
+            <button class="filter-btn" onclick="filterFunctions('internal')">Internal Only</button>
+            <button class="filter-btn" onclick="filterFunctions('unused')">Unused</button>
+        </div>
+
+        <div class="category">
+            <h2>🎯 Core Character Management</h2>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">set_seed</div>
+                    <div class="line-number">Line 39</div>
+                </div>
+                <div class="function-signature">def set_seed(seed: int = 77) -&gt; random.Random:</div>
+                <div class="function-description">Create a random generator with the specified seed</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (get_rng function)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">get_random_generator</div>
+                    <div class="line-number">Line 51</div>
+                </div>
+                <div class="function-signature">def get_random_generator(character_record: dict[str, Any]) -&gt; random.Random:</div>
+                <div class="function-description">Get a random generator for the character, restoring previous state if available</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> All API endpoints in app.py</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">save_random_state</div>
+                    <div class="line-number">Line 74</div>
+                </div>
+                <div class="function-signature">def save_random_state(character_record: dict[str, Any], random_generator: random.Random) -&gt; None:</div>
+                <div class="function-description">Save the current random generator state to the character record</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> All API endpoints in app.py after random operations</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">generate_character_name</div>
+                    <div class="line-number">Line 84</div>
+                </div>
+                <div class="function-signature">def generate_character_name(random_generator: random.Random) -&gt; str:</div>
+                <div class="function-description">Generate a random sci-fi character name with separate first and last name pools</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_create_character)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">create_character_record</div>
+                    <div class="line-number">Line 108</div>
+                </div>
+                <div class="function-signature">def create_character_record() -&gt; dict[str, Any]:</div>
+                <div class="function-description">Create an empty data structure to hold character generation data</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_create_character)</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>🎲 Dice Rolling & Characteristics</h2>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">roll_2d6</div>
+                    <div class="line-number">Line 150</div>
+                </div>
+                <div class="function-signature">def roll_2d6(random_generator: random.Random) -&gt; int:</div>
+                <div class="function-description">Roll 2d6 using the provided random generator</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> generate_characteristic, attempt_enlistment, check_survival, check_commission, check_promotion, attempt_reenlistment, apply_ageing_effects, apply_advanced_ageing_effects</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">generate_characteristic</div>
+                    <div class="line-number">Line 162</div>
+                </div>
+                <div class="function-signature">def generate_characteristic(random_generator: random.Random, characteristic: str) -&gt; int:</div>
+                <div class="function-description">Generate a value for a single characteristic (2-12)</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_generate_characteristic)</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>🚀 Service Enlistment</h2>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">get_enlistment_target</div>
+                    <div class="line-number">Line 186</div>
+                </div>
+                <div class="function-signature">def get_enlistment_target(service: str) -&gt; int:</div>
+                <div class="function-description">Get the target number needed for enlistment in a specific service</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> attempt_enlistment</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">get_enlistment_modifiers</div>
+                    <div class="line-number">Line 206</div>
+                </div>
+                <div class="function-signature">def get_enlistment_modifiers(characteristics: dict[str, int], service: str) -&gt; Tuple[int, List[str]]:</div>
+                <div class="function-description">Calculate modifiers for enlistment based on characteristics</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> attempt_enlistment</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">get_available_services</div>
+                    <div class="line-number">Line 238</div>
+                </div>
+                <div class="function-signature">def get_available_services() -&gt; List[str]:</div>
+                <div class="function-description">Get list of available services for enlistment</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> get_draft_service</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">get_draft_service</div>
+                    <div class="line-number">Line 247</div>
+                </div>
+                <div class="function-signature">def get_draft_service(random_generator: random.Random) -&gt; str:</div>
+                <div class="function-description">Determine which service a character is drafted into</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> attempt_enlistment</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">attempt_enlistment</div>
+                    <div class="line-number">Line 262</div>
+                </div>
+                <div class="function-signature">def attempt_enlistment(random_generator: random.Random, character_record: dict[str, Any], service_choice: str) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Attempt to enlist a character in their chosen service</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_enlist)</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>⚔️ Career Progression</h2>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">check_survival</div>
+                    <div class="line-number">Line 323</div>
+                </div>
+                <div class="function-signature">def check_survival(random_generator: random.Random, character_record: dict[str, Any], death_rule_enabled: bool = False) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Check if a character survives their current term and update the character record</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_survival)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">check_commission</div>
+                    <div class="line-number">Line 414</div>
+                </div>
+                <div class="function-signature">def check_commission(random_generator: random.Random, character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Check if a character receives a commission during their current term</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_commission)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">check_promotion</div>
+                    <div class="line-number">Line 539</div>
+                </div>
+                <div class="function-signature">def check_promotion(random_generator: random.Random, character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Check if a character is promoted during their current term</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_promotion)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">attempt_reenlistment</div>
+                    <div class="line-number">Line 668</div>
+                </div>
+                <div class="function-signature">def attempt_reenlistment(random_generator: random.Random, character_record: dict[str, Any], preference: str = 'reenlist') -&gt; dict[str, Any]:</div>
+                <div class="function-description">Attempt to reenlist a character for another term of service</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_reenlist)</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>📚 Skills System</h2>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">get_available_skill_tables</div>
+                    <div class="line-number">Line 1074</div>
+                </div>
+                <div class="function-signature">def get_available_skill_tables(character_record: dict[str, Any]) -&gt; dict[str, bool]:</div>
+                <div class="function-description">Determine which skill tables are available to the character</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> resolve_skill, app.py (api_available_skill_tables)</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">resolve_skill</div>
+                    <div class="line-number">Line 1111</div>
+                </div>
+                <div class="function-signature">def resolve_skill(random_generator: random.Random, character_record: dict[str, Any], table_choice: Optional[str] = None) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Resolve a skill gain for a character</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_resolve_skill)</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">increment_skill_eligibility_for_term</div>
+                    <div class="line-number">Line 1602</div>
+                </div>
+                <div class="function-signature">def increment_skill_eligibility_for_term(character_record: dict) -&gt; None:</div>
+                <div class="function-description">Increment skill eligibility at the start of a new term</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_survival, attempt_reenlistment</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>⏳ Ageing Effects</h2>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">check_ageing</div>
+                    <div class="line-number">Line 1669</div>
+                </div>
+                <div class="function-signature">def check_ageing(random_generator: random.Random, character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Check for ageing effects when a character completes a term and ages</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_resolve_skill, api_ageing)</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">increment_character_age</div>
+                    <div class="line-number">Line 860</div>
+                </div>
+                <div class="function-signature">def increment_character_age(character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Increment the character's age when they complete a term</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_ageing</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">check_ageing_characteristics</div>
+                    <div class="line-number">Line 903</div>
+                </div>
+                <div class="function-signature">def check_ageing_characteristics(random_generator: random.Random, character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Check for ageing effects on characteristics when a character ages</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_ageing</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">apply_ageing_effects</div>
+                    <div class="line-number">Line 970</div>
+                </div>
+                <div class="function-signature">def apply_ageing_effects(random_generator: random.Random, character_record: dict[str, Any], age: int) -&gt; List[str]:</div>
+                <div class="function-description">Apply ageing effects at a specific age</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_ageing_characteristics</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">apply_advanced_ageing_effects</div>
+                    <div class="line-number">Line 1026</div>
+                </div>
+                <div class="function-signature">def apply_advanced_ageing_effects(random_generator: random.Random, character_record: dict[str, Any], age: int) -&gt; List[str]:</div>
+                <div class="function-description">Apply advanced ageing effects for ages 66+</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_ageing_characteristics</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>🎖️ Mustering Out</h2>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">perform_mustering_out</div>
+                    <div class="line-number">Line 1363</div>
+                </div>
+                <div class="function-signature">def perform_mustering_out(random_generator: random.Random, character_record: dict[str, Any], cash_rolls: Optional[int] = None) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Perform mustering out for a character according to Classic Traveller rules</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_muster_out)</div>
+            </div>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">_build_modifier_details</div>
+                    <div class="line-number">Line 1593</div>
+                </div>
+                <div class="function-signature">def _build_modifier_details(rank_bonus: int, gambling_bonus: int) -&gt; List[str]:</div>
+                <div class="function-description">Helper function to build modifier details for mustering out</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> perform_mustering_out</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>🔧 Utility Functions</h2>
+            
+            <div class="function internal-func">
+                <div class="function-header">
+                    <div class="function-name">get_current_term_number</div>
+                    <div class="line-number">Line 129</div>
+                </div>
+                <div class="function-signature">def get_current_term_number(character_record: dict[str, Any]) -&gt; int:</div>
+                <div class="function-description">Get the current term number (1-based)</div>
+                <div class="function-usage">
+                    <span class="usage-badge internal">Internal Only</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> check_commission, attempt_reenlistment, increment_skill_eligibility_for_term</div>
+            </div>
+            
+            <div class="function external-func">
+                <div class="function-header">
+                    <div class="function-name">get_available_reenlistment_options</div>
+                    <div class="line-number">Line 1618</div>
+                </div>
+                <div class="function-signature">def get_available_reenlistment_options(character_record):</div>
+                <div class="function-description">Get available reenlistment options for a character</div>
+                <div class="function-usage">
+                    <span class="usage-badge external">External API</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> app.py (api_resolve_skill, api_ageing, api_reenlist)</div>
+            </div>
+        </div>
+
+        <div class="category">
+            <h2>❌ Unused Functions</h2>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">complete_term</div>
+                    <div class="line-number">Line 141</div>
+                </div>
+                <div class="function-signature">def complete_term(character_record: dict[str, Any]) -&gt; None:</div>
+                <div class="function-description">Increment terms_served when term actually completes</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None (superseded by logic in attempt_reenlistment)</div>
+            </div>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">is_ready_for_skills</div>
+                    <div class="line-number">Line 316</div>
+                </div>
+                <div class="function-signature">def is_ready_for_skills(character_record: dict) -&gt; bool:</div>
+                <div class="function-description">Determine if the character is ready to roll skills for the current term</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None</div>
+            </div>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">get_skill_eligibility_count</div>
+                    <div class="line-number">Line 1099</div>
+                </div>
+                <div class="function-signature">def get_skill_eligibility_count(character_record: dict[str, Any]) -&gt; int:</div>
+                <div class="function-description">Get the number of skill eligibilities available to the character</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None</div>
+            </div>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">get_next_phase</div>
+                    <div class="line-number">Line 1276</div>
+                </div>
+                <div class="function-signature">def get_next_phase(character_record: dict) -&gt; str:</div>
+                <div class="function-description">Determine the next phase for the character after skills are exhausted</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None</div>
+            </div>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">calculate_mustering_out_info</div>
+                    <div class="line-number">Line 1294</div>
+                </div>
+                <div class="function-signature">def calculate_mustering_out_info(character_record: dict[str, Any]) -&gt; dict[str, Any]:</div>
+                <div class="function-description">Calculate mustering out information for a character without executing it</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None</div>
+            </div>
+            
+            <div class="function unused-func">
+                <div class="function-header">
+                    <div class="function-name">get_rank_title</div>
+                    <div class="line-number">Line 1653</div>
+                </div>
+                <div class="function-signature">def get_rank_title(service: str, rank_number: int) -&gt; str:</div>
+                <div class="function-description">Get the rank title for a given service and rank number</div>
+                <div class="function-usage">
+                    <span class="usage-badge unused">Unused</span>
+                </div>
+                <div class="callers"><strong>Called by:</strong> None</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function filterFunctions(type) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide functions
+            const functions = document.querySelectorAll('.function');
+            functions.forEach(func => {
+                if (type === 'all') {
+                    func.style.display = 'block';
+                } else if (type === 'external' && func.classList.contains('external-func')) {
+                    func.style.display = 'block';
+                } else if (type === 'internal' && func.classList.contains('internal-func')) {
+                    func.style.display = 'block';
+                } else if (type === 'unused' && func.classList.contains('unused-func')) {
+                    func.style.display = 'block';
+                } else {
+                    func.style.display = 'none';
+                }
+            });
+            
+            // Show/hide categories based on visible functions
+            document.querySelectorAll('.category').forEach(category => {
+                const visibleFunctions = category.querySelectorAll('.function[style="display: block"], .function:not([style*="display: none"])');
+                if (type === 'all' || visibleFunctions.length > 0) {
+                    category.style.display = 'block';
+                } else {
+                    category.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
