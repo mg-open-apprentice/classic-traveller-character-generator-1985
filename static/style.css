@@ -221,6 +221,39 @@ body {
     font-style: italic;
 }
 
+.commission-item {
+    position: relative;
+}
+
+.commission-item .term-outcome {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    text-align: right;
+}
+
+.skills-item {
+    position: relative;
+}
+
+.skills-item .term-outcome {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    text-align: right;
+}
+
+.ageing-item {
+    position: relative;
+}
+
+.ageing-item .term-outcome {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    text-align: right;
+}
+
 .muster-header {
     border-top: 1px solid #666;
     padding-top: 10px;

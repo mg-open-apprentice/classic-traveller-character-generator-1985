@@ -58,13 +58,16 @@ let remainingCharButtons = 6;
 document.getElementById('create-character-btn').onclick = function() {
     fetch('/api/create_character', {method: 'POST'})
         .then(res => res.json())
-        .then(data => {
+        .then(async data => {
             // Display the generated name as the third item in the top line
             document.getElementById('char-name').textContent = data.name;
             document.getElementById('char-age').textContent = 'Age: ' + data.age;
             document.getElementById('char-terms').textContent = 'Terms: ' + data.terms_served;
             document.getElementById('upp-string').textContent = data.upp || '______';
             document.getElementById('char-service').textContent = 'Service';
+            
+            // Initialize character name display (no rank initially)
+            await updateCharacterNameWithRank(data.name);
 
             // Update term panel if character data is provided
             if (data.character) {
@@ -121,14 +124,14 @@ setupCharacteristicButton('education-btn', 'education');
 setupCharacteristicButton('social-btn', 'social');
 
 function setupEnlistmentButton(btnId, serviceName) {
-    document.getElementById(btnId).onclick = function() {
-        fetch('/api/enlist', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({service: serviceName})
-        })
-        .then(res => res.json())
-        .then(data => {
+    document.getElementById(btnId).onclick = async function() {
+        try {
+            const res = await fetch('/api/enlist', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({service: serviceName})
+            });
+            const data = await res.json();
             // Hide all enlistment buttons
             document.getElementById('navy-btn').style.display = 'none';
             document.getElementById('marines-btn').style.display = 'none';
@@ -144,7 +147,7 @@ function setupEnlistmentButton(btnId, serviceName) {
                 document.getElementById('char-service').textContent = `${service} ${capitalizedOutcome}`;
                 
                 const name = document.getElementById('char-name').textContent;
-                updateRankDisplay(0, '');
+                await updateRankDisplay(0);
                 
                 // Populate the event-record middle panel
                 const result = data.enlistment_result;
@@ -173,7 +176,10 @@ function setupEnlistmentButton(btnId, serviceName) {
             } else {
                 alert(data.error || "Enlistment failed.");
             }
-        });
+        } catch (error) {
+            console.error('Error during enlistment:', error);
+            alert('Error during enlistment');
+        }
     };
 }
 
@@ -184,9 +190,17 @@ setupEnlistmentButton('scouts-btn', 'Scouts');
 setupEnlistmentButton('merchants-btn', 'Merchants');
 setupEnlistmentButton('others-btn', 'Others');
 
-function updateRankDisplay(rank, rankTitle) {
-    document.getElementById('char-rank').textContent = rankTitle ? rankTitle : '';
+async function updateRankDisplay(rank) {
+    const rankTitle = await getRankTitle();
     document.getElementById('char-rank-number').textContent = (rank && rank > 0) ? `Rank: ${rank}` : '';
+    
+    // Also update character name with rank title
+    const charNameElement = document.getElementById('char-name');
+    const currentName = charNameElement.textContent;
+    // Extract just the character name (assume it's the last two words: FirstName LastName)
+    const nameParts = currentName.trim().split(/\s+/);
+    const baseName = nameParts.slice(-2).join(' '); // Get last two words
+    await updateCharacterNameWithRank(baseName);
 }
 
 // Add click handlers for demonstration purposes
@@ -326,7 +340,7 @@ document.getElementById('survival-btn').onclick = function() {
             // Update rank display if character has rank information
             if (data.character && data.character.rank !== undefined) {
                 const career = data.character.career || '';
-                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+                updateRankDisplay(data.character.rank);
             }
 
             // ADD: Update term panel with latest character data
@@ -384,7 +398,7 @@ document.getElementById('commission-btn').onclick = function() {
 
             // If commissioned, update rank display and show promotion button
             if (result.success && result.rank !== undefined) {
-                updateRankDisplay(result.rank, getRankTitle(result.career, result.rank));
+                updateRankDisplay(result.rank);
                 // Show promotion button
                 document.getElementById('promotion-btn').style.display = 'inline-block';
             }
@@ -409,7 +423,7 @@ document.getElementById('commission-btn').onclick = function() {
             // Update rank display if character has rank information
             if (data.character && data.character.rank !== undefined) {
                 const career = data.character.career || '';
-                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+                updateRankDisplay(data.character.rank);
             }
             
             // ADD: Update term panel with latest character data
@@ -427,15 +441,33 @@ document.getElementById('commission-btn').onclick = function() {
     });
 };
 
-// Helper to get rank title (you may want to adjust this mapping)
-function getRankTitle(career, rank) {
-    // Example mapping for Navy, expand as needed
-    const navyRanks = ["", "Ensign", "Lieutenant", "Lt Cmdr", "Commander", "Captain", "Admiral"];
-    if (career === "Navy" && rank >= 1 && rank < navyRanks.length) {
-        return navyRanks[rank];
+// Helper to get rank title from server
+async function getRankTitle() {
+    try {
+        const response = await fetch('/api/get_rank_title', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+        if (data.success) {
+            return data.rank_title;
+        }
+    } catch (error) {
+        console.error('Error fetching rank title:', error);
     }
-    // Add mappings for other careers as needed
     return "";
+}
+
+// Function to update character name display with rank title
+async function updateCharacterNameWithRank(characterName) {
+    const rankTitle = await getRankTitle();
+    const charNameElement = document.getElementById('char-name');
+    
+    if (rankTitle && rankTitle.trim() !== '') {
+        charNameElement.textContent = `${rankTitle} ${characterName}`;
+    } else {
+        charNameElement.textContent = characterName;
+    }
 } 
 
 document.getElementById('promotion-btn').onclick = function() {
@@ -476,7 +508,7 @@ document.getElementById('promotion-btn').onclick = function() {
 
             // If promoted, update rank display
             if (result.success && result.rank !== undefined) {
-                updateRankDisplay(result.rank, getRankTitle(result.career, result.rank));
+                updateRankDisplay(result.rank);
             }
 
             // Update skill eligibility counter if present
@@ -497,7 +529,7 @@ document.getElementById('promotion-btn').onclick = function() {
             // Update rank display if character has rank information
             if (data.character && data.character.rank !== undefined) {
                 const career = data.character.career || '';
-                updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+                updateRankDisplay(data.character.rank);
             }
             
             // ADD: Update term panel with latest character data
@@ -581,7 +613,7 @@ function setupSkillButton(btnId, tableChoice) {
                 // Update rank display if character has rank information
                 if (data.character && data.character.rank !== undefined) {
                     const career = data.character.career || '';
-                    updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
+                    updateRankDisplay(data.character.rank);
                 }
             } else {
                 alert(data.error || 'Skill resolution failed.');
@@ -821,6 +853,13 @@ function updateTermPanel(character) {
         moEl.innerHTML = '';
     }
 
+    // Update the static term title regardless of which report is showing
+    const staticTitle = document.querySelector('.term-title');
+    if (staticTitle) {
+        const currentTerm = getCurrentTermNumber(character);
+        staticTitle.textContent = `CURRENT TERM ${currentTerm}`;
+    }
+
     // If mustering out, replace the term report with the mustering out report
     const termRecord = document.querySelector('.term-record');
     let moDiv = document.getElementById('mustering-out-summary');
@@ -835,31 +874,20 @@ function updateTermPanel(character) {
             moDiv.className = 'section';
             termRecord.appendChild(moDiv);
         }
-        // Format the mustering out report
+        // Format the mustering out report in four categories like term panel
         const mo = character.mustering_out_benefits;
-        let summary = `<strong>Mustering Out Results:</strong><br>`;
-        summary += `Cash: <span style="color:lime;">Cr${mo.cash ? mo.cash.toLocaleString() : 0}</span><br>`;
-        if (mo.items && mo.items.length > 0) {
-            summary += `Items: <span style="color:cyan;">${mo.items.join(', ')}</span><br>`;
-        }
-        if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
-            summary += `Stat Boosts: <span style="color:orange;">`;
-            summary += Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat}+${val}`).join(', ');
-            summary += `</span><br>`;
-        }
-        if (mo.cash_roll_details && mo.cash_roll_details.length > 0) {
-            summary += `<em>Cash Rolls:</em> `;
-            summary += mo.cash_roll_details.map(r => r.total_roll).join(', ') + '<br>';
-        }
-        if (mo.benefit_roll_details && mo.benefit_roll_details.length > 0) {
-            summary += `<em>Benefit Rolls:</em> `;
-            summary += mo.benefit_roll_details.map(r => r.benefit).join(', ') + '<br>';
-        }
+        let summary = `<div class="term-title" style="color:#fff; font-weight:bold; border-bottom:1px solid #333; padding-bottom:3px; margin-bottom:10px;">MUSTERING OUT REPORT</div>`;
+        summary += `<div class="term-item"><span class="term-action">Benefits</span><span class="term-outcome"><span style="color:#00ffff; font-weight:bold;">${mo.items && mo.items.length > 0 ? mo.items.join(', ').toUpperCase() : 'NONE'}</span></span></div>`;
+        summary += `<div class="term-item"><span class="term-action">Personal</span><span class="term-outcome"><span style="color:#ff6600; font-weight:bold;">${mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0 ? Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat.toUpperCase()}+${val}`).join(', ') : 'NONE'}</span></span></div>`;
+        summary += `<div class="term-item"><span class="term-action">Cash</span><span class="term-outcome"><span style="color:#00ff00; font-weight:bold;">CR${mo.cash ? mo.cash.toLocaleString() : 0}</span></span></div>`;
+        summary += `<div class="term-item"><span class="term-action">Retirement Pay</span><span class="term-outcome"><span style="color:#ffff00; font-weight:bold;">${mo.retirement_pay ? `CR${mo.retirement_pay.toLocaleString()}` : 'NONE'}</span></span></div>`;
         moDiv.innerHTML = summary;
         return;
     } else {
         // If not mustered out, remove the mustering out summary if present
         if (moDiv) moDiv.remove();
+        
+        // Title is already updated in updateCharacterDisplay function
     }
 
     // Update term outcomes in bottom panel (only if not mustered out)
@@ -903,6 +931,11 @@ function updateSkillsDisplay(character) {
     }
 }
 
+// Helper function to get current term number
+function getCurrentTermNumber(character) {
+    return character.terms_served || 1; // Use actual terms_served, default to 1 if not set
+}
+
 // Improve the ageing display in the term outcomes
 function updateTermOutcomes(character) {
     // Get the current term number - show the LATEST term by default
@@ -911,11 +944,7 @@ function updateTermOutcomes(character) {
     // FIXED: Define targetTerm outside the if block to fix scope issue
     const targetTerm = currentTerm; // Show the latest term
     
-    // UPDATE: Show the term number in the header
-    const termTitle = document.querySelector('.term-title');
-    if (termTitle) {
-        termTitle.textContent = `Current Term (${currentTerm})`;
-    }
+    // Title is now updated earlier in updateCharacterDisplay function
     
     // ADD BACK: Initialize termEvents object
     const termEvents = {
@@ -970,7 +999,7 @@ function updateTermOutcomes(character) {
                 termEvents.commission = event;
             } else if (event.event_type === 'promotion_check') {
                 termEvents.promotion = event;
-            } else if (event.event_type === 'skill_resolution' && event.result_type === 'skill_gain') {
+            } else if (event.event_type === 'skill_resolution' && (event.result_type === 'skill_gain' || event.result_type === 'characteristic_increase')) {
                 termEvents.skills.push(event);
             } else if (event.event_type === 'ageing_check') {
                 termEvents.ageing = event;
@@ -1024,14 +1053,9 @@ function updateTermOutcomes(character) {
     // Update the term outcomes in the LOWER PANEL
     updateLowerPanelOutcome('Survival', termEvents.survival);
     
-    // Only show Commission if character is not already commissioned
-    if (!isCommissioned) {
-        showLowerPanelOutcome('Commission');
-        updateLowerPanelOutcome('Commission', termEvents.commission);
-    } else {
-        // Hide the Commission line if character is already commissioned
-        hideLowerPanelOutcome('Commission');
-    }
+    // Always show Commission like Survival and Promotion
+    showLowerPanelOutcome('Commission');
+    updateLowerPanelOutcome('Commission', termEvents.commission);
     
     updateLowerPanelOutcome('Promotion', termEvents.promotion);
     updateLowerPanelOutcome('Skills', termEvents.skills);
@@ -1083,13 +1107,13 @@ function updateLowerPanelOutcome(actionName, event) {
             content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
         }
     } else if (actionName === 'Commission') {
-        if (event.success) {
-            content = `<span style="color:#00ff00; font-weight:bold;">COMMISSIONED</span>`;
-            if (event.rank !== undefined) {
-                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
-            }
-        } else {
-            content = `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        const outcome = event.success ? 'commissioned' : 'failed';
+        let color = event.success ? '#00ff00' : '#ff0000';
+        
+        content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+        
+        if (event.success && event.rank !== undefined) {
+            content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
         }
         
         // Show roll details
@@ -1100,13 +1124,13 @@ function updateLowerPanelOutcome(actionName, event) {
             content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
         }
     } else if (actionName === 'Promotion') {
-        if (event.success) {
-            content = `<span style="color:#00ff00; font-weight:bold;">PROMOTED</span>`;
-            if (event.rank !== undefined) {
-                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
-            }
-        } else {
-            content = `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        const outcome = event.success ? 'promoted' : 'failed';
+        let color = event.success ? '#00ff00' : '#ff0000';
+        
+        content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+        
+        if (event.success && event.rank !== undefined) {
+            content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
         }
         
         // Show roll details
@@ -1118,51 +1142,55 @@ function updateLowerPanelOutcome(actionName, event) {
         }
     } else if (actionName === 'Skills') {
         if (Array.isArray(event) && event.length > 0) {
-            const skillNames = event.map(skill => skill.skill_gained || skill.result_type).filter(Boolean);
-            content = `<span style="color:#00ffff; font-weight:bold;">${skillNames.join(', ')}</span>`;
-            
-            // Show roll details for each skill
-            event.forEach(skill => {
-                if (skill.roll !== undefined) {
-                    content += `<br><span style="color:#ffff00; font-size:0.9em;">${skill.skill_gained || skill.result_type}: (${skill.roll})</span>`;
+            const skillDisplays = event.map(skill => {
+                if (skill.result_type === 'characteristic_increase') {
+                    // Handle characteristic increases like "+1 EDU"
+                    const charName = skill.skill_gained || `${skill.characteristic.charAt(0).toUpperCase() + skill.characteristic.slice(1).toLowerCase()} +1`;
+                    return charName;
+                } else {
+                    // Handle regular skills
+                    const skillName = skill.skill_gained || skill.result_type;
+                    const levelGain = skill.level_gain || '+1';
+                    return `${skillName} ${levelGain}`;
                 }
-            });
+            }).filter(Boolean);
+            const outcome = skillDisplays.join(', ');
+            let color = '#00ffff'; // Cyan for skills gained
+            
+            content = `<span style="color:${color}; font-weight:bold;">${outcome}</span>`;
         } else {
-            content = `<span style="color:gray;">None</span>`;
+            const outcome = 'none this term';
+            let color = 'gray';
+            content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
         }
     } else if (actionName === 'Ageing') {
         if (event.age_increase !== undefined) {
-            content = `<span style="color:#ffff00; font-weight:bold;">Age ${event.previous_age}→${event.current_age}</span>`;
-            
             if (event.ageing_effects && event.ageing_effects.length > 0) {
-                content += `<br><span style="color:#ff6600;">${event.ageing_effects.join(', ')}</span>`;
+                const effects = event.ageing_effects.join(', ');
+                content = `<span style="color:#ff6600; font-weight:bold;">${effects.toUpperCase()}</span> <span style="color:#ffff00; font-weight:bold;">AGE ${event.current_age}</span>`;
             } else {
-                content += `<br><span style="color:#00ff00;">No effects</span>`;
-            }
-            
-            // Show ageing roll details if available
-            if (event.roll !== undefined && event.target !== undefined) {
-                content += `<br><span style="color:#ffff00;">Ageing roll: (${event.roll}/${event.target})</span>`;
+                content = `<span style="color:#00ff00; font-weight:bold;">NO EFFECTS</span> <span style="color:#ffff00; font-weight:bold;">AGE ${event.current_age}</span>`;
             }
         } else {
-            content = `<span style="color:#00ff00;">No effects</span>`;
-        }
-    } else if (actionName === 'Reenlistment') {
-        if (event.continue_career) {
-            content = `<span style="color:#00ff00; font-weight:bold;">REENLISTED</span>`;
-        } else {
-            const outcome = event.outcome || 'unknown';
-            let color = '#ff6600'; // Orange
-            if (outcome === 'discharged') color = '#ff0000'; // Red
-            else if (outcome === 'retired') color = '#ff6600'; // Orange
-            else if (outcome === 'medical_discharge') color = '#ff0000'; // Red
-            
+            const outcome = 'no effects';
+            let color = '#00ff00'; // Lime green
             content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
         }
+    } else if (actionName === 'Reenlistment') {
+        const outcome = event.continue_career ? 'reenlisted' : (event.outcome || 'unknown');
+        let color = 'gray';
+        if (outcome === 'reenlisted') color = '#00ff00'; // Bright green
+        else if (outcome === 'retired') color = '#ff6600'; // Orange
+        else if (outcome === 'discharged' || outcome === 'medical_discharge') color = '#ff0000'; // Red
+        
+        content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
         
         // Show roll details
         if (event.roll !== undefined && event.target !== undefined) {
             content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
         }
     }
     
@@ -1312,17 +1340,18 @@ function updateTermItem(itemName, event, ageingDetailsByTerm = null) {
         }
     } else if (itemName === 'Skills') {
         if (Array.isArray(event) && event.length > 0) {
+            // Only show skills gained in this specific term, not all career skills
             const skillNames = event.map(skill => skill.skill_gained || skill.result_type).filter(Boolean);
             content += `<span style="color:#00ffff; font-weight:bold;">${skillNames.join(', ')}</span>`;
             
-            // Show roll details for each skill
+            // Show roll details for each skill gained this term
             event.forEach(skill => {
                 if (skill.roll !== undefined) {
                     content += `<br><span style="color:#ffff00; font-size:0.9em;">${skill.skill_gained || skill.result_type}: (${skill.roll})</span>`;
                 }
             });
         } else {
-            content = `<span style="color:gray;">None</span>`;
+            content += `<span style="color:gray;">None this term</span>`;
         }
     } else if (itemName === 'Ageing') {
         if (event.age_increase !== undefined) {
