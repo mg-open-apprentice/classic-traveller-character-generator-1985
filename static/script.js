@@ -5,6 +5,53 @@ function updateUPPSlot(index, hexChar) {
     document.getElementById('upp-string').textContent = upp.join('');
 }
 
+// Helper to update UPP from characteristics object
+function updateUPPFromCharacteristics(characteristics) {
+    const charToUPPIndex = {
+        'strength': 0,
+        'dexterity': 1,
+        'endurance': 2,
+        'intelligence': 3,
+        'education': 4,
+        'social': 5
+    };
+    
+    // Get the current UPP string
+    const uppElement = document.getElementById('upp-string');
+    if (!uppElement) {
+        console.error('UPP element not found');
+        return;
+    }
+    
+    let currentUPP = uppElement.textContent;
+    console.log('Current UPP:', currentUPP);
+    console.log('Characteristics to update:', characteristics);
+    
+    // Ensure the UPP string is exactly 6 characters
+    if (currentUPP.length !== 6) {
+        console.log('UPP string not 6 characters, creating new one');
+        currentUPP = '______';
+    }
+    
+    let upp = currentUPP.split('');
+    
+    // Update each characteristic in the UPP
+    for (const [charName, value] of Object.entries(characteristics)) {
+        if (charName in charToUPPIndex) {
+            const index = charToUPPIndex[charName];
+            const hexChar = value < 10 ? String(value) : String.fromCharCode(65 + value - 10);
+            upp[index] = hexChar;
+            console.log(`Updating ${charName} (${value}) at index ${index} to '${hexChar}'`);
+        }
+    }
+    
+    const newUPP = upp.join('');
+    console.log('New UPP:', newUPP);
+    
+    // Update the display
+    uppElement.textContent = newUPP;
+}
+
 // Track how many characteristic buttons remain
 let remainingCharButtons = 6;
 
@@ -117,6 +164,11 @@ function setupEnlistmentButton(btnId, serviceName) {
                 }
                 if (typeof data.show_promotion !== 'undefined') {
                     document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
+                }
+                
+                // ADD: Update term panel with latest character data
+                if (data.character) {
+                    updateTermPanel(data.character);
                 }
             } else {
                 alert(data.error || "Enlistment failed.");
@@ -277,6 +329,11 @@ document.getElementById('survival-btn').onclick = function() {
                 updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
             }
 
+            // ADD: Update term panel with latest character data
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
+
             // Update terms served if survived
             if (result.outcome === 'survived') {
                 // This would need to be handled by the backend, but for now we can show it
@@ -354,6 +411,12 @@ document.getElementById('commission-btn').onclick = function() {
                 const career = data.character.career || '';
                 updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
             }
+            
+            // ADD: Update term panel with latest character data
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
+            
             // Ensure promotion button visibility matches backend after commission attempt
             if (typeof data.show_promotion !== 'undefined') {
                 document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
@@ -436,6 +499,11 @@ document.getElementById('promotion-btn').onclick = function() {
                 const career = data.character.career || '';
                 updateRankDisplay(data.character.rank, getRankTitle(career, data.character.rank));
             }
+            
+            // ADD: Update term panel with latest character data
+            if (data.character) {
+                updateTermPanel(data.character);
+            }
         } else {
             alert(data.error || "Promotion check failed.");
         }
@@ -488,7 +556,14 @@ function setupSkillButton(btnId, tableChoice) {
                     updateTermPanel(data.character);
                 }
                 
-                // Show reenlistment options if ageing was completed
+
+                
+                // Update UPP if characteristic increase occurred
+                if (data.skill_event && data.skill_event.result_type === 'characteristic_increase') {
+                    updateUPPFromCharacteristics(data.character.characteristics);
+                }
+                
+                // Always update reenlistment buttons if options are available
                 if (data.available_options && data.available_options.length > 0) {
                     updateReenlistmentButtons(data.character, data.available_options);
                 }
@@ -535,10 +610,21 @@ function updateReenlistmentButtons(character, availableOptions) {
     // If character is ready for ageing, only show the Ageing button
     if (character.ready_for_ageing) {
         if (ageingBtn) ageingBtn.style.display = 'inline-block';
-        return; // Don't show reenlist/leave/retire until ageing is done
+        return; // Don't show reenlist/leave until ageing is done
     }
 
-    if (!availableOptions) return;
+    // ADD: If character is ready for reenlistment, show reenlistment options
+    if (character.ready_for_reenlistment) {
+        reenlistBtn.style.display = 'inline-block';
+        leaveRetireBtn.textContent = 'Leave';
+        leaveRetireBtn.style.display = 'inline-block';
+        return;
+    }
+
+    // Fallback to availableOptions logic for other cases
+    if (!availableOptions) {
+        return;
+    }
 
     if (availableOptions.includes('reenlist')) {
         reenlistBtn.style.display = 'inline-block';
@@ -569,6 +655,10 @@ function updateReenlistmentButtons(character, availableOptions) {
                         alert('Medical discharge: ' + (data.reenlistment_result.status_text || ''));
                         if (data.character && data.available_options) {
                             updateReenlistmentButtons(data.character, data.available_options);
+                        }
+                        // ADD: Update term panel with latest character data
+                        if (data.character) {
+                            updateTermPanel(data.character);
                         }
                     } else {
                         alert(data.error || 'Medical discharge failed.');
@@ -614,8 +704,7 @@ document.getElementById('reenlist-btn').onclick = function() {
                 let medicalBtn = document.getElementById('medical-btn');
                 if (medicalBtn) medicalBtn.style.display = 'none';
                 
-                // Update success message to indicate new term (no popup)
-                console.log(`Successfully reenlisted! Beginning term ${data.term_number}.`);
+
             }
             
             if (data.character && data.available_options) updateReenlistmentButtons(data.character, data.available_options);
@@ -669,8 +758,7 @@ document.getElementById('leave-retire-btn').onclick = function() {
                 let medicalBtn = document.getElementById('medical-btn');
                 if (medicalBtn) medicalBtn.style.display = 'none';
                 
-                // Update success message to indicate new term
-                console.log(`Successfully reenlisted! Beginning term ${data.term_number}.`);
+
             }
             
             if (data.character && data.available_options) updateReenlistmentButtons(data.character, data.available_options);
@@ -691,7 +779,6 @@ document.getElementById('leave-retire-btn').onclick = function() {
 
 function updateTermPanel(character) {
     // This function updates the term panel with character information
-    // Implementation depends on your HTML structure
     console.log('Updating term panel for character:', character);
     
     // Update skills display in top panel
@@ -700,6 +787,12 @@ function updateTermPanel(character) {
     // Always update terms served in the UI
     if (character.terms_served !== undefined) {
         document.getElementById('char-terms').textContent = 'Terms: ' + character.terms_served;
+    }
+
+    // ALWAYS update UPP display to reflect current characteristics
+    if (character.characteristics) {
+        console.log('Updating UPP from characteristics:', character.characteristics);
+        updateUPPFromCharacteristics(character.characteristics);
     }
 
     // Display mustering out rolls in pink next to skill eligibility (cyan)
@@ -771,6 +864,14 @@ function updateTermPanel(character) {
 
     // Update term outcomes in bottom panel (only if not mustered out)
     updateTermOutcomes(character);
+    
+    // Update event panel (middle panel) for ageing events
+    updateEventPanel(character);
+    
+    // Update UPP display to reflect current characteristics
+    if (character.characteristics) {
+        updateUPPFromCharacteristics(character.characteristics);
+    }
 }
 
 function updateSkillsDisplay(character) {
@@ -802,11 +903,21 @@ function updateSkillsDisplay(character) {
     }
 }
 
+// Improve the ageing display in the term outcomes
 function updateTermOutcomes(character) {
-    // Get the current term number
+    // Get the current term number - show the LATEST term by default
     const currentTerm = character.terms_served || 0;
     
-    // Find events for the current term
+    // FIXED: Define targetTerm outside the if block to fix scope issue
+    const targetTerm = currentTerm; // Show the latest term
+    
+    // UPDATE: Show the term number in the header
+    const termTitle = document.querySelector('.term-title');
+    if (termTitle) {
+        termTitle.textContent = `Current Term (${currentTerm})`;
+    }
+    
+    // ADD BACK: Initialize termEvents object
     const termEvents = {
         survival: null,
         commission: null,
@@ -816,10 +927,43 @@ function updateTermOutcomes(character) {
         reenlistment: null
     };
     
+    // Find events for the SPECIFIC term (latest term by default)
     if (character.career_history) {
-        character.career_history.forEach(event => {
-            // Determine which term this event belongs to
-            // This is a simplified approach - you might need to refine this logic
+        let termCount = 0;
+        let termStartIndex = 0;
+        let termEndIndex = character.career_history.length;
+        
+        // FIXED: Handle term 0 (first term) specially
+        if (targetTerm === 0) {
+            // Term 0 starts from the beginning and ends at the first reenlistment
+            termStartIndex = 0;
+            for (let i = 0; i < character.career_history.length; i++) {
+                const event = character.career_history[i];
+                if (event.event_type === 'reenlistment_attempt' && event.new_term_started) {
+                    termEndIndex = i; // Stop at first reenlistment
+                    break;
+                }
+            }
+        } else {
+            // Find the start and end of the TARGET term (for terms 1+)
+            for (let i = 0; i < character.career_history.length; i++) {
+                const event = character.career_history[i];
+                if (event.event_type === 'reenlistment_attempt' && event.new_term_started) {
+                    termCount++;
+                    if (termCount === targetTerm) {
+                        termStartIndex = i + 1; // Start after this reenlistment
+                    } else if (termCount === targetTerm + 1) {
+                        termEndIndex = i; // Stop at next reenlistment
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Process events for the SPECIFIC term only
+        for (let i = termStartIndex; i < termEndIndex; i++) {
+            const event = character.career_history[i];
+            
             if (event.event_type === 'survival_check') {
                 termEvents.survival = event;
             } else if (event.event_type === 'commission_check') {
@@ -832,54 +976,454 @@ function updateTermOutcomes(character) {
                 termEvents.ageing = event;
             } else if (event.event_type === 'reenlistment_attempt') {
                 termEvents.reenlistment = event;
+                break;
             }
-        });
+        }
+        
+        // FIXED: Find the reenlistment event that STARTED this term
+        // The reenlistment event should be the one that begins the current term
+        if (targetTerm === 0) {
+            // For term 0, look for the reenlistment event that starts term 1
+            for (let i = 0; i < character.career_history.length; i++) {
+                const event = character.career_history[i];
+                if (event.event_type === 'reenlistment_attempt' && event.new_term_started) {
+                    termEvents.reenlistment = event;
+                    break;
+                }
+            }
+        } else {
+            // For terms 1+, look for the reenlistment event that started this term
+            let termCount = 0;
+            for (let i = 0; i < character.career_history.length; i++) {
+                const event = character.career_history[i];
+                if (event.event_type === 'reenlistment_attempt' && event.new_term_started) {
+                    termCount++;
+                    if (termCount === targetTerm) {
+                        termEvents.reenlistment = event;
+                        break;
+                    }
+                }
+            }
+        }
     }
     
-    // Update the term outcomes in the bottom panel
-    updateTermItem('Survival', termEvents.survival);
-    updateTermItem('Commission', termEvents.commission);
-    updateTermItem('Promotion', termEvents.promotion);
-    updateTermItem('Skills', termEvents.skills);
-    updateTermItem('Ageing', termEvents.ageing);
-    updateTermItem('Reenlistment', termEvents.reenlistment);
+    // Check if character is already commissioned (rank 1 or higher)
+    const currentRank = character.rank || 0;
+    const isCommissioned = currentRank >= 1;
+    
+    // DEBUG: Log what we found for this term
+    console.log(`[DEBUG] Term ${targetTerm} events:`, {
+        survival: termEvents.survival ? 'found' : 'not found',
+        commission: termEvents.commission ? 'found' : 'not found',
+        promotion: termEvents.promotion ? 'found' : 'not found',
+        skills: termEvents.skills.length,
+        ageing: termEvents.ageing ? 'found' : 'not found',
+        reenlistment: termEvents.reenlistment ? 'found' : 'not found'
+    });
+    
+    // Update the term outcomes in the LOWER PANEL
+    updateLowerPanelOutcome('Survival', termEvents.survival);
+    
+    // Only show Commission if character is not already commissioned
+    if (!isCommissioned) {
+        showLowerPanelOutcome('Commission');
+        updateLowerPanelOutcome('Commission', termEvents.commission);
+    } else {
+        // Hide the Commission line if character is already commissioned
+        hideLowerPanelOutcome('Commission');
+    }
+    
+    updateLowerPanelOutcome('Promotion', termEvents.promotion);
+    updateLowerPanelOutcome('Skills', termEvents.skills);
+    updateLowerPanelOutcome('Ageing', termEvents.ageing);
+    updateLowerPanelOutcome('Reenlistment', termEvents.reenlistment);
 }
 
-function updateTermItem(actionName, event) {
+// Replace the updateLowerPanelOutcome function with this enhanced version:
+
+function updateLowerPanelOutcome(actionName, event) {
+    // Find the term-item that contains this action in the lower panel
     const termItems = document.querySelectorAll('.term-item');
     let targetItem = null;
     
-    // Find the matching term item
-    termItems.forEach(item => {
+    for (let item of termItems) {
         const actionSpan = item.querySelector('.term-action');
         if (actionSpan && actionSpan.textContent === actionName) {
             targetItem = item;
+            break;
         }
-    });
+    }
+    
+    if (!targetItem) return;
+    
+    const outcomeSpan = targetItem.querySelector('.term-outcome');
+    if (!outcomeSpan) return;
+    
+    if (!event) {
+        outcomeSpan.innerHTML = '<span style="color:gray;">Not applicable</span>';
+        return;
+    }
+    
+    let content = '';
+    
+    if (actionName === 'Survival') {
+        const outcome = event.outcome || 'unknown';
+        let color = 'gray';
+        if (outcome === 'survived') color = '#00ff00'; // Bright green
+        else if (outcome === 'injured') color = '#ff6600'; // Orange
+        else color = '#ff0000'; // Red
+        
+        content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+        
+        // Show roll details
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (actionName === 'Commission') {
+        if (event.success) {
+            content = `<span style="color:#00ff00; font-weight:bold;">COMMISSIONED</span>`;
+            if (event.rank !== undefined) {
+                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
+            }
+        } else {
+            content = `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        }
+        
+        // Show roll details
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (actionName === 'Promotion') {
+        if (event.success) {
+            content = `<span style="color:#00ff00; font-weight:bold;">PROMOTED</span>`;
+            if (event.rank !== undefined) {
+                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
+            }
+        } else {
+            content = `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        }
+        
+        // Show roll details
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (actionName === 'Skills') {
+        if (Array.isArray(event) && event.length > 0) {
+            const skillNames = event.map(skill => skill.skill_gained || skill.result_type).filter(Boolean);
+            content = `<span style="color:#00ffff; font-weight:bold;">${skillNames.join(', ')}</span>`;
+            
+            // Show roll details for each skill
+            event.forEach(skill => {
+                if (skill.roll !== undefined) {
+                    content += `<br><span style="color:#ffff00; font-size:0.9em;">${skill.skill_gained || skill.result_type}: (${skill.roll})</span>`;
+                }
+            });
+        } else {
+            content = `<span style="color:gray;">None</span>`;
+        }
+    } else if (actionName === 'Ageing') {
+        if (event.age_increase !== undefined) {
+            content = `<span style="color:#ffff00; font-weight:bold;">Age ${event.previous_age}→${event.current_age}</span>`;
+            
+            if (event.ageing_effects && event.ageing_effects.length > 0) {
+                content += `<br><span style="color:#ff6600;">${event.ageing_effects.join(', ')}</span>`;
+            } else {
+                content += `<br><span style="color:#00ff00;">No effects</span>`;
+            }
+            
+            // Show ageing roll details if available
+            if (event.roll !== undefined && event.target !== undefined) {
+                content += `<br><span style="color:#ffff00;">Ageing roll: (${event.roll}/${event.target})</span>`;
+            }
+        } else {
+            content = `<span style="color:#00ff00;">No effects</span>`;
+        }
+    } else if (actionName === 'Reenlistment') {
+        if (event.continue_career) {
+            content = `<span style="color:#00ff00; font-weight:bold;">REENLISTED</span>`;
+        } else {
+            const outcome = event.outcome || 'unknown';
+            let color = '#ff6600'; // Orange
+            if (outcome === 'discharged') color = '#ff0000'; // Red
+            else if (outcome === 'retired') color = '#ff6600'; // Orange
+            else if (outcome === 'medical_discharge') color = '#ff0000'; // Red
+            
+            content = `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+        }
+        
+        // Show roll details
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+    }
+    
+    outcomeSpan.innerHTML = content;
+}
+
+// NEW FUNCTION: Hide a specific outcome line in the lower panel
+function hideLowerPanelOutcome(actionName) {
+    // Find the term-item that contains this action in the lower panel
+    const termItems = document.querySelectorAll('.term-item');
+    let targetItem = null;
+    
+    for (let item of termItems) {
+        const actionSpan = item.querySelector('.term-action');
+        if (actionSpan && actionSpan.textContent === actionName) {
+            targetItem = item;
+            break;
+        }
+    }
     
     if (targetItem) {
-        const outcomeSpan = targetItem.querySelector('.term-outcome');
-        if (outcomeSpan) {
-            if (Array.isArray(event)) {
-                // Handle skills array
-                if (event.length > 0) {
-                    const skillNames = event.map(e => e.skill_gained).filter(s => s);
-                    outcomeSpan.textContent = skillNames.join(', ');
-                } else {
-                    outcomeSpan.textContent = 'None';
-                }
-            } else if (event) {
-                // Handle single events
-                if (event.outcome) {
-                    outcomeSpan.textContent = event.outcome;
-                } else if (event.status_text) {
-                    outcomeSpan.textContent = event.status_text;
-                } else {
-                    outcomeSpan.textContent = 'Completed';
-                }
-            } else {
-                outcomeSpan.textContent = '<outcome>';
+        // Hide the entire term-item div
+        targetItem.style.display = 'none';
+    }
+}
+
+// NEW FUNCTION: Show a specific outcome line in the lower panel
+function showLowerPanelOutcome(actionName) {
+    // Find the term-item that contains this action in the lower panel
+    const termItems = document.querySelectorAll('.term-item');
+    let targetItem = null;
+    
+    for (let item of termItems) {
+        const actionSpan = item.querySelector('.term-action');
+        if (actionSpan && actionSpan.textContent === actionName) {
+            targetItem = item;
+            break;
+        }
+    }
+    
+    if (targetItem) {
+        // Show the entire term-item div
+        targetItem.style.display = 'block';
+    }
+}
+
+// NEW FUNCTION: Show ageing effects for the entire career
+function updateCareerAgeingSummary(character) {
+    const termRecord = document.querySelector('.term-record');
+    let ageingSummaryDiv = document.getElementById('career-ageing-summary');
+    
+    if (!ageingSummaryDiv) {
+        ageingSummaryDiv = document.createElement('div');
+        ageingSummaryDiv.id = 'career-ageing-summary';
+        ageingSummaryDiv.className = 'section';
+        termRecord.appendChild(ageingSummaryDiv);
+    }
+    
+    // Find all ageing events
+    const ageingEvents = character.career_history.filter(event => event.event_type === 'ageing_check');
+    const ageingDetails = character.career_history.filter(event => event.event_type === 'ageing_check_detail');
+    
+    if (ageingEvents.length === 0) {
+        ageingSummaryDiv.innerHTML = `<strong>Career Ageing:</strong> <span style="color:lime;">No ageing effects</span>`;
+        return;
+    }
+    
+    let content = `<strong>Career Ageing Summary:</strong><br>`;
+    
+    ageingEvents.forEach((event, index) => {
+        const termNumber = index + 1;
+        content += `<span style="color:yellow;">Term ${termNumber}: Age ${event.previous_age}→${event.current_age}</span>`;
+        
+        if (event.ageing_effects && event.ageing_effects.length > 0) {
+            content += ` <span style="color:red;">(${event.ageing_effects.join(', ')})</span>`;
+        } else {
+            content += ` <span style="color:lime;">(No effects)</span>`;
+        }
+        content += '<br>';
+    });
+    
+    ageingSummaryDiv.innerHTML = content;
+}
+
+// Improve the updateTermItem function for ageing display
+function updateTermItem(itemName, event, ageingDetailsByTerm = null) {
+    const termRecord = document.querySelector('.term-record');
+    let itemDiv = document.getElementById(`term-${itemName.toLowerCase()}`);
+    
+    if (!itemDiv) {
+        itemDiv = document.createElement('div');
+        itemDiv.id = `term-${itemName.toLowerCase()}`;
+        itemDiv.className = 'section';
+        termRecord.appendChild(itemDiv);
+    }
+    
+    if (!event) {
+        itemDiv.innerHTML = `<strong>${itemName}:</strong> <span style="color:gray;">Not applicable</span>`;
+        return;
+    }
+    
+    let content = `<strong>${itemName}:</strong> `;
+    
+    if (itemName === 'Survival') {
+        const outcome = event.outcome || 'unknown';
+        let color = 'gray';
+        if (outcome === 'survived') color = '#00ff00'; // Bright green
+        else if (outcome === 'injured') color = '#ff6600'; // Orange
+        else color = '#ff0000'; // Red
+        
+        content += `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (itemName === 'Commission') {
+        if (event.success) {
+            content += `<span style="color:#00ff00; font-weight:bold;">COMMISSIONED</span>`;
+            if (event.rank !== undefined) {
+                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
             }
+        } else {
+            content += `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        }
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (itemName === 'Promotion') {
+        if (event.success) {
+            content += `<span style="color:#00ff00; font-weight:bold;">PROMOTED</span>`;
+            if (event.rank !== undefined) {
+                content += ` <span style="color:#00ffff;">(Rank ${event.rank})</span>`;
+            }
+        } else {
+            content += `<span style="color:#ff0000; font-weight:bold;">FAILED</span>`;
+        }
+        if (event.roll !== undefined && event.target !== undefined) {
+            content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+        }
+        if (event.modifier !== undefined && event.modifier !== 0) {
+            content += ` <span style="color:#00ffff;">[+${event.modifier}]</span>`;
+        }
+    } else if (itemName === 'Skills') {
+        if (Array.isArray(event) && event.length > 0) {
+            const skillNames = event.map(skill => skill.skill_gained || skill.result_type).filter(Boolean);
+            content += `<span style="color:#00ffff; font-weight:bold;">${skillNames.join(', ')}</span>`;
+            
+            // Show roll details for each skill
+            event.forEach(skill => {
+                if (skill.roll !== undefined) {
+                    content += `<br><span style="color:#ffff00; font-size:0.9em;">${skill.skill_gained || skill.result_type}: (${skill.roll})</span>`;
+                }
+            });
+        } else {
+            content = `<span style="color:gray;">None</span>`;
+        }
+    } else if (itemName === 'Ageing') {
+        if (event.age_increase !== undefined) {
+            content += `<span style="color:#ffff00; font-weight:bold;">Age ${event.previous_age}→${event.current_age}</span>`;
+            
+            if (event.checks_performed && event.checks_performed.length > 0) {
+                content += `<br><span style="color:#ff6600;">Checks: ${event.checks_performed.join(', ')}</span>`;
+            }
+            
+            if (event.ageing_effects && event.ageing_effects.length > 0) {
+                content += `<br><span style="color:#ff0000;">Effects: ${event.ageing_effects.join(', ')}</span>`;
+            } else {
+                content += `<br><span style="color:#00ff00;">No characteristic loss</span>`;
+            }
+            
+            // Show ageing roll details if available
+            if (event.roll !== undefined && event.target !== undefined) {
+                content += `<br><span style="color:#ffff00;">Ageing roll: (${event.roll}/${event.target})</span>`;
+            }
+        } else {
+            content = `<span style="color:#00ff00;">No effects</span>`;
+        }
+    } else if (itemName === 'Reenlistment') {
+        if (event.continue_career) {
+            content += `<span style="color:#00ff00; font-weight:bold;">REENLISTED</span>`;
+            if (event.roll !== undefined && event.target !== undefined) {
+                content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+            }
+            if (event.age !== undefined) {
+                content += `<br><span style="color:#ffff00;">Age ${event.age}</span>`;
+            }
+        } else {
+            const outcome = event.outcome || 'unknown';
+            let color = '#ff6600'; // Orange
+            if (outcome === 'discharged') color = '#ff0000'; // Red
+            else if (outcome === 'retired') color = '#ff6600'; // Orange
+            else if (outcome === 'medical_discharge') color = '#ff0000'; // Red
+            
+            content += `<span style="color:${color}; font-weight:bold;">${outcome.toUpperCase()}</span>`;
+            if (event.roll !== undefined && event.target !== undefined) {
+                content += ` <span style="color:#ffff00;">(${event.roll}/${event.target})</span>`;
+            }
+            if (event.age !== undefined) {
+                content += `<br><span style="color:#ffff00;">Age ${event.age}</span>`;
+            }
+        }
+        
+        // Add status text if available
+        if (event.status_text) {
+            content += `<br><span style="color:gray;">${event.status_text}</span>`;
+        }
+    }
+    
+    itemDiv.innerHTML = content;
+}
+
+// For the event panel (middle), display ageing_check_detail events when the latest event is an ageing_check
+function updateEventPanel(character) {
+    const eventSections = document.querySelectorAll('.event-record .event-section');
+    if (!character.career_history || character.career_history.length === 0) return;
+    
+    const lastEvent = character.career_history[character.career_history.length - 1];
+    
+    // Check if the last event is an ageing check
+    if (lastEvent.event_type === 'ageing_check') {
+        // Find all ageing_check_detail events after this ageing_check
+        let idx = character.career_history.length - 1;
+        while (idx > 0 && character.career_history[idx].event_type !== 'ageing_check') idx--;
+        let details = [];
+        for (let i = idx + 1; i < character.career_history.length; i++) {
+            if (character.career_history[i].event_type === 'ageing_check_detail') {
+                details.push(character.career_history[i]);
+            } else {
+                break;
+            }
+        }
+        
+        // Display in the event panel
+        if (eventSections.length > 0) {
+            eventSections[0].querySelector('.event-label').textContent = 'Ageing Events:';
+            let detailText = '';
+            
+            if (details.length > 0) {
+                details.forEach(detail => {
+                    detailText += `Age ${detail.age}: ${detail.stat} roll ${detail.roll}/${detail.target} → ${detail.loss > 0 ? '-' + detail.loss : '0'}; `;
+                });
+            } else {
+                detailText = 'No characteristic loss this term.';
+            }
+            
+            if (eventSections.length > 1) {
+                eventSections[1].querySelector('.event-label').textContent = detailText;
+            }
+        }
+    } else {
+        // Clear ageing display if not showing ageing
+        if (eventSections.length > 0) {
+            eventSections[0].querySelector('.event-label').textContent = '';
+        }
+        if (eventSections.length > 1) {
+            eventSections[1].querySelector('.event-label').textContent = '';
         }
     }
 }
@@ -977,4 +1521,38 @@ document.getElementById('mustering-out-btn').onclick = function() {
     musteringSection.appendChild(label);
     musteringSection.appendChild(select);
     musteringSection.appendChild(confirmBtn);
+};
+
+
+
+// Add this ageing button handler
+document.getElementById('ageing-btn').onclick = function() {
+    fetch('/api/ageing', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Hide the ageing button
+            document.getElementById('ageing-btn').style.display = 'none';
+            
+            // CRITICAL: After ageing completes, check for reenlistment options
+            console.log('[DEBUG] Ageing completed, checking for reenlistment options...');
+            console.log('[DEBUG] available_options:', data.available_options);
+            
+            // Update reenlistment buttons with available options
+            if (data.available_options && data.available_options.length > 0) {
+                updateReenlistmentButtons(data.character, data.available_options);
+            }
+            
+            // Update character display
+            if (data.character) {
+                updateTermPanel(data.character);
+                updateEventPanel(data.character);
+            }
+        } else {
+            alert(data.error || 'Ageing check failed.');
+        }
+    });
 };

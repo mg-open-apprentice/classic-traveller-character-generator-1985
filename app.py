@@ -301,6 +301,8 @@ def api_resolve_skill():
             break
     ageing_report = None
     available_options = None
+    
+    # Check if ageing should be triggered
     if current_character.get("ready_for_ageing", False):
         rng = chargen.get_random_generator(current_character)
         current_character = chargen.check_ageing(rng, current_character)
@@ -308,7 +310,18 @@ def api_resolve_skill():
         save_character_to_file()
         ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
         ageing_report = ageing_events[-1] if ageing_events else None
-        available_options = chargen.get_available_reenlistment_options(current_character)
+    
+    # Always get available reenlistment options after skills are resolved
+    # This ensures reenlistment options are available whether ageing was just completed or not
+    available_options = chargen.get_available_reenlistment_options(current_character)
+    
+    # ADD DEBUGGING
+    print(f"[DEBUG] After skill resolution:")
+    print(f"[DEBUG] - ready_for_skills: {current_character.get('ready_for_skills', False)}")
+    print(f"[DEBUG] - ready_for_ageing: {current_character.get('ready_for_ageing', False)}")
+    print(f"[DEBUG] - terms_served: {current_character.get('terms_served', 0)}")
+    print(f"[DEBUG] - available_options: {available_options}")
+    
     return jsonify({
         "success": True,
         "skill_event": skill_event,

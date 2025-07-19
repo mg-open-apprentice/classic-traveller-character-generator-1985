@@ -822,13 +822,15 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
     
     # Increment terms_served for all outcomes except medical discharge
     if outcome != "medical_discharge":
-        character_record["terms_served"] = character_record.get("terms_served", 0) + 1
-
+        old_terms = character_record.get("terms_served", 0)
+        character_record["terms_served"] = old_terms + 1
+    
     # If continuing career, reset term progression
     if continue_career:
         # Explicitly reset term progression flags for new term
         character_record["ready_for_skills"] = False  # After reenlistment, character must perform a survival check to begin the new term
         character_record["ready_for_ageing"] = False
+        character_record["ready_for_reenlistment"] = False # ADD: Reset the flag
         character_record["skill_eligibility"] = 0
         character_record["survival_outcome"] = "pending"
         # Reset commission attempt flag for new term
@@ -855,19 +857,17 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
 
     return character_record
 
-def check_ageing(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
+def increment_character_age(character_record: dict[str, Any]) -> dict[str, Any]:
     """
-    Check for ageing effects when a character completes a term and ages
+    Increment the character's age when they complete a term
     
     Args:
-        random_generator: An instance of random.Random with the user's seed
         character_record: The character's record
         
     Returns:
-        Updated character record with ageing results
+        Updated character record with age increment
     """
     # Determine age increase based on survival outcome
-    # First check the survival_outcome field in character record, then fall back to career history
     survival_outcome = character_record.get('survival_outcome')
     if survival_outcome is None:
         # Fallback: look for last survival check in career history
@@ -885,13 +885,7 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
     character_record["age"] = previous_age + age_increase
     current_age = character_record["age"]
     
-    ageing_thresholds = [34, 38, 42, 46, 50, 54, 58, 62]
-    advanced_ageing_start = 66
-    
-    ageing_effects = []
-    checks_performed = []
-    
-    # Create ageing check event
+    # Create basic ageing event record (age increment only)
     ageing_event = {
         "event_type": "ageing_check",
         "previous_age": previous_age,
@@ -900,6 +894,46 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
         "checks_performed": [],
         "ageing_effects": []
     }
+    
+    # Add the ageing check to the character's career history
+    character_record["career_history"].append(ageing_event)
+    
+    return character_record
+
+def check_ageing_characteristics(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Check for ageing effects on characteristics when a character ages
+    
+    Args:
+        random_generator: An instance of random.Random with the user's seed
+        character_record: The character's record
+        
+    Returns:
+        Updated character record with ageing characteristic effects
+    """
+    # Get the latest ageing event to find the age range
+    ageing_events = [e for e in character_record.get('career_history', []) if e.get('event_type') == 'ageing_check']
+    if not ageing_events:
+        return character_record
+    
+    latest_ageing = ageing_events[-1]
+    previous_age = latest_ageing.get('previous_age', 18)
+    current_age = latest_ageing.get('current_age', 18)
+    
+    # Check survival outcome to determine if characteristic checks should be made
+    survival_outcome = character_record.get('survival_outcome')
+    if survival_outcome is None:
+        # Fallback: look for last survival check in career history
+        for event in reversed(character_record.get('career_history', [])):
+            if event.get('event_type') == 'survival_check':
+                survival_outcome = event.get('outcome')
+                break
+    
+    ageing_thresholds = [34, 38, 42, 46, 50, 54, 58, 62]
+    advanced_ageing_start = 66
+    
+    ageing_effects = []
+    checks_performed = []
     
     # Only apply ageing effects if survived (injured characters still age but don't get aging rolls)
     if survival_outcome == 'survived' or survival_outcome is None:
@@ -918,12 +952,10 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
                     effects = apply_advanced_ageing_effects(random_generator, character_record, age)
                     ageing_effects.extend(effects)
     
-    ageing_event["checks_performed"] = checks_performed
-    ageing_event["ageing_effects"] = ageing_effects
-    ageing_event["total_effects"] = len(ageing_effects)
-    
-    # Add the ageing check to the character's career history
-    character_record["career_history"].append(ageing_event)
+    # Update the latest ageing event with characteristic check results
+    latest_ageing["checks_performed"] = checks_performed
+    latest_ageing["ageing_effects"] = ageing_effects
+    latest_ageing["total_effects"] = len(ageing_effects)
     
     # Reset the ready_for_ageing flag after ageing is completed
     character_record["ready_for_ageing"] = False
@@ -1356,11 +1388,8 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     terms_served = character_record.get('terms_served', 0)
     rank = character_record.get('rank', 0)
     
-    # Increment age by 1 year for mustering out
-    if 'age' in character_record:
-        character_record['age'] += 1
-    else:
-        character_record['age'] = 19  # Default to 19 if missing (shouldn't happen)
+    # FIXED: Remove age increment - mustering out doesn't represent time passage
+    # Age only increases during term completion, not during mustering out
     
     # Get gambling skill from character's skills
     gambling_skill = character_record.get('skills', {}).get('Gambling', 0)
@@ -1636,6 +1665,28 @@ def get_rank_title(service: str, rank_number: int) -> str:
     if 0 <= rank_number < len(titles):
         return titles[rank_number]
     return ""
+
+def check_ageing(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Check for ageing effects when a character completes a term and ages
+    
+    Args:
+        random_generator: An instance of random.Random with the user's seed
+        character_record: The character's record
+        
+    Returns:
+        Updated character record with ageing results
+    """
+    # Step 1: Increment character age
+    character_record = increment_character_age(character_record)
+    
+    # Step 2: Check for characteristic effects
+    character_record = check_ageing_characteristics(random_generator, character_record)
+    
+    # ADD: Set ready_for_reenlistment flag when ageing is complete
+    character_record["ready_for_reenlistment"] = True
+    
+    return character_record
 
 if __name__ == "__main__":
     """

@@ -1,10 +1,10 @@
 {
   "name": "Elara Stardust",
-  "age": 39,
+  "age": 38,
   "terms_served": 5,
   "characteristics": {
-    "strength": 3,
-    "dexterity": 2,
+    "strength": 4,
+    "dexterity": 3,
     "endurance": 9,
     "intelligence": 8,
     "education": 14,
@@ -15,8 +15,7 @@
     "Blade Combat": 1,
     "Admin": 2,
     "Mechanical": 2,
-    "Tactics": 2,
-    "Vehicle": 1
+    "Tactics": 1
   },
   "career_history": [
     {
@@ -296,10 +295,13 @@
         "education": true
       },
       "table_choice_method": "player",
-      "table_choice": "service",
+      "table_choice": "personal",
       "roll": 1,
-      "skill_gained": "Vehicle",
-      "result_type": "skill_gain",
+      "skill_gained": "+1 STR",
+      "result_type": "characteristic_increase",
+      "characteristic": "strength",
+      "old_value": 4,
+      "new_value": 5,
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
     },
@@ -364,45 +366,15 @@
         "education": true
       },
       "table_choice_method": "player",
-      "table_choice": "advanced",
+      "table_choice": "personal",
       "roll": 2,
-      "skill_gained": "Mechanical",
-      "result_type": "skill_gain",
+      "skill_gained": "+1 DEX",
+      "result_type": "characteristic_increase",
+      "characteristic": "dexterity",
+      "old_value": 3,
+      "new_value": 4,
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 34,
-      "stat": "STRENGTH",
-      "roll": 2,
-      "target": 8,
-      "old_value": 4,
-      "new_value": 3,
-      "loss": 1,
-      "phase": "standard"
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 34,
-      "stat": "DEXTERITY",
-      "roll": 8,
-      "target": 7,
-      "old_value": 3,
-      "new_value": 3,
-      "loss": 0,
-      "phase": "standard"
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 34,
-      "stat": "ENDURANCE",
-      "roll": 9,
-      "target": 8,
-      "old_value": 9,
-      "new_value": 9,
-      "loss": 0,
-      "phase": "standard"
     },
     {
       "event_type": "ageing_check",
@@ -416,6 +388,39 @@
         "-1 STRENGTH"
       ],
       "total_effects": 1
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 34,
+      "stat": "STRENGTH",
+      "roll": 2,
+      "target": 8,
+      "old_value": 5,
+      "new_value": 4,
+      "loss": 1,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 34,
+      "stat": "DEXTERITY",
+      "roll": 8,
+      "target": 7,
+      "old_value": 4,
+      "new_value": 4,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 34,
+      "stat": "ENDURANCE",
+      "roll": 9,
+      "target": 8,
+      "old_value": 9,
+      "new_value": 9,
+      "loss": 0,
+      "phase": "standard"
     },
     {
       "event_type": "reenlistment_attempt",
@@ -486,45 +491,12 @@
         "education": true
       },
       "table_choice_method": "player",
-      "table_choice": "education",
+      "table_choice": "advanced",
       "roll": 2,
-      "skill_gained": "Tactics",
+      "skill_gained": "Mechanical",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 38,
-      "stat": "STRENGTH",
-      "roll": 9,
-      "target": 8,
-      "old_value": 3,
-      "new_value": 3,
-      "loss": 0,
-      "phase": "standard"
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 38,
-      "stat": "DEXTERITY",
-      "roll": 2,
-      "target": 7,
-      "old_value": 3,
-      "new_value": 2,
-      "loss": 1,
-      "phase": "standard"
-    },
-    {
-      "event_type": "ageing_check_detail",
-      "age": 38,
-      "stat": "ENDURANCE",
-      "roll": 9,
-      "target": 8,
-      "old_value": 9,
-      "new_value": 9,
-      "loss": 0,
-      "phase": "standard"
     },
     {
       "event_type": "ageing_check",
@@ -540,14 +512,47 @@
       "total_effects": 1
     },
     {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "STRENGTH",
+      "roll": 9,
+      "target": 8,
+      "old_value": 4,
+      "new_value": 4,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "DEXTERITY",
+      "roll": 2,
+      "target": 7,
+      "old_value": 4,
+      "new_value": 3,
+      "loss": 1,
+      "phase": "standard"
+    },
+    {
+      "event_type": "ageing_check_detail",
+      "age": 38,
+      "stat": "ENDURANCE",
+      "roll": 9,
+      "target": 8,
+      "old_value": 9,
+      "new_value": 9,
+      "loss": 0,
+      "phase": "standard"
+    },
+    {
       "event_type": "reenlistment_attempt",
       "career": "Army",
       "age": 38,
-      "preference": "retire",
+      "preference": "reenlist",
       "roll": 6,
       "target": 7,
-      "outcome": "retired",
-      "status_text": "retired",
+      "outcome": "discharged",
+      "status_text": "military discharge",
       "continue_career": false
     },
     {
@@ -1297,6 +1302,7 @@
   "career": "Army",
   "commissioned": true,
   "rank": 4,
+  "ready_for_reenlistment": true,
   "terms": [
     {
       "term_number": 1,
