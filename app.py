@@ -45,9 +45,9 @@ def load_character_from_file(name):
 def get_rng():
     return chargen.set_seed(GLOBAL_SEED)
 
-# Helper function to determine if commission button should be shown
-
-def can_show_commission_button(character_record):
+# Helper function to check common restrictions for commission and promotion buttons
+def get_base_button_restrictions(character_record):
+    """Check common restrictions that apply to both commission and promotion"""
     # 1. Injured: check last survival outcome
     last_survival_outcome = None
     for event in reversed(character_record.get('career_history', [])):
@@ -56,40 +56,35 @@ def can_show_commission_button(character_record):
             break
     if last_survival_outcome == 'injured':
         return False
+    
     # 2. Drafted
     if character_record.get('drafted', False):
         return False
-    # 3. Already commissioned
-    if character_record.get('commissioned', False):
-        return False
-    # 4. Career is Scouts or Others
-    career = character_record.get('career', '').lower()
-    if career in ['scouts', 'others']:
-        return False
-    return True
-
-# Helper function to determine if promotion button should be shown
-
-def can_show_promotion_button(character_record):
-    # 1. Injured: check last survival outcome
-    last_survival_outcome = None
-    for event in reversed(character_record.get('career_history', [])):
-        if event.get('event_type') == 'survival_check':
-            last_survival_outcome = event.get('outcome')
-            break
-    if last_survival_outcome == 'injured':
-        return False
-    # 2. Drafted
-    if character_record.get('drafted', False):
-        return False
+    
     # 3. Career is Scouts or Others
     career = character_record.get('career', '').lower()
     if career in ['scouts', 'others']:
         return False
-    # 4. If commission was attempted and failed this term, cannot promote
+    
+    return True
+
+# Helper function to determine if commission button should be shown
+def can_show_commission_button(character_record):
+    if not get_base_button_restrictions(character_record):
+        return False
+    # Already commissioned
+    if character_record.get('commissioned', False):
+        return False
+    return True
+
+# Helper function to determine if promotion button should be shown
+def can_show_promotion_button(character_record):
+    if not get_base_button_restrictions(character_record):
+        return False
+    # If commission was attempted and failed this term, cannot promote
     if character_record.get('commission_failed_this_term', False):
         return False
-    # 5. Promotion is available to both commissioned and non-commissioned characters
+    # Promotion is available to both commissioned and non-commissioned characters
     return True
 
 @app.route('/')
