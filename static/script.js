@@ -1,3 +1,125 @@
+// Old updateEventDisplay function removed - superseded by new action panels
+
+// Helper to calculate and display probability
+function calculateAndDisplayProbability(target, modifiers, element) {
+    fetch('/api/calculate_probability', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target: target, modifiers: modifiers})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.probability) {
+            const percentage = data.probability.percentage;
+            let color = '#00ff00'; // Green
+            
+            // Simple color coding
+            if (percentage >= 50) color = '#00ff00'; // Green
+            else if (percentage >= 25) color = '#ffff00'; // Yellow  
+            else color = '#ff0000'; // Red
+            
+            element.innerHTML = `<span style="color:${color}; font-weight:bold;">${percentage}%</span>`;
+        } else {
+            element.textContent = '-';
+        }
+    })
+    .catch(error => {
+        console.error('Probability calculation failed:', error);
+        element.textContent = '-';
+    });
+}
+
+// Helper to determine which characteristics are relevant for each test type
+function getRelevantCharacteristics(testType, result, characterData) {
+    if (!characterData || !characterData.characteristics) {
+        return '-';
+    }
+    
+    const chars = characterData.characteristics;
+    let relevantChars = [];
+    
+    switch (testType.toLowerCase()) {
+        case 'enlistment':
+            // Different services use different characteristics for enlistment
+            if (result.assigned_service) {
+                const service = result.assigned_service.toLowerCase();
+                if (service.includes('navy')) relevantChars = [`INT:${chars.intelligence}`, `EDU:${chars.education}`];
+                else if (service.includes('marines')) relevantChars = [`STR:${chars.strength}`, `END:${chars.endurance}`];
+                else if (service.includes('army')) relevantChars = [`DEX:${chars.dexterity}`, `END:${chars.endurance}`];
+                else if (service.includes('scouts')) relevantChars = [`INT:${chars.intelligence}`, `STR:${chars.strength}`];
+                else if (service.includes('merchants')) relevantChars = [`STR:${chars.strength}`, `INT:${chars.intelligence}`];
+                else if (service.includes('others')) relevantChars = [`DEX:${chars.dexterity}`, `INT:${chars.intelligence}`];
+            }
+            break;
+            
+        case 'survival':
+            // Survival tests typically use different characteristics per service
+            if (characterData.career) {
+                const career = characterData.career.toLowerCase();
+                if (career.includes('navy')) relevantChars = [`INT:${chars.intelligence}`];
+                else if (career.includes('marines')) relevantChars = [`END:${chars.endurance}`];
+                else if (career.includes('army')) relevantChars = [`EDU:${chars.education}`];
+                else if (career.includes('scouts')) relevantChars = [`END:${chars.endurance}`];
+                else if (career.includes('merchants')) relevantChars = [`EDU:${chars.education}`];
+                else if (career.includes('others')) relevantChars = [`INT:${chars.intelligence}`];
+            }
+            break;
+            
+        case 'commission':
+            // Commission tests typically use Social
+            relevantChars = [`SOC:${chars.social}`];
+            break;
+            
+        case 'promotion':
+            // Promotion tests vary by service but often use INT or EDU
+            if (characterData.career) {
+                const career = characterData.career.toLowerCase();
+                if (career.includes('navy')) relevantChars = [`EDU:${chars.education}`];
+                else if (career.includes('marines')) relevantChars = [`SOC:${chars.social}`];
+                else if (career.includes('army')) relevantChars = [`EDU:${chars.education}`];
+                else if (career.includes('scouts')) relevantChars = [`EDU:${chars.education}`];
+                else if (career.includes('merchants')) relevantChars = [`INT:${chars.intelligence}`];
+                else relevantChars = [`EDU:${chars.education}`];
+            }
+            break;
+            
+        case 'skill':
+            // Skills don't typically have specific characteristic requirements
+            relevantChars = ['-'];
+            break;
+            
+        default:
+            // Try to extract from modifier details if available
+            if (result.modifier_details && result.modifier_details.length) {
+                result.modifier_details.forEach(detail => {
+                    const charMatch = detail.match(/(STR|DEX|END|INT|EDU|SOC|Strength|Dexterity|Endurance|Intelligence|Education|Social)/i);
+                    if (charMatch) {
+                        const charName = charMatch[1].substring(0, 3).toUpperCase();
+                        const charKey = getCharacteristicKey(charName);
+                        if (charKey && chars[charKey] !== undefined) {
+                            relevantChars.push(`${charName}:${chars[charKey]}`);
+                        }
+                    }
+                });
+            }
+    }
+    
+    return relevantChars.length > 0 ? relevantChars.join(', ') : '-';
+}
+
+// Helper to convert characteristic abbreviations to full keys
+function getCharacteristicKey(abbrev) {
+    const mapping = {
+        'STR': 'strength',
+        'DEX': 'dexterity', 
+        'END': 'endurance',
+        'INT': 'intelligence',
+        'EDU': 'education',
+        'SOC': 'social'
+    };
+    return mapping[abbrev.toUpperCase()];
+}
+
 // Helper to update the UPP string in the UI
 function updateUPPSlot(index, hexChar) {
     let upp = document.getElementById('upp-string').textContent.split('');
@@ -69,6 +191,9 @@ document.getElementById('create-character-btn').onclick = function() {
             // Initialize character name display (no rank initially)
             await updateCharacterNameWithRank(data.name);
 
+            // Show characteristics panel
+            showCharacteristicsPanel();
+
             // Update term panel if character data is provided
             if (data.character) {
                 updateTermPanel(data.character);
@@ -85,16 +210,30 @@ function setupCharacteristicButton(btnId, charName) {
         })
         .then(res => res.json())
         .then(data => {
-            // Hide the button
-            document.getElementById(btnId).style.display = 'none';
+            // Reveal the value in the button
+            const valueElement = document.getElementById(charName + '-value');
+            const button = document.getElementById(btnId);
+            
+            if (valueElement && button) {
+                valueElement.textContent = data.value;
+                button.classList.add('revealed');
+                button.style.pointerEvents = 'none'; // Disable further clicks
+            }
+            
             remainingCharButtons--;
-            // Only update the UPP string when the last characteristic is rolled
+            
+            // Update the UPP string
             if (data.upp) {
                 document.getElementById('upp-string').textContent = data.upp;
             }
-            // If this was the last button, hide the whole section
+            
+            // If this was the last characteristic, transition to enlistment
             if (remainingCharButtons === 0) {
-                document.getElementById('characteristics-section').style.display = 'none';
+                setTimeout(() => {
+                    hideCharacteristicsPanel();
+                    showEnlistmentProbabilities();
+                }, 1000); // Wait 1 second before transitioning
+                
                 // Fetch available skill tables and show/hide skill buttons accordingly
                 fetch('/api/available_skill_tables')
                     .then(res => res.json())
@@ -141,6 +280,9 @@ function setupEnlistmentButton(btnId, serviceName) {
             document.getElementById('others-btn').style.display = 'none';
             
             if (data.success) {
+                // Hide enlistment panel and show actions panel
+                hideEnlistmentPanel();
+                
                 const service = data.enlistment_result.assigned_service || data.career || '';
                 const outcome = data.enlistment_result.outcome || '';
                 const capitalizedOutcome = outcome.charAt(0).toUpperCase() + outcome.slice(1);
@@ -149,25 +291,12 @@ function setupEnlistmentButton(btnId, serviceName) {
                 const name = document.getElementById('char-name').textContent;
                 await updateRankDisplay(0);
                 
-                // Populate the event-record middle panel
-                const result = data.enlistment_result;
-                const eventSections = document.querySelectorAll('.event-record .event-section');
-                if (eventSections.length >= 6) {
-                    eventSections[0].querySelector('.event-label').textContent = 'Conditions: ' + (result.modifier_details && result.modifier_details.length ? result.modifier_details.join(', ') : 'None');
-                    eventSections[1].querySelector('.event-label').textContent = 'Test: Enlistment';
-                    eventSections[2].querySelector('.event-label').textContent = 'Target: ' + (result.target !== undefined ? result.target : '');
-                    eventSections[3].querySelector('.event-label').textContent = 'Roll: ' + (result.roll !== undefined ? result.roll : '');
-                    eventSections[4].querySelector('.event-label').textContent = 'Modifiers: ' + (result.modifier !== undefined ? result.modifier : '');
-                    eventSections[5].querySelector('.event-label').textContent = 'Outcome: ' + (result.outcome || '');
+                // Update action probabilities for the new character
+                if (data.character) {
+                    updateActionProbabilities(data.character);
                 }
 
-                // Update commission and promotion button visibility
-                if (typeof data.show_commission !== 'undefined') {
-                    document.getElementById('commission-btn').style.display = data.show_commission ? 'inline-block' : 'none';
-                }
-                if (typeof data.show_promotion !== 'undefined') {
-                    document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
-                }
+                // Commission and promotion handling now done in actions panel
                 
                 // ADD: Update term panel with latest character data
                 if (data.character) {
@@ -189,6 +318,586 @@ setupEnlistmentButton('army-btn', 'Army');
 setupEnlistmentButton('scouts-btn', 'Scouts');
 setupEnlistmentButton('merchants-btn', 'Merchants');
 setupEnlistmentButton('others-btn', 'Others');
+
+// Function to update action probabilities and visibility
+function updateActionProbabilities(character) {
+    // Reset all action buttons to fresh state
+    const survivalBtn = document.getElementById('survival-action-btn');
+    const commissionBtn = document.getElementById('commission-action-btn');
+    const promotionBtn = document.getElementById('promotion-action-btn');
+    
+    // Reset visual states
+    [survivalBtn, commissionBtn, promotionBtn].forEach(btn => {
+        btn.classList.remove('completed', 'disabled');
+        btn.style.pointerEvents = 'auto';
+    });
+    
+    if (!character || !character.characteristics) {
+        return;
+    }
+    
+    // Always show survival button as active
+    survivalBtn.style.display = 'block';
+    calculateActionProbability('survival', character).then(prob => {
+        updateActionProbabilityDisplay('survival-action-prob', prob);
+    });
+    
+    // Show commission button if character could potentially get commission
+    const couldGetCommission = !character.commissioned && !character.drafted && 
+                              !isScoutsOrOthers(character);
+    if (couldGetCommission) {
+        commissionBtn.style.display = 'block';
+        commissionBtn.classList.add('disabled'); // Greyed out until survival
+        commissionBtn.style.pointerEvents = 'none';
+        document.getElementById('commission-action-prob').textContent = 'Pending';
+    } else {
+        commissionBtn.style.display = 'none';
+    }
+    
+    // Show promotion button if character could potentially get promotion
+    const couldGetPromotion = !character.drafted && !isScoutsOrOthers(character);
+    if (couldGetPromotion) {
+        promotionBtn.style.display = 'block';
+        promotionBtn.classList.add('disabled'); // Greyed out until survival
+        promotionBtn.style.pointerEvents = 'none';
+        document.getElementById('promotion-action-prob').textContent = 'Pending';
+    } else {
+        promotionBtn.style.display = 'none';
+    }
+    
+    // Reset survival probability display
+    document.getElementById('survival-action-prob').textContent = '-';
+}
+
+// Helper function to check if character is in Scouts or Others
+function isScoutsOrOthers(character) {
+    const career = character.career?.toLowerCase() || '';
+    return career.includes('scouts') || career.includes('others');
+}
+
+// Function to calculate action probability
+async function calculateActionProbability(actionType, character) {
+    try {
+        // Get action requirements based on type
+        let target, modifiers = 0;
+        
+        if (actionType === 'survival') {
+            // Get survival requirements (would need backend support)
+            target = 5; // Default survival target
+            // Add characteristic modifiers based on service
+            const career = character.career?.toLowerCase() || '';
+            if (career.includes('navy')) modifiers += Math.floor((character.characteristics.intelligence - 7) / 3);
+            else if (career.includes('marines')) modifiers += Math.floor((character.characteristics.endurance - 7) / 3);
+            else if (career.includes('army')) modifiers += Math.floor((character.characteristics.education - 7) / 3);
+            else if (career.includes('scouts')) modifiers += Math.floor((character.characteristics.endurance - 7) / 3);
+            else if (career.includes('merchants')) modifiers += Math.floor((character.characteristics.education - 7) / 3);
+            else if (career.includes('others')) modifiers += Math.floor((character.characteristics.intelligence - 7) / 3);
+        } else if (actionType === 'commission') {
+            target = 8; // Default commission target
+            modifiers += Math.floor((character.characteristics.social - 7) / 3);
+        } else if (actionType === 'promotion') {
+            target = 8; // Default promotion target
+            const career = character.career?.toLowerCase() || '';
+            if (career.includes('navy')) modifiers += Math.floor((character.characteristics.education - 7) / 3);
+            else if (career.includes('marines')) modifiers += Math.floor((character.characteristics.social - 7) / 3);
+            else if (career.includes('army')) modifiers += Math.floor((character.characteristics.education - 7) / 3);
+            else if (career.includes('scouts')) modifiers += Math.floor((character.characteristics.education - 7) / 3);
+            else if (career.includes('merchants')) modifiers += Math.floor((character.characteristics.intelligence - 7) / 3);
+            else modifiers += Math.floor((character.characteristics.education - 7) / 3);
+        }
+        
+        const response = await fetch('/api/calculate_probability', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({target: target, modifiers: modifiers})
+        });
+        
+        const data = await response.json();
+        if (data.success && data.probability) {
+            return data.probability.percentage;
+        }
+        return 50; // Default
+    } catch (error) {
+        console.error('Error calculating action probability:', error);
+        return 50; // Default
+    }
+}
+
+// Function to update action probability display
+function updateActionProbabilityDisplay(elementId, percentage) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        let color = '#00ff00'; // Green
+        if (percentage >= 50) color = '#00ff00'; // Green
+        else if (percentage >= 25) color = '#ffff00'; // Yellow
+        else color = '#ff0000'; // Red
+        
+        element.innerHTML = `<span style="color:${color};">${percentage}%</span>`;
+    }
+}
+
+// Helper functions for action button eligibility
+function canShowCommissionButton(character) {
+    if (!character) return false;
+    
+    // Already commissioned - can only commission once
+    if (character.commissioned) return false;
+    
+    // Drafted characters can't get commission
+    if (character.drafted) return false;
+    
+    // Scouts and Others don't have commissions
+    if (isScoutsOrOthers(character)) return false;
+    
+    // If injured this term, can't attempt commission
+    if (character.survival_outcome === 'injured') return false;
+    
+    return true;
+}
+
+function canShowPromotionButton(character) {
+    if (!character) return false;
+    
+    // Drafted characters can't get promotion
+    if (character.drafted) return false;
+    
+    // Scouts and Others don't have promotions
+    if (isScoutsOrOthers(character)) return false;
+    
+    // If injured this term, can't attempt promotion
+    if (character.survival_outcome === 'injured') return false;
+    
+    // If commission was attempted and failed this term, cannot promote
+    if (character.commission_failed_this_term) return false;
+    
+    return true;
+}
+
+// Setup action button handlers
+function setupActionButton(btnId, actionType) {
+    document.getElementById(btnId).onclick = function() {
+        // Hide the action that was clicked
+        this.style.display = 'none';
+        
+        // Call the appropriate API endpoint
+        let apiEndpoint = '/api/' + actionType;
+        
+        fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Mark this action as completed (visual feedback)
+                this.classList.add('completed');
+                this.style.pointerEvents = 'none'; // Disable further clicks
+                
+                // Get result data
+                let result;
+                if (actionType === 'survival') {
+                    result = data.survival_result;
+                } else if (actionType === 'commission') {
+                    result = data.commission_result;
+                } else if (actionType === 'promotion') {
+                    result = data.promotion_result;
+                }
+                
+                // Update the button to show outcome instead of probability
+                const probabilityElement = this.querySelector('.action-probability');
+                if (probabilityElement && result.outcome) {
+                    probabilityElement.textContent = result.outcome.toUpperCase();
+                }
+                
+                // No longer show old event display - keep actions panel visible
+                
+                // Update character display
+                if (data.character) {
+                    updateTermPanel(data.character);
+                    
+                    // Update age and terms if provided
+                    if (data.character.age !== undefined) {
+                        document.getElementById('char-age').textContent = 'Age: ' + data.character.age;
+                    }
+                    if (data.character.terms_served !== undefined) {
+                        document.getElementById('char-terms').textContent = 'Terms: ' + data.character.terms_served;
+                    }
+                    
+                    // Update rank display if applicable
+                    if (data.character.rank !== undefined) {
+                        updateRankDisplay(data.character.rank);
+                    }
+                    
+                    // Update service status
+                    if (data.character.career) {
+                        let status = data.character.commissioned ? 'Commissioned' : 'Enlisted';
+                        document.getElementById('char-service').textContent = `${data.character.career} ${status}`;
+                    }
+                    
+                    // Show next available actions after survival
+                    if (actionType === 'survival') {
+                        showNextActionsAfterSurvival(data.character, result);
+                    } else {
+                        // For commission/promotion, check if we should show skills or continue with remaining actions
+                        checkForNextAction(data.character);
+                    }
+                }
+                
+                // Update skill eligibility if provided
+                if (data.skill_eligibility !== undefined) {
+                    document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
+                }
+                
+                // Show skills section if ready
+                if (data.ready_for_skills) {
+                    fetch('/api/available_skill_tables')
+                        .then(res => res.json())
+                        .then(tableData => {
+                            if (tableData.success && tableData.available_tables) {
+                                const available = tableData.available_tables;
+                                document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
+                                document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
+                                document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
+                                document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
+                                
+                                const anyAvailable = available.personal || available.service || available.advanced || available.education;
+                                const skillsSection = getSkillsSection();
+                                if (skillsSection) skillsSection.style.display = anyAvailable ? 'block' : 'none';
+                            }
+                        });
+                } else {
+                    const skillsSection = getSkillsSection();
+                    if (skillsSection) skillsSection.style.display = 'none';
+                }
+                
+                // Handle special cases based on action results
+                if (actionType === 'survival' && result.outcome === 'injured') {
+                    // Show medical options if injured
+                    const reenlistBtn = document.getElementById('reenlist-btn');
+                    const leaveBtn = document.getElementById('leave-retire-btn');
+                    if (reenlistBtn) reenlistBtn.style.display = 'none';
+                    if (leaveBtn) leaveBtn.style.display = 'none';
+                    
+                    // Add medical button if not present
+                    if (!document.getElementById('medical-btn')) {
+                        const medicalBtn = document.createElement('button');
+                        medicalBtn.id = 'medical-btn';
+                        medicalBtn.className = 'btn';
+                        medicalBtn.textContent = 'Medical';
+                        medicalBtn.onclick = function() {
+                            alert('Medical event triggered!');
+                        };
+                        if (reenlistBtn && reenlistBtn.parentNode) {
+                            reenlistBtn.parentNode.appendChild(medicalBtn);
+                        }
+                    }
+                    document.getElementById('medical-btn').style.display = 'inline-block';
+                }
+                
+            } else {
+                alert(data.error || `${actionType} action failed.`);
+            }
+        })
+        .catch(error => {
+            console.error(`Error during ${actionType}:`, error);
+            alert(`Error during ${actionType}`);
+        });
+    };
+}
+
+setupActionButton('survival-action-btn', 'survival');
+setupActionButton('commission-action-btn', 'commission');
+setupActionButton('promotion-action-btn', 'promotion');
+
+// Function to show next actions after survival
+function showNextActionsAfterSurvival(character, survivalResult) {
+    const commissionBtn = document.getElementById('commission-action-btn');
+    const promotionBtn = document.getElementById('promotion-action-btn');
+    
+    // If injured, remove commission/promotion buttons and move to skills/reenlistment
+    if (survivalResult.outcome === 'injured') {
+        commissionBtn.style.display = 'none';
+        promotionBtn.style.display = 'none';
+        
+        setTimeout(() => {
+            checkForSkillsOrReenlistment(character);
+        }, 1500);
+        return;
+    }
+    
+    // If survived, enable previously greyed out buttons
+    
+    // Handle commission button
+    if (commissionBtn.style.display === 'block') {
+        if (canShowCommissionButton(character)) {
+            // Enable commission button
+            commissionBtn.classList.remove('disabled');
+            commissionBtn.style.pointerEvents = 'auto';
+            calculateActionProbability('commission', character).then(prob => {
+                updateActionProbabilityDisplay('commission-action-prob', prob);
+            });
+        } else {
+            // Hide if no longer eligible (already commissioned)
+            commissionBtn.style.display = 'none';
+        }
+    }
+    
+    // Handle promotion button
+    if (promotionBtn.style.display === 'block') {
+        if (canShowPromotionButton(character)) {
+            // Enable promotion button
+            promotionBtn.classList.remove('disabled');
+            promotionBtn.style.pointerEvents = 'auto';
+            calculateActionProbability('promotion', character).then(prob => {
+                updateActionProbabilityDisplay('promotion-action-prob', prob);
+            });
+        } else {
+            // Hide if not eligible
+            promotionBtn.style.display = 'none';
+        }
+    }
+    
+    // If no commission/promotion available, move to skills
+    const hasAvailableActions = (commissionBtn.style.display === 'block' && !commissionBtn.classList.contains('completed')) ||
+                               (promotionBtn.style.display === 'block' && !promotionBtn.classList.contains('completed'));
+    
+    if (!hasAvailableActions) {
+        setTimeout(() => {
+            checkForSkillsOrReenlistment(character);
+        }, 1500);
+    }
+}
+
+// Function to check for next action after commission/promotion
+function checkForNextAction(character) {
+    const commissionBtn = document.getElementById('commission-action-btn');
+    const promotionBtn = document.getElementById('promotion-action-btn');
+    
+    // If commission was just completed successfully, hide commission button permanently
+    if (commissionBtn.classList.contains('completed') && character.commissioned) {
+        commissionBtn.style.display = 'none';
+    }
+    
+    // Check if there are any remaining actions
+    const commissionAvailable = commissionBtn.style.display !== 'none' && !commissionBtn.classList.contains('completed');
+    const promotionAvailable = promotionBtn.style.display !== 'none' && !promotionBtn.classList.contains('completed');
+    
+    // If no more actions available, move to skills
+    if (!commissionAvailable && !promotionAvailable) {
+        setTimeout(() => {
+            checkForSkillsOrReenlistment(character);
+        }, 1500); // Give time to see result
+    }
+}
+
+// Function to check if we should show skills or reenlistment options
+function checkForSkillsOrReenlistment(character) {
+    // Check if skills are available
+    fetch('/api/available_skill_tables')
+        .then(res => res.json())
+        .then(tableData => {
+            if (tableData.success && tableData.available_tables) {
+                const available = tableData.available_tables;
+                const anySkillsAvailable = available.personal || available.service || available.advanced || available.education;
+                
+                if (anySkillsAvailable && character.skill_eligibility > 0) {
+                    // Show skills panel with appropriate layout
+                    showSkillsPanelWithLayout(available);
+                } else {
+                    // Hide actions panel and move to reenlistment/ageing
+                    hideActionsPanel();
+                    showReenlistmentOptions(character);
+                }
+            } else {
+                // Hide actions panel and move to reenlistment/ageing
+                hideActionsPanel();
+                showReenlistmentOptions(character);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking skill tables:', error);
+            hideActionsPanel();
+            showReenlistmentOptions(character);
+        });
+}
+
+// Function to show skills panel with appropriate layout
+function showSkillsPanelWithLayout(availableSkills) {
+    // Show the skills panel
+    showSkillsPanel();
+    
+    // Count available skills
+    const skillCount = Object.values(availableSkills).filter(Boolean).length;
+    const skillsGrid = document.getElementById('skills-grid');
+    
+    // Reset all buttons
+    document.getElementById('personal-skill-btn').style.display = 'none';
+    document.getElementById('service-skill-btn').style.display = 'none';
+    document.getElementById('advanced-skill-btn').style.display = 'none';
+    document.getElementById('education-skill-btn').style.display = 'none';
+    
+    // Set grid layout based on skill count
+    skillsGrid.className = 'skills-grid'; // Reset classes
+    if (skillCount === 3) {
+        skillsGrid.classList.add('three-skills');
+    } else if (skillCount === 4) {
+        skillsGrid.classList.add('four-skills');
+    }
+    
+    // Show available skill buttons
+    if (availableSkills.personal) {
+        document.getElementById('personal-skill-btn').style.display = 'flex';
+    }
+    if (availableSkills.service) {
+        document.getElementById('service-skill-btn').style.display = 'flex';
+    }
+    if (availableSkills.advanced) {
+        document.getElementById('advanced-skill-btn').style.display = 'flex';
+    }
+    if (availableSkills.education) {
+        document.getElementById('education-skill-btn').style.display = 'flex';
+    }
+}
+
+// Function to show reenlistment options
+function showReenlistmentOptions(character) {
+    // Check if ageing is needed first
+    if (character.ready_for_ageing) {
+        document.getElementById('ageing-btn').style.display = 'inline-block';
+    } else if (character.ready_for_reenlistment) {
+        document.getElementById('reenlist-btn').style.display = 'inline-block';
+        document.getElementById('leave-retire-btn').style.display = 'inline-block';
+    }
+    // Update reenlistment buttons based on character state
+    updateReenlistmentButtons(character, character.available_options || []);
+}
+
+// Helper to show probability for upcoming action
+function showUpcomingActionProbability(testType, target, modifiers = 0) {
+    const probabilityEl = document.getElementById('event-probability');
+    const testEl = document.getElementById('event-test');
+    const targetEl = document.getElementById('event-target');
+    
+    if (testEl) testEl.textContent = testType;
+    if (targetEl) targetEl.textContent = target;
+    if (probabilityEl) {
+        calculateAndDisplayProbability(target, modifiers, probabilityEl);
+    }
+}
+
+// Show characteristics panel
+function showCharacteristicsPanel() {
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('actions-panel').style.display = 'none';
+    document.getElementById('skills-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'flex';
+    
+    // Reset remaining button count
+    remainingCharButtons = 6;
+    
+    // Reset all buttons to unrevealed state
+    const characteristicButtons = document.querySelectorAll('.characteristic-btn');
+    characteristicButtons.forEach(button => {
+        button.classList.remove('revealed');
+        button.style.pointerEvents = 'auto';
+    });
+    
+    // Reset all values to ?
+    const valueElements = document.querySelectorAll('.char-value');
+    valueElements.forEach(element => {
+        element.textContent = '?';
+    });
+}
+
+// Hide characteristics panel
+function hideCharacteristicsPanel() {
+    document.getElementById('characteristics-panel').style.display = 'none';
+}
+
+// Show enlistment probabilities for all services
+function showEnlistmentProbabilities() {
+    // Show the enlistment panel and hide other panels
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'flex';
+    
+    fetch('/api/enlistment_probabilities', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.probabilities) {
+            const probs = data.probabilities;
+            
+            // Update probability displays in the new format
+            updateEnlistmentProbability('navy-prob', probs.navy);
+            updateEnlistmentProbability('marines-prob', probs.marines);
+            updateEnlistmentProbability('army-prob', probs.army);
+            updateEnlistmentProbability('scouts-prob', probs.scouts);
+            updateEnlistmentProbability('merchants-prob', probs.merchants);
+            updateEnlistmentProbability('others-prob', probs.others);
+        }
+    })
+    .catch(error => {
+        console.error('Failed to get enlistment probabilities:', error);
+    });
+}
+
+// Update enlistment probability display
+function updateEnlistmentProbability(probId, probData) {
+    const probElement = document.getElementById(probId);
+    if (probElement && probData && !probData.error) {
+        const percentage = probData.percentage;
+        let color = '#00ff00'; // Green
+        
+        // Color coding
+        if (percentage >= 50) color = '#00ff00'; // Green
+        else if (percentage >= 25) color = '#ffff00'; // Yellow
+        else color = '#ff0000'; // Red
+        
+        probElement.innerHTML = `<span style="color:${color};">${percentage}%</span>`;
+    } else if (probElement) {
+        probElement.textContent = '-'; // Fallback
+    }
+}
+
+// Hide enlistment panel and show actions panel
+function hideEnlistmentPanel() {
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    showActionsPanel();
+}
+
+// Show actions panel
+function showActionsPanel() {
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('actions-panel').style.display = 'flex';
+}
+
+// Hide actions panel (no longer show old event panel)
+function hideActionsPanel() {
+    document.getElementById('actions-panel').style.display = 'none';
+    // Don't show old event panel anymore - it's superseded
+}
+
+// Show skills panel
+function showSkillsPanel() {
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('actions-panel').style.display = 'none';
+    document.getElementById('skills-panel').style.display = 'flex';
+}
+
+// Hide skills panel (no longer show old event panel)
+function hideSkillsPanel() {
+    document.getElementById('skills-panel').style.display = 'none';
+    // Don't show old event panel anymore - it's superseded
+}
 
 async function updateRankDisplay(rank) {
     const rankTitle = await getRankTitle();
@@ -221,8 +930,8 @@ buttons.forEach(button => {
     }
 }); 
 
-// Add survival button handler
-document.getElementById('survival-btn').onclick = function() {
+// Legacy survival button handler (now handled in actions panel)
+/*document.getElementById('survival-btn').onclick = function() {
     fetch('/api/survival', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'}
@@ -230,20 +939,7 @@ document.getElementById('survival-btn').onclick = function() {
     .then(res => res.json())
     .then(data => {
         if (data.success) {
-            // Hide the survival button
-            document.getElementById('survival-btn').style.display = 'none';
-            
-            // Display survival outcome in event record panel
-            const result = data.survival_result;
-            const eventSections = document.querySelectorAll('.event-record .event-section');
-            if (eventSections.length >= 6) {
-                eventSections[0].querySelector('.event-label').textContent = 'Conditions: ' + (result.modifier_details && result.modifier_details.length ? result.modifier_details.join(', ') : 'None');
-                eventSections[1].querySelector('.event-label').textContent = 'Test: Survival';
-                eventSections[2].querySelector('.event-label').textContent = 'Target: ' + (result.target !== undefined ? result.target : '');
-                eventSections[3].querySelector('.event-label').textContent = 'Roll: ' + (result.roll !== undefined ? result.roll : '');
-                eventSections[4].querySelector('.event-label').textContent = 'Modifiers: ' + (result.modifier !== undefined ? result.modifier : '');
-                eventSections[5].querySelector('.event-label').textContent = 'Outcome: ' + (result.outcome || '');
-            }
+            // Survival action completed (legacy handler - no longer used)
             
             // Update the term panel with survival outcome
             const termItems = document.querySelectorAll('.term-item');
@@ -286,13 +982,7 @@ document.getElementById('survival-btn').onclick = function() {
                 if (skillsSection) skillsSection.style.display = 'none';
             }
 
-            // Hide commission and promotion buttons if needed
-            if (typeof data.show_commission !== 'undefined') {
-                document.getElementById('commission-btn').style.display = data.show_commission ? 'inline-block' : 'none';
-            }
-            if (typeof data.show_promotion !== 'undefined') {
-                document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
-            }
+            // Commission and promotion handling now done in actions panel
 
             // If show_medical is true, replace reenlist/leave with a medical button
             if (data.show_medical) {
@@ -357,9 +1047,10 @@ document.getElementById('survival-btn').onclick = function() {
             alert(data.error || "Survival check failed.");
         }
     });
-}; 
+};*/
 
-// Add commission button handler
+// Legacy commission button handler (now handled in actions panel)
+/*
 document.getElementById('commission-btn').onclick = function() {
     console.log("Commission button clicked"); // Debug log
     fetch('/api/commission', {
@@ -368,22 +1059,10 @@ document.getElementById('commission-btn').onclick = function() {
     })
     .then(res => res.json())
     .then(data => {
-        // Hide the commission button permanently
-        document.getElementById('commission-btn').style.display = 'none';
+        // Commission action completed (legacy handler - no longer used)
 
         if (data.success && data.commission_result) {
             const result = data.commission_result;
-
-            // Display commission outcome in event record panel
-            const eventSections = document.querySelectorAll('.event-record .event-section');
-            if (eventSections.length >= 6) {
-                eventSections[0].querySelector('.event-label').textContent = 'Conditions: ' + (result.modifier_details && result.modifier_details.length ? result.modifier_details.join(', ') : 'None');
-                eventSections[1].querySelector('.event-label').textContent = 'Test: Commission';
-                eventSections[2].querySelector('.event-label').textContent = 'Target: ' + (result.target !== undefined ? result.target : '');
-                eventSections[3].querySelector('.event-label').textContent = 'Roll: ' + (result.roll !== undefined ? result.roll : '');
-                eventSections[4].querySelector('.event-label').textContent = 'Modifiers: ' + (result.modifier !== undefined ? result.modifier : '');
-                eventSections[5].querySelector('.event-label').textContent = 'Outcome: ' + (result.outcome || '');
-            }
 
             // Update the term panel with commission outcome
             const termItems = document.querySelectorAll('.term-item');
@@ -399,8 +1078,7 @@ document.getElementById('commission-btn').onclick = function() {
             // If commissioned, update rank display and show promotion button
             if (result.success && result.rank !== undefined) {
                 updateRankDisplay(result.rank);
-                // Show promotion button
-                document.getElementById('promotion-btn').style.display = 'inline-block';
+                // Promotion now available (handled in actions panel)
             }
             // Update skill eligibility counter if present
             if (data.skill_eligibility !== undefined) {
@@ -431,15 +1109,12 @@ document.getElementById('commission-btn').onclick = function() {
                 updateTermPanel(data.character);
             }
             
-            // Ensure promotion button visibility matches backend after commission attempt
-            if (typeof data.show_promotion !== 'undefined') {
-                document.getElementById('promotion-btn').style.display = data.show_promotion ? 'inline-block' : 'none';
-            }
+            // Promotion handling now done in actions panel
         } else {
             alert(data.error || "Commission check failed.");
         }
     });
-};
+};*/
 
 // Helper to get rank title from server
 async function getRankTitle() {
@@ -470,7 +1145,8 @@ async function updateCharacterNameWithRank(characterName) {
     }
 } 
 
-document.getElementById('promotion-btn').onclick = function() {
+// Legacy promotion button handler (now handled in actions panel)
+/*document.getElementById('promotion-btn').onclick = function() {
     console.log("Promotion button clicked"); // Debug log
     fetch('/api/promotion', {
         method: 'POST',
@@ -478,22 +1154,10 @@ document.getElementById('promotion-btn').onclick = function() {
     })
     .then(res => res.json())
     .then(data => {
-        // Hide the promotion button
-        document.getElementById('promotion-btn').style.display = 'none';
+        // Promotion action completed (legacy handler - no longer used)
 
         if (data.success && data.promotion_result) {
             const result = data.promotion_result;
-
-            // Display promotion outcome in event record panel
-            const eventSections = document.querySelectorAll('.event-record .event-section');
-            if (eventSections.length >= 6) {
-                eventSections[0].querySelector('.event-label').textContent = 'Conditions: ' + (result.modifier_details && result.modifier_details.length ? result.modifier_details.join(', ') : 'None');
-                eventSections[1].querySelector('.event-label').textContent = 'Test: Promotion';
-                eventSections[2].querySelector('.event-label').textContent = 'Target: ' + (result.target !== undefined ? result.target : '');
-                eventSections[3].querySelector('.event-label').textContent = 'Roll: ' + (result.roll !== undefined ? result.roll : '');
-                eventSections[4].querySelector('.event-label').textContent = 'Modifiers: ' + (result.modifier !== undefined ? result.modifier : '');
-                eventSections[5].querySelector('.event-label').textContent = 'Outcome: ' + (result.outcome || '');
-            }
 
             // Update the term panel with promotion outcome
             const termItems = document.querySelectorAll('.term-item');
@@ -540,10 +1204,13 @@ document.getElementById('promotion-btn').onclick = function() {
             alert(data.error || "Promotion check failed.");
         }
     });
-}; 
+};*/
 
 function setupSkillButton(btnId, tableChoice) {
     document.getElementById(btnId).onclick = function() {
+        // Hide skills panel and show event panel with skill result
+        hideSkillsPanel();
+        
         fetch('/api/resolve_skill', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -552,32 +1219,35 @@ function setupSkillButton(btnId, tableChoice) {
         .then(res => res.json())
         .then(data => {
             if (data.success && data.skill_event) {
-                // Display skill gain in event record panel
-                const eventSections = document.querySelectorAll('.event-record .event-section');
-                if (eventSections.length >= 6) {
-                    eventSections[0].querySelector('.event-label').textContent = 'Skill Table: ' + (data.skill_event.table_choice || '');
-                    eventSections[1].querySelector('.event-label').textContent = 'Test: Skill';
-                    eventSections[2].querySelector('.event-label').textContent = 'Roll: ' + (data.skill_event.roll !== undefined ? data.skill_event.roll : '');
-                    eventSections[3].querySelector('.event-label').textContent = 'Skill: ' + (data.skill_event.skill_gained || '');
-                    eventSections[4].querySelector('.event-label').textContent = 'Type: ' + (data.skill_event.result_type || '');
-                    eventSections[5].querySelector('.event-label').textContent = 'Eligibilities Left: ' + (data.skill_eligibility !== undefined ? data.skill_eligibility : '');
-                }
+                // Skill resolved - no longer show old event display
                 // Update skill eligibility counter
                 if (data.skill_eligibility !== undefined) {
                     document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
                 }
-                // Show/hide skill buttons based on backend available_tables
-                if (data.skill_event.available_tables) {
-                    const available = data.skill_event.available_tables;
-                    document.getElementById('personal-btn').style.display = available.personal ? 'inline-block' : 'none';
-                    document.getElementById('service-btn').style.display = available.service ? 'inline-block' : 'none';
-                    document.getElementById('advanced-btn').style.display = available.advanced ? 'inline-block' : 'none';
-                    document.getElementById('education-skill-btn').style.display = available.education ? 'inline-block' : 'none';
-                }
-                // Hide skills section if no more eligibilities
-                if (!data.ready_for_skills) {
-                    const skillsSection = getSkillsSection();
-                    if (skillsSection) skillsSection.style.display = 'none';
+                
+                // Check if more skills are available
+                if (data.ready_for_skills && data.skill_eligibility > 0) {
+                    // Show skills panel again with updated available tables
+                    setTimeout(() => {
+                        fetch('/api/available_skill_tables')
+                            .then(res => res.json())
+                            .then(tableData => {
+                                if (tableData.success && tableData.available_tables) {
+                                    showSkillsPanelWithLayout(tableData.available_tables);
+                                } else {
+                                    showReenlistmentOptions(data.character);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error checking skill tables:', error);
+                                showReenlistmentOptions(data.character);
+                            });
+                    }, 2000); // Give time to see skill result
+                } else {
+                    // No more skills available, move to reenlistment/ageing
+                    setTimeout(() => {
+                        showReenlistmentOptions(data.character);
+                    }, 2000);
                 }
                 // Update age in UI if present in response
                 if (data.character && data.character.age !== undefined) {
@@ -622,9 +1292,16 @@ function setupSkillButton(btnId, tableChoice) {
     };
 }
 
-setupSkillButton('personal-btn', 'personal');
+// Legacy sidebar skill buttons (commented out)
+/*setupSkillButton('personal-btn', 'personal');
 setupSkillButton('service-btn', 'service');
 setupSkillButton('advanced-btn', 'advanced');
+setupSkillButton('education-skill-btn', 'education');*/
+
+// New skills panel buttons
+setupSkillButton('personal-skill-btn', 'personal');
+setupSkillButton('service-skill-btn', 'service');
+setupSkillButton('advanced-skill-btn', 'advanced');
 setupSkillButton('education-skill-btn', 'education'); 
 
 function updateReenlistmentButtons(character, availableOptions) {
@@ -723,10 +1400,13 @@ document.getElementById('reenlist-btn').onclick = function() {
                     document.getElementById('char-terms').textContent = 'Terms: ' + data.term_number;
                 }
                 
-                // Reset UI workflow - show survival button, hide others
-                document.getElementById('survival-btn').style.display = 'inline-block';
-                document.getElementById('commission-btn').style.display = 'none';
-                document.getElementById('promotion-btn').style.display = 'none';
+                // Show actions panel for new term
+                showActionsPanel();
+                if (data.character) {
+                    updateActionProbabilities(data.character);
+                }
+                
+                // Hide skills section
                 const skillsSection = getSkillsSection();
                 if (skillsSection) skillsSection.style.display = 'none'; // Hide skills section
                 
@@ -777,10 +1457,13 @@ document.getElementById('leave-retire-btn').onclick = function() {
                     document.getElementById('char-terms').textContent = 'Terms: ' + data.term_number;
                 }
                 
-                // Reset UI workflow - show survival button, hide others
-                document.getElementById('survival-btn').style.display = 'inline-block';
-                document.getElementById('commission-btn').style.display = 'none';
-                document.getElementById('promotion-btn').style.display = 'none';
+                // Show actions panel for new term
+                showActionsPanel();
+                if (data.character) {
+                    updateActionProbabilities(data.character);
+                }
+                
+                // Hide skills section
                 const skillsSection = getSkillsSection();
                 if (skillsSection) skillsSection.style.display = 'none'; // Hide skills section
                 
@@ -815,6 +1498,10 @@ function updateTermPanel(character) {
     
     // Update skills display in top panel
     updateSkillsDisplay(character);
+    
+    // Update credits and benefits displays
+    updateCreditsDisplay(character);
+    updateBenefitsDisplay(character);
     
     // Always update terms served in the UI
     if (character.terms_served !== undefined) {
@@ -916,17 +1603,66 @@ function updateSkillsDisplay(character) {
         });
     }
     
-    // Format skills for display
-    const skillList = Object.entries(skillCounts).map(([skill, count]) => {
-        return count > 1 ? `${skill}-${count}` : skill;
-    });
-    
     const skillsDisplay = document.getElementById('skills-display');
     if (skillsDisplay) {
-        if (skillList.length > 0) {
-            skillsDisplay.textContent = skillList.join(', ');
+        if (Object.keys(skillCounts).length > 0) {
+            // Create horizontal skill items
+            let skillsHTML = '';
+            Object.entries(skillCounts).forEach(([skill, count]) => {
+                const displayText = count > 1 ? `${skill}-${count}` : skill;
+                skillsHTML += `<span class="skill-item">${displayText}</span>`;
+            });
+            skillsDisplay.innerHTML = skillsHTML;
         } else {
-            skillsDisplay.textContent = 'None';
+            skillsDisplay.innerHTML = 'None';
+        }
+    }
+}
+
+function updateCreditsDisplay(character) {
+    const creditsDisplay = document.getElementById('char-credits');
+    if (creditsDisplay) {
+        let credits = 0;
+        
+        // Get credits from mustering out benefits
+        if (character.mustering_out_benefits && character.mustering_out_benefits.cash) {
+            credits = character.mustering_out_benefits.cash;
+        }
+        
+        creditsDisplay.textContent = `CR ${credits.toLocaleString()}`;
+    }
+}
+
+function updateBenefitsDisplay(character) {
+    const benefitsDisplay = document.getElementById('benefits-display');
+    if (benefitsDisplay) {
+        let benefits = [];
+        
+        if (character.mustering_out_benefits) {
+            const mo = character.mustering_out_benefits;
+            
+            // Add items
+            if (mo.items && mo.items.length > 0) {
+                benefits = benefits.concat(mo.items);
+            }
+            
+            // Add characteristic boosts
+            if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
+                Object.entries(mo.characteristic_boosts).forEach(([stat, boost]) => {
+                    benefits.push(`${stat.substring(0,3).toUpperCase()}+${boost}`);
+                });
+            }
+            
+            // Add retirement pay
+            if (mo.retirement_pay && mo.retirement_pay > 0) {
+                benefits.push(`Pension: CR${mo.retirement_pay.toLocaleString()}/yr`);
+            }
+        }
+        
+        if (benefits.length > 0) {
+            benefitsDisplay.textContent = benefits.join(', ');
+        } else {
+            benefitsDisplay.textContent = 'None';
         }
     }
 }

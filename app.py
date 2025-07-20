@@ -172,7 +172,8 @@ def api_enlist():
             "modifier_details": enlistment_result["modifier_details"]
         },
         "show_commission": show_commission,
-        "show_promotion": show_promotion
+        "show_promotion": show_promotion,
+        "character": current_character
     }
     return jsonify(response_data)
 
@@ -429,6 +430,70 @@ def api_get_rank_title():
         "rank_title": rank_title,
         "service": service,
         "rank": rank
+    })
+
+@app.route('/api/calculate_probability', methods=['POST'])
+def api_calculate_probability():
+    data = request.get_json() or {}
+    target = data.get('target')
+    modifiers = data.get('modifiers', 0)
+    
+    if target is None:
+        return jsonify({"success": False, "error": "Target number required"}), 400
+    
+    try:
+        target = int(target)
+        modifiers = int(modifiers)
+        probability_data = chargen.calculate_success_probability(target, modifiers)
+        
+        return jsonify({
+            "success": True,
+            "probability": probability_data
+        })
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid target or modifiers"}), 400
+
+@app.route('/api/enlistment_probabilities', methods=['POST'])
+def api_enlistment_probabilities():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    if not current_character.get("characteristics"):
+        return jsonify({"success": False, "error": "Character characteristics not generated yet"}), 400
+    
+    # Get enlistment probabilities for all services
+    services = ['Navy', 'Marines', 'Army', 'Scouts', 'Merchants', 'Others']
+    probabilities = {}
+    
+    for service in services:
+        try:
+            # Create a temporary RNG for calculation (we don't actually roll)
+            rng = chargen.get_random_generator(current_character)
+            
+            # Get enlistment requirements for this service
+            target, modifiers, modifier_details = chargen.get_enlistment_requirements(service, current_character)
+            
+            # Calculate probability
+            prob_data = chargen.calculate_success_probability(target, modifiers)
+            
+            probabilities[service.lower()] = {
+                "target": target,
+                "modifiers": modifiers,
+                "modifier_details": modifier_details,
+                "percentage": prob_data["percentage"],
+                "description": prob_data["description"]
+            }
+            
+        except Exception as e:
+            probabilities[service.lower()] = {
+                "error": str(e),
+                "percentage": 0
+            }
+    
+    return jsonify({
+        "success": True,
+        "probabilities": probabilities
     })
 
 if __name__ == '__main__':

@@ -1598,6 +1598,56 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
     
     return character_record
 
+def calculate_success_probability(target, modifiers=0):
+    """
+    Calculate probability of success for Classic Traveller 2D6 roll.
+    
+    Rule: Roll 2D6, add modifiers, must equal or exceed target.
+    
+    Args:
+        target (int): Target number to meet or exceed
+        modifiers (int): Modifiers to add to roll (can be negative)
+    
+    Returns:
+        dict: Contains percentage and simple description
+    """
+    # 2D6 probability table - number of ways to roll each sum
+    roll_counts = {
+        2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6,
+        8: 5, 9: 4, 10: 3, 11: 2, 12: 1
+    }
+    
+    # Calculate effective target (what we need to roll on dice)
+    effective_target = target - modifiers
+    
+    # Edge cases
+    if effective_target <= 2:
+        return {"percentage": 100, "description": "Automatic"}
+    elif effective_target > 12:
+        return {"percentage": 0, "description": "Impossible"}
+    
+    # Count successful outcomes
+    successful = sum(count for roll, count in roll_counts.items() if roll >= effective_target)
+    percentage = round((successful / 36) * 100)
+    
+    return {"percentage": percentage, "description": f"{percentage}%"}
+
+def get_enlistment_requirements(service: str, character_record: dict[str, Any]) -> Tuple[int, int, List[str]]:
+    """
+    Get enlistment requirements for a service without rolling dice.
+    
+    Args:
+        service: The service to check requirements for
+        character_record: The character's record with characteristics
+        
+    Returns:
+        Tuple of (target, total_modifier, modifier_details)
+    """
+    target = get_enlistment_target(service)
+    modifier, modifier_details = get_enlistment_modifiers(character_record["characteristics"], service)
+    
+    return target, modifier, modifier_details
+
 if __name__ == "__main__":
     """
     Module guard - this code only runs when the module is executed directly
