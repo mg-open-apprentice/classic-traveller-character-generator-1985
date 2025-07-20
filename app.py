@@ -315,13 +315,6 @@ def api_resolve_skill():
     # This ensures reenlistment options are available whether ageing was just completed or not
     available_options = chargen.get_available_reenlistment_options(current_character)
     
-    # ADD DEBUGGING
-    print(f"[DEBUG] After skill resolution:")
-    print(f"[DEBUG] - ready_for_skills: {current_character.get('ready_for_skills', False)}")
-    print(f"[DEBUG] - ready_for_ageing: {current_character.get('ready_for_ageing', False)}")
-    print(f"[DEBUG] - terms_served: {current_character.get('terms_served', 0)}")
-    print(f"[DEBUG] - available_options: {available_options}")
-    
     return jsonify({
         "success": True,
         "skill_event": skill_event,
@@ -364,11 +357,8 @@ def api_ageing():
 @app.route('/api/reenlist', methods=['POST'])
 def api_reenlist():
     global current_character
-    print(f"[DEBUG] current_character: {current_character}")
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
-    print(f"[DEBUG] Character age at reenlist: {current_character.get('age', 'MISSING')}")
-    print(f"[DEBUG] Character career at reenlist: {current_character.get('career', 'MISSING')}")
     data = request.get_json() or {}
     preference = data.get('preference', 'reenlist')
     rng = chargen.get_random_generator(current_character)
@@ -426,6 +416,24 @@ def api_muster_out():
         "mustering_out": current_character.get("mustering_out_benefits", {})
     })
 
+@app.route('/api/get_rank_title', methods=['POST'])
+def api_get_rank_title():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    service = current_character.get('career', '')
+    rank = current_character.get('rank', 0)
+    
+    rank_title = chargen.get_rank_title(service, rank)
+    
+    return jsonify({
+        "success": True,
+        "rank_title": rank_title,
+        "service": service,
+        "rank": rank
+    })
+
 if __name__ == '__main__':
     print(f"Classic Traveller Character Generator starting with seed: {GLOBAL_SEED}")
     print("To use a different seed, run: python app.py --seed <number>")
@@ -434,4 +442,4 @@ if __name__ == '__main__':
     print("Default seed is 77 if not specified")
     print("-" * 50)
     # No character is loaded at startup, as we don't know the name
-    app.run(debug=True) 
+    app.run(host ="0.0.0.0", port=5000, debug=True)
