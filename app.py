@@ -21,11 +21,13 @@ current_character = None
 def get_character_json_path(name):
     # Sanitize name for filename (remove unsafe characters)
     safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
-    return f'{safe_name}.json'
+    return f'characters/{safe_name}.json'
 
 def save_character_to_file():
     global current_character
     if current_character is not None and "name" in current_character:
+        # Ensure characters directory exists
+        os.makedirs('characters', exist_ok=True)
         path = get_character_json_path(current_character["name"])
         with open(path, 'w') as f:
             json.dump(current_character, f, indent=2)

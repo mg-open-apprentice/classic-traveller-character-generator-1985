@@ -1,3 +1,30 @@
+:root {
+    /* Terminal Color Palette */
+    --color-bg: #000;
+    --color-primary: #0f0;
+    --color-secondary: #666;
+    --color-accent: #fff;
+    --color-warning: #ff0;
+    --color-danger: #f44;
+    --color-success: #4f8;
+    
+    /* Spacing System */
+    --space-xs: 2px;
+    --space-sm: 5px;
+    --space-md: 10px;
+    --space-lg: 15px;
+    --space-xl: 20px;
+    
+    /* Typography */
+    --font-mono: 'Courier New', monospace;
+    --font-display: 'Orbitron', 'Courier New', monospace;
+    
+    /* Effects */
+    --border-radius: 2px;
+    --transition: all 0.2s ease;
+    --glow: 0 0 5px currentColor;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -5,9 +32,9 @@
 }
 
 body {
-    font-family: 'Courier New', monospace;
-    background: #000;
-    color: #0f0;
+    font-family: var(--font-mono);
+    background: var(--color-bg);
+    color: var(--color-primary);
     height: 100vh;
     overflow: hidden;
     line-height: 1.4;
@@ -23,26 +50,28 @@ body {
     grid-template-columns: 300px 1fr;
     grid-template-rows: auto 1fr 1fr 1fr;
     height: 100vh;
-    gap: 2px;
-    background: #000;
+    gap: var(--space-xs);
+    background: var(--color-bg);
 }
 
 .panel {
-    background: #000;
-    border: 1px solid #0f0;
-    padding: 15px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-primary);
+    padding: var(--space-lg);
     overflow-y: auto;
+    border-radius: var(--border-radius);
 }
 
 .header {
     grid-area: header;
     text-align: center;
-    font-family: 'Orbitron', 'Courier New', monospace;
+    font-family: var(--font-display);
     font-size: 24px;
     font-weight: 900;
-    padding: 10px;
-    border-bottom: 2px solid #0f0;
+    padding: var(--space-md);
+    border-bottom: 2px solid var(--color-primary);
     letter-spacing: 2px;
+    text-shadow: var(--glow);
 }
 
 .sidebar {
@@ -103,21 +132,128 @@ body {
 }
 
 .btn {
-    background: #000;
-    color: #0f0;
-    border: 1px solid #0f0;
+    background: var(--color-bg);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     padding: 8px 16px;
-    margin: 3px 0;
+    margin: var(--space-xs) 0;
     width: 100%;
     cursor: pointer;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-mono);
     font-size: 14px;
-    transition: all 0.2s;
+    transition: var(--transition);
+    border-radius: var(--border-radius);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn:hover {
-    background: #0f0;
-    color: #000;
+    background: var(--color-primary);
+    color: var(--color-bg);
+    box-shadow: var(--glow);
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:focus {
+    outline: 2px solid var(--color-warning);
+    outline-offset: 2px;
+}
+
+/* Button variants for different actions */
+.btn-danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-danger:hover {
+    background: var(--color-danger);
+    color: var(--color-bg);
+}
+
+.btn-success {
+    border-color: var(--color-success);
+    color: var(--color-success);
+}
+
+.btn-success:hover {
+    background: var(--color-success);
+    color: var(--color-bg);
+}
+
+.btn-warning {
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+}
+
+.btn-warning:hover {
+    background: var(--color-warning);
+    color: var(--color-bg);
+}
+
+/* Loading States */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes typing {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.btn.loading {
+    color: var(--color-secondary);
+    cursor: not-allowed;
+}
+
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.typing-indicator::after {
+    content: '...';
+    animation: typing 1.5s infinite;
+}
+
+/* Status indicators */
+.status-success {
+    color: var(--color-success) !important;
+}
+
+.status-warning {
+    color: var(--color-warning) !important;
+}
+
+.status-danger {
+    color: var(--color-danger) !important;
 }
 
 .character-record {
@@ -271,7 +407,60 @@ body {
 }
 
 .muster-item {
-    color: #fff;
+    color: var(--color-accent);
     margin-bottom: 8px;
-    padding: 3px 0;
+    padding: var(--space-xs) 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .terminal-container {
+        grid-template-areas: 
+            "header"
+            "sidebar"
+            "right-top"
+            "right-middle"
+            "right-bottom";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto 1fr 1fr 1fr;
+    }
+    
+    .sidebar {
+        border-right: none;
+        border-bottom: 2px solid var(--color-primary);
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .header {
+        font-size: 18px;
+        padding: var(--space-sm);
+    }
+    
+    .panel {
+        padding: var(--space-md);
+    }
+    
+    .btn {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        font-size: 14px;
+        letter-spacing: 1px;
+    }
+    
+    .card {
+        font-size: 32px;
+        min-height: 80px;
+    }
+    
+    .character-record,
+    .event-record,
+    .term-record {
+        font-size: 12px;
+    }
 } 
