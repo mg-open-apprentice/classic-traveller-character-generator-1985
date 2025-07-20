@@ -91,19 +91,37 @@ def generate_character_name(random_generator: random.Random) -> str:
     Returns:
         A randomly generated character name
     """
-    first_names = [
-        "Zara", "Orion", "Nova", "Elexis", "Jaxon", "Lyra", "Nyx", "Ryker",
-        "Elara", "Caelum", "Vega", "Draco", "Aurora", "Cassius", "Astra", 
-        "Kaius", "Seren", "Altair", "Selene", "Maximus"
+    # 6x6 grid of first names (2d6 table)
+    first_names_grid = [
+        ["Zara", "Orion", "Nova", "Elexis", "Jaxon", "Lyra"],
+        ["Nyx", "Ryker", "Elara", "Caelum", "Vega", "Draco"],
+        ["Aurora", "Cassius", "Astra", "Kaius", "Seren", "Altair"],
+        ["Selene", "Maximus", "Zephyr", "Cosmo", "Astrid", "Pheonix"],
+        ["Nebula", "Kira", "Axel", "Vesper", "Cyrus", "Luna"],
+        ["Atlas", "Iris", "Dex", "Stella", "Kai", "Cora"]
     ]
     
-    last_names = [
-        "Xylo", "Pax", "Kin", "Vortex", "Starfire", "Nebulae", "Solaris", 
-        "Quantum", "Galaxy", "Void", "Stardust", "Cosmos", "Hyperdrive", 
-        "Meteor", "Comet", "Eclipse", "Andromeda", "Nebular", "Astraeus", "Ion"
+    # 6x6 grid of last names (2d6 table)
+    last_names_grid = [
+        ["Xylo", "Pax", "Kin", "Vortex", "Starfire", "Nebulae"],
+        ["Solaris", "Quantum", "Galaxy", "Void", "Stardust", "Cosmos"],
+        ["Hyperdrive", "Meteor", "Comet", "Eclipse", "Andromeda", "Nebular"],
+        ["Astraeus", "Ion", "Pulsar", "Zenith", "Flux", "Prism"],
+        ["Nexus", "Titan", "Astro", "Helix", "Vector", "Cipher"],
+        ["Apex", "Binary", "Nova", "Quark", "Sigma", "Vertex"]
     ]
     
-    return f"{random_generator.choice(first_names)} {random_generator.choice(last_names)}"
+    # Roll 2d6 for first name (1-6 for each die, convert to 0-5 indices)
+    first_die = random_generator.randint(1, 6) - 1
+    second_die = random_generator.randint(1, 6) - 1
+    first_name = first_names_grid[first_die][second_die]
+    
+    # Roll 2d6 for last name
+    first_die = random_generator.randint(1, 6) - 1
+    second_die = random_generator.randint(1, 6) - 1
+    last_name = last_names_grid[first_die][second_die]
+    
+    return f"{first_name} {last_name}"
 
 def create_character_record() -> dict[str, Any]:
     """
@@ -138,14 +156,6 @@ def get_current_term_number(character_record: dict[str, Any]) -> int:
     """
     return character_record.get("terms_served", 0) + 1
 
-def complete_term(character_record: dict[str, Any]) -> None:
-    """
-    Increment terms_served when term actually completes
-    
-    Args:
-        character_record: The character's record
-    """
-    character_record["terms_served"] = character_record.get("terms_served", 0) + 1
 
 def roll_2d6(random_generator: random.Random) -> int:
     """
@@ -313,12 +323,6 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     
     return character_record
 
-def is_ready_for_skills(character_record: dict) -> bool:
-    """
-    Determine if the character is ready to roll skills for the current term.
-    """
-    # Character is ready for skills after survival check
-    return True
 
 def check_survival(random_generator: random.Random, character_record: dict[str, Any], death_rule_enabled: bool = False) -> dict[str, Any]:
     """
@@ -1096,17 +1100,6 @@ def get_available_skill_tables(character_record: dict[str, Any]) -> dict[str, bo
     
     return available_tables
 
-def get_skill_eligibility_count(character_record: dict[str, Any]) -> int:
-    """
-    Get the number of skill eligibilities available to the character
-    
-    Args:
-        character_record: The character's record
-        
-    Returns:
-        Number of skill eligibilities available
-    """
-    return character_record.get("skill_eligibility", 0)
 
 def resolve_skill(random_generator: random.Random, character_record: dict[str, Any], 
                   table_choice: Optional[str] = None) -> dict[str, Any]:
@@ -1174,14 +1167,16 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
         "available_tables": available_tables,
     }
     
-    # If no table choice provided, randomly select one
+    # If no table choice provided, require explicit choice (random selection disabled)
     if table_choice is None:
+        # DISABLED: Automatic random table selection
         # Filter to only available tables
-        valid_tables = [table for table, available in available_tables.items() if available]
-        if not valid_tables:
-            raise ValueError("No valid skill tables available")
-        table_choice = random_generator.choice(valid_tables)
-        skill_event["table_choice_method"] = "random"
+        # valid_tables = [table for table, available in available_tables.items() if available]
+        # if not valid_tables:
+        #     raise ValueError("No valid skill tables available")
+        # table_choice = random_generator.choice(valid_tables)
+        # skill_event["table_choice_method"] = "random"
+        raise ValueError("Table choice must be explicitly provided - random selection disabled")
     else:
         # Validate table choice
         if table_choice not in available_tables:
@@ -1273,92 +1268,7 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     
     return character_record
 
-def get_next_phase(character_record: dict) -> str:
-    """
-    Determine the next phase for the character after skills are exhausted.
-    Returns one of: 'skills', 'ageing', 'reenlistment'
-    
-    Ageing ALWAYS happens after skills and before reenlistment, regardless of age.
-    The only effect before age 34 is age increase (no characteristic loss checks).
-    """
-    skill_eligibility = character_record.get('skill_eligibility', 0)
-    # If there are still skills to roll, stay in skills phase
-    if skill_eligibility > 0:
-        return 'skills'
-    # Always do ageing after skills, before reenlistment
-    if not character_record.get('ready_for_ageing', False):
-        return 'ageing'
-    # After ageing, proceed to reenlistment
-    return 'reenlistment'
 
-def calculate_mustering_out_info(character_record: dict[str, Any]) -> dict[str, Any]:
-    """
-    Calculate mustering out information for a character without executing it
-    
-    Args:
-        character_record: The character's record
-        
-    Returns:
-        Dictionary containing mustering out information
-        
-    Raises:
-        ValueError: If character has no career or required fields missing
-    """
-    # Get current career and calculate terms served
-    current_career = character_record.get('career')
-    if not current_career:
-        raise ValueError("Character must have a current career to calculate mustering out")
-    
-    terms_served = character_record.get('terms_served', 0)
-    rank = character_record.get('rank', 0)
-    
-    # Calculate total rolls (terms + rank bonus)
-    total_rolls = int(terms_served)
-    if 1 <= rank <= 2:
-        total_rolls += 1
-    elif 3 <= rank <= 4:
-        total_rolls += 2
-    elif 5 <= rank <= 6:
-        total_rolls += 3
-    
-    # Get the mustering out tables for reference
-    cash_table = {
-        'Navy':     {1: 1000, 2: 5000, 3: 5000, 4: 10000, 5: 20000, 6: 50000, 7: 50000},
-        'Marines':  {1: 2000, 2: 5000, 3: 5000, 4: 10000, 5: 20000, 6: 30000, 7: 40000},
-        'Army':     {1: 2000, 2: 5000, 3: 10000, 4: 10000, 5: 10000, 6: 20000, 7: 30000},
-        'Scouts':   {1: 20000, 2: 20000, 3: 30000, 4: 30000, 5: 50000, 6: 50000, 7: 50000},
-        'Merchant': {1: 1000, 2: 5000, 3: 10000, 4: 20000, 5: 20000, 6: 40000, 7: 40000},
-        'Other':    {1: 1000, 2: 5000, 3: 10000, 4: 10000, 5: 10000, 6: 50000, 7: 100000},
-    }
-    
-    benefit_table = {
-        'Navy':     {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +2', 4: 'Blade', 5: 'Travellers', 6: 'High Psg', 7: 'SOC +2'},
-        'Marines':  {1: 'Low Psg', 2: 'INT +2', 3: 'EDU +1', 4: 'Blade', 5: 'Traveller', 6: 'High Psg', 7: 'SOC +2'},
-        'Army':     {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +2', 4: 'Gun', 5: 'High Psg', 6: 'Mid Psg', 7: 'SOC +1'},
-        'Scouts':   {1: 'Low Psg', 2: 'INT +2', 3: 'EDU +2', 4: 'Blade', 5: 'Gun', 6: 'Scout Ship'},
-        'Merchant': {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +1', 4: 'Gun', 5: 'Blade', 6: 'Low Psg', 7: 'Free Trader'},
-        'Other':    {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +1', 4: 'Gun', 5: 'High Psg', 6: '-'},
-    }
-    
-    # Get appropriate tables
-    career_cash_table = cash_table.get(current_career, cash_table['Other'])
-    career_benefit_table = benefit_table.get(current_career, benefit_table['Other'])
-    
-    # Calculate bonuses
-    # For benefits: +1 only if rank == 5 or rank == 6
-    benefit_rank_bonus = 1 if rank in (5, 6) else 0
-    
-    return {
-        'career': current_career,
-        'terms_served': terms_served,
-        'rank': rank,
-        'total_rolls': total_rolls,
-        'max_cash_rolls': min(3, total_rolls),
-        'benefit_rank_bonus': benefit_rank_bonus,
-        'cash_table': career_cash_table,
-        'benefit_table': career_benefit_table,
-        'requires_mustering_out': True
-    }
 
 def perform_mustering_out(random_generator: random.Random, character_record: dict[str, Any], 
                           cash_rolls: Optional[int] = None) -> dict[str, Any]:
