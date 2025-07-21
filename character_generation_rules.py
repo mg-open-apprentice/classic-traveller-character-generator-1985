@@ -35,6 +35,7 @@ __author__ = "System Two Digital"
 
 import random
 from typing import Any, List, Tuple, Optional
+import character_generation_tables as tables
 
 def set_seed(seed: int = 77) -> random.Random:
     """
@@ -91,35 +92,15 @@ def generate_character_name(random_generator: random.Random) -> str:
     Returns:
         A randomly generated character name
     """
-    # 6x6 grid of first names (2d6 table)
-    first_names_grid = [
-        ["Zara", "Orion", "Nova", "Elexis", "Jaxon", "Lyra"],
-        ["Nyx", "Ryker", "Elara", "Caelum", "Vega", "Draco"],
-        ["Aurora", "Cassius", "Astra", "Kaius", "Seren", "Altair"],
-        ["Selene", "Maximus", "Zephyr", "Cosmo", "Astrid", "Pheonix"],
-        ["Nebula", "Kira", "Axel", "Vesper", "Cyrus", "Luna"],
-        ["Atlas", "Iris", "Dex", "Stella", "Kai", "Cora"]
-    ]
-    
-    # 6x6 grid of last names (2d6 table)
-    last_names_grid = [
-        ["Xylo", "Pax", "Kin", "Vortex", "Starfire", "Nebulae"],
-        ["Solaris", "Quantum", "Galaxy", "Void", "Stardust", "Cosmos"],
-        ["Hyperdrive", "Meteor", "Comet", "Eclipse", "Andromeda", "Nebular"],
-        ["Astraeus", "Ion", "Pulsar", "Zenith", "Flux", "Prism"],
-        ["Nexus", "Titan", "Astro", "Helix", "Vector", "Cipher"],
-        ["Apex", "Binary", "Nova", "Quark", "Sigma", "Vertex"]
-    ]
-    
     # Roll 2d6 for first name (1-6 for each die, convert to 0-5 indices)
     first_die = random_generator.randint(1, 6) - 1
     second_die = random_generator.randint(1, 6) - 1
-    first_name = first_names_grid[first_die][second_die]
+    first_name = tables.FIRST_NAMES_TABLE[first_die][second_die]
     
     # Roll 2d6 for last name
     first_die = random_generator.randint(1, 6) - 1
     second_die = random_generator.randint(1, 6) - 1
-    last_name = last_names_grid[first_die][second_die]
+    last_name = tables.LAST_NAMES_TABLE[first_die][second_die]
     
     return f"{first_name} {last_name}"
 
@@ -203,15 +184,7 @@ def get_enlistment_target(service: str) -> int:
     Returns:
         Target number for enlistment roll
     """
-    enlistment_targets = {
-        'Navy': 8,
-        'Marines': 9,
-        'Army': 5,
-        'Scouts': 7,
-        'Merchants': 7,
-        'Others': 3
-    }
-    return enlistment_targets.get(service, 5)  # Default to 5 for unknown services
+    return tables.ENLISTMENT_TARGETS[service]
 
 def get_enlistment_modifiers(characteristics: dict[str, int], service: str) -> Tuple[int, List[str]]:
     """
@@ -227,18 +200,8 @@ def get_enlistment_modifiers(characteristics: dict[str, int], service: str) -> T
     modifiers = []
     total_modifier = 0
     
-    # Define characteristic requirements and bonuses for each service
-    service_bonuses = {
-        'Navy': [('intelligence', 8, 1), ('education', 9, 2)],
-        'Marines': [('intelligence', 8, 1), ('strength', 8, 2)],
-        'Army': [('dexterity', 6, 1), ('endurance', 5, 2)],
-        'Scouts': [('intelligence', 6, 1), ('strength', 8, 2)],
-        'Merchants': [('strength', 7, 1), ('intelligence', 6, 2)],
-        'Others': []
-    }
-    
     # Apply modifiers based on characteristics
-    for char, req, bonus in service_bonuses.get(service, []):
+    for char, req, bonus in tables.ENLISTMENT_BONUSES[service]:
         if characteristics.get(char, 0) >= req:
             total_modifier += bonus
             modifiers.append(f"{char.capitalize()} {characteristics.get(char, 0)}≥{req} (+{bonus})")
@@ -252,7 +215,7 @@ def get_available_services() -> List[str]:
     Returns:
         List of service names
     """
-    return ['Navy', 'Marines', 'Army', 'Scouts', 'Merchants', 'Others']
+    return tables.get_service_list()
 
 def get_draft_service(random_generator: random.Random) -> str:
     """
@@ -341,26 +304,10 @@ def check_survival(random_generator: random.Random, character_record: dict[str, 
     characteristics = character_record.get("characteristics", {})
     
     # Get survival target number
-    survival_targets = {
-        'Navy': 5,
-        'Marines': 6,
-        'Army': 5,
-        'Scouts': 7,
-        'Merchants': 5,
-        'Others': 5
-    }
-    target = survival_targets.get(career, 5)
+    target = tables.SURVIVAL_TARGETS[career]
     
-    # Define characteristic bonuses for each career
-    survival_bonuses = {
-        'Navy': [('intelligence', 7, 2)],
-        'Marines': [('endurance', 8, 2)],
-        'Army': [('education', 6, 2)],
-        'Scouts': [('endurance', 9, 2)],
-        'Merchants': [('intelligence', 7, 2)],
-        'Others': [('intelligence', 9, 2)]
-    }
-    career_bonuses = survival_bonuses.get(career, [])
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.SURVIVAL_BONUSES[career]
     
     # Calculate modifiers based on characteristics
     modifier = 0
@@ -475,24 +422,12 @@ def check_commission(random_generator: random.Random, character_record: dict[str
     # Character is eligible for commission
     commission_result["applicable"] = True
     
-    # Define commission target numbers
-    commission_targets = {
-        'Navy': 10,
-        'Marines': 9,
-        'Army': 5,
-        'Merchants': 4
-    }
-    target = commission_targets.get(career, 8)
+    # Get commission target number
+    target = tables.COMMISSION_TARGETS[career]
     commission_result["target"] = target
     
-    # Define characteristic bonuses for each career
-    commission_bonuses = {
-        'Navy': [('social', 9, 1)],
-        'Marines': [('education', 7, 1)],
-        'Army': [('endurance', 7, 1)],
-        'Merchants': [('intelligence', 9, 1)]
-    }
-    career_bonuses = commission_bonuses.get(career, [])
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.COMMISSION_BONUSES[career]
     
     # Calculate modifiers based on characteristics
     modifier = 0
@@ -564,8 +499,19 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
     }
     
     # Check if character is eligible for promotion
-    # Note: Promotion is available to both commissioned and non-commissioned characters
-    # Non-commissioned characters can be promoted to enlisted ranks
+    # Book 1 Rule: Only commissioned officers can be promoted
+    # Non-commissioned characters (Rank 0) have no enlisted ranks to promote to
+    
+    # First check: Must be commissioned to be eligible for promotion
+    if not character_record.get("commissioned", False):
+        promotion_result["applicable"] = False
+        promotion_result["reason"] = "Non-commissioned characters cannot be promoted (must obtain commission first)"
+        promotion_result["success"] = False
+        promotion_result["outcome"] = "not applicable"
+        
+        # Add the promotion check to the character's career history
+        character_record["career_history"].append(promotion_result)
+        return character_record
     
     if career in ['Scouts', 'Others']:
         # These careers don't have rank structure
@@ -579,13 +525,7 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         return character_record
     
     # Check for maximum rank limits
-    max_ranks = {
-        'Navy': 6,
-        'Marines': 6,
-        'Army': 6,
-        'Merchants': 5
-    }
-    max_rank = max_ranks.get(career, 6)
+    max_rank = tables.MAX_RANKS[career]
     
     if current_rank >= max_rank:
         # Character has reached maximum rank for their career
@@ -601,24 +541,12 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
     # Character is eligible for promotion (one promotion per term is handled by call sequencing)
     promotion_result["applicable"] = True
     
-    # Define promotion target numbers
-    promotion_targets = {
-        'Navy': 8,
-        'Marines': 9,
-        'Army': 6,
-        'Merchants': 10
-    }
-    target = promotion_targets.get(career, 8)
+    # Get promotion target number
+    target = tables.PROMOTION_TARGETS[career]
     promotion_result["target"] = target
     
-    # Define characteristic bonuses for each career
-    promotion_bonuses = {
-        'Navy': [('education', 8, 1)],
-        'Marines': [('social', 8, 1)],
-        'Army': [('education', 7, 1)],
-        'Merchants': [('intelligence', 9, 1)]
-    }
-    career_bonuses = promotion_bonuses.get(career, [])
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.PROMOTION_BONUSES[career]
     
     # Calculate modifiers based on characteristics
     modifier = 0
@@ -649,13 +577,10 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         promotion_result["rank"] = new_rank
         promotion_result["career"] = career
         
-        # Determine promotion outcome text based on commission status
-        if character_record.get("commissioned", False):
-            promotion_result["outcome"] = f"promoted to rank {new_rank}"
-        else:
-            promotion_result["outcome"] = f"promoted to enlisted rank {new_rank}"
+        # All promotions are for commissioned officers (since commission is required)
+        promotion_result["outcome"] = f"promoted to rank {new_rank}"
         
-        # Grant +1 skill eligibility for successful promotion (regardless of commission status)
+        # Grant +1 skill eligibility for successful promotion
         character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + 1
         promotion_result["skill_eligibilities_granted"] = 1
     else:
@@ -728,18 +653,8 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         # Do NOT increment terms_served for medical discharge due to injury
         return character_record
     
-    # Define reenlistment target numbers
-    reenlistment_targets = {
-        'Navy': 6,
-        'Marines': 6,
-        'Army': 7,
-        'Scouts': 3,
-        'Merchants': 4,
-        'Others': 5
-    }
-    # Ensure career is one of the valid options
-    assert career in reenlistment_targets, f"Invalid career: {career}"
-    target = reenlistment_targets[career]
+    # Get reenlistment target from tables
+    target = tables.REENLISTMENT_TARGETS[career]
     
     # Roll for reenlistment
     roll = roll_2d6(random_generator)
@@ -829,12 +744,14 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         old_terms = character_record.get("terms_served", 0)
         character_record["terms_served"] = old_terms + 1
     
-    # If continuing career, reset term progression
+    # Reset reenlistment readiness flag
+    character_record["ready_for_reenlistment"] = False
+    
+    # Set appropriate next step based on reenlistment outcome
     if continue_career:
-        # Explicitly reset term progression flags for new term
-        character_record["ready_for_skills"] = False  # After reenlistment, character must perform a survival check to begin the new term
+        # Character will continue - set up for new term
+        character_record["ready_for_skills"] = False
         character_record["ready_for_ageing"] = False
-        character_record["ready_for_reenlistment"] = False # ADD: Reset the flag
         character_record["skill_eligibility"] = 0
         character_record["survival_outcome"] = "pending"
         # Reset commission attempt flag for new term
@@ -844,20 +761,11 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         # Increment skill eligibility for the new term
         increment_skill_eligibility_for_term(character_record)
         
-        # Create a new term record if you're tracking terms as objects
-        if "terms" not in character_record:
-            character_record["terms"] = []
-        
-        # Start a new term record
-        character_record["terms"].append({
-            "term_number": character_record["terms_served"],  # This is now the correct term number
-            "start_age": character_record["age"],
-            "completed": False,
-            # Other term-specific data
-        })
-        
-        # Ensure the character is ready to start the new term with survival check
-        # This is critical for proper term progression
+        # Add indication that a new term has started
+        reenlistment_result["new_term_started"] = True
+    else:
+        # Character is leaving service - ready for mustering out
+        character_record["ready_for_mustering_out"] = True
 
     return character_record
 
@@ -933,8 +841,8 @@ def check_ageing_characteristics(random_generator: random.Random, character_reco
                 survival_outcome = event.get('outcome')
                 break
     
-    ageing_thresholds = [34, 38, 42, 46, 50, 54, 58, 62]
-    advanced_ageing_start = 66
+    ageing_thresholds = tables.AGING_THRESHOLDS
+    advanced_ageing_start = tables.ADVANCED_AGING_START
     
     ageing_effects = []
     checks_performed = []
@@ -976,16 +884,12 @@ def apply_ageing_effects(random_generator: random.Random, character_record: dict
     effects = []
     characteristics = character_record.get("characteristics", {})
     
-    if age in [34, 38, 42, 46]:
+    if age in tables.PHASE_1_AGING['ages']:
         # Phase 1: Early ageing
-        checks = [
-            ('strength', 8, 1), ('dexterity', 7, 1), ('endurance', 8, 1)
-        ]
-    elif age in [50, 54, 58, 62]:
+        checks = tables.PHASE_1_AGING['checks']
+    elif age in tables.PHASE_2_AGING['ages']:
         # Phase 2: Advanced ageing  
-        checks = [
-            ('strength', 9, 1), ('dexterity', 8, 1), ('endurance', 9, 1)
-        ]
+        checks = tables.PHASE_2_AGING['checks']
     else:
         return effects
     
@@ -1033,9 +937,7 @@ def apply_advanced_ageing_effects(random_generator: random.Random, character_rec
     characteristics = character_record.get("characteristics", {})
     
     # Advanced ageing affects STR, DEX, END, and INT
-    checks = [
-        ('strength', 9, 2), ('dexterity', 9, 2), ('endurance', 9, 2), ('intelligence', 9, 1)
-    ]
+    checks = tables.ADVANCED_AGING['checks']
     
     for stat, target, loss in checks:
         roll = roll_2d6(random_generator)
@@ -1117,45 +1019,7 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     # Get career
     career = character_record["career"]
     
-    # Define skill tables for each career
-    skill_tables = {
-        'Navy': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', '+1 INT', '+1 EDU', '+1 SOC'],
-            'service': ['Ship\'s Boat', 'Vacc Suit', 'Forward Observer', 'Gunnery', 'Blade Combat', 'Gun Combat'],
-            'advanced': ['Vacc Suit', 'Mechanical', 'Electronic', 'Engineering', 'Gunnery', 'Jack-of-all-Trades'],
-            'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Admin']
-        },
-        'Marines': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', 'Gambling', 'Brawling', 'Blade Combat'],
-            'service': ['Vehicle', 'Vacc Suit', 'Blade Combat', 'Gun Combat', 'Blade Combat', 'Gun Combat'],
-            'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Tactics', 'Blade Combat', 'Gun Combat'],
-            'education': ['Medical', 'Tactics', 'Tactics', 'Computer', 'Leader', 'Admin']
-        },
-        'Army': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', 'Gambling', '+1 EDU', 'Brawling'],
-            'service': ['Vehicle', 'Air/Raft', 'Gun Combat', 'Forward Observer', 'Blade Combat', 'Gun Combat'],
-            'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Tactics', 'Blade Combat', 'Gun Combat'],
-            'education': ['Medical', 'Tactics', 'Tactics', 'Computer', 'Leader', 'Admin']
-        },
-        'Scouts': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', '+1 INT', '+1 EDU', 'Gun Combat'],
-            'service': ['Vehicle', 'Vacc Suit', 'Mechanical', 'Navigation', 'Electronics', 'Jack-of-all-Trades'],
-            'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Jack-of-all-Trades', 'Gunnery', 'Medical'],
-            'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Jack-of-all-Trades']
-        },
-        'Merchants': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', 'Blade Combat', 'Bribery', '+1 INT'],
-            'service': ['Vehicle', 'Vacc Suit', 'Jack-of-all-Trades', 'Steward', 'Electronics', 'Gun Combat'],
-            'advanced': ['Streetwise', 'Mechanical', 'Electronic', 'Navigation', 'Engineering', 'Computer'],
-            'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Admin']
-        },
-        'Others': {
-            'personal': ['+1 STR', '+1 DEX', '+1 END', 'Blade Combat', 'Brawling', '+1 SOC'],
-            'service': ['Vehicle', 'Gambling', 'Brawling', 'Bribery', 'Blade Combat', 'Gun Combat'],
-            'advanced': ['Streetwise', 'Mechanical', 'Electronic', 'Gambling', 'Brawling', 'Forgery'],
-            'education': ['Medical', 'Forgery', 'Electronics', 'Computer', 'Streetwise', 'Jack-of-all-Trades']
-        }
-    }
+    # Get skill tables from centralized table module
     
     # Get available skill tables
     available_tables = get_available_skill_tables(character_record)
@@ -1188,7 +1052,7 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     skill_event["table_choice"] = table_choice
     
     # Get the skill table for the career
-    career_tables = skill_tables.get(career, skill_tables['Others'])
+    career_tables = tables.SKILL_TABLES[career]
     
     # Ensure the table exists for this career
     if table_choice not in career_tables:
@@ -1321,28 +1185,11 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     
     benefit_rolls = total_rolls - cash_rolls
     
-    # Mustering out tables
-    cash_table = {
-        'Navy':     {1: 1000, 2: 5000, 3: 5000, 4: 10000, 5: 20000, 6: 50000, 7: 50000},
-        'Marines':  {1: 2000, 2: 5000, 3: 5000, 4: 10000, 5: 20000, 6: 30000, 7: 40000},
-        'Army':     {1: 2000, 2: 5000, 3: 10000, 4: 10000, 5: 10000, 6: 20000, 7: 30000},
-        'Scouts':   {1: 20000, 2: 20000, 3: 30000, 4: 30000, 5: 50000, 6: 50000, 7: 50000},
-        'Merchant': {1: 1000, 2: 5000, 3: 10000, 4: 20000, 5: 20000, 6: 40000, 7: 40000},
-        'Other':    {1: 1000, 2: 5000, 3: 10000, 4: 10000, 5: 10000, 6: 50000, 7: 100000},
-    }
-    
-    benefit_table = {
-        'Navy':     {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +2', 4: 'Blade', 5: 'Travellers', 6: 'High Psg', 7: 'SOC +2'},
-        'Marines':  {1: 'Low Psg', 2: 'INT +2', 3: 'EDU +1', 4: 'Blade', 5: 'Traveller', 6: 'High Psg', 7: 'SOC +2'},
-        'Army':     {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +2', 4: 'Gun', 5: 'High Psg', 6: 'Mid Psg', 7: 'SOC +1'},
-        'Scouts':   {1: 'Low Psg', 2: 'INT +2', 3: 'EDU +2', 4: 'Blade', 5: 'Gun', 6: 'Scout Ship'},
-        'Merchant': {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +1', 4: 'Gun', 5: 'Blade', 6: 'Low Psg', 7: 'Free Trader'},
-        'Other':    {1: 'Low Psg', 2: 'INT +1', 3: 'EDU +1', 4: 'Gun', 5: 'High Psg', 6: '-'},
-    }
+    # Get mustering out tables from centralized table module
     
     # Get appropriate tables
-    career_cash_table = cash_table.get(current_career, cash_table['Other'])
-    career_benefit_table = benefit_table.get(current_career, benefit_table['Other'])
+    career_cash_table = tables.CASH_TABLES[current_career]
+    career_benefit_table = tables.BENEFIT_TABLES[current_career]
     
     # Calculate bonuses
     # For benefits: +1 only if rank == 5 or rank == 6
@@ -1528,13 +1375,13 @@ def increment_skill_eligibility_for_term(character_record: dict) -> None:
 def get_available_reenlistment_options(character_record):
     options = []
     
-    # Check if character is ready for reenlistment (after ageing is complete)
+    # Check if character is ready for reenlistment (after skills are complete, before aging)
     # Character should be ready for reenlistment if:
-    # 1. They have survived and completed their term (ready_for_ageing is False after ageing)
-    # 2. They are injured and need medical discharge
+    # 1. They have completed their skills and are ready for reenlistment decision
+    # 2. They are injured and need medical discharge  
     ready_for_reenlistment = (
-        not character_record.get('ready_for_ageing', False) and  # Ageing is complete
-        not character_record.get('ready_for_skills', False)      # Skills are complete
+        character_record.get('ready_for_reenlistment', False) and  # Skills are complete, ready for reenlistment
+        not character_record.get('ready_for_skills', False)       # Skills are complete
     )
     
     if not ready_for_reenlistment:
@@ -1551,14 +1398,7 @@ def get_available_reenlistment_options(character_record):
         options.append('reenlist')    # Always allow reenlist
     return options
 
-SERVICE_RANK_TITLES = {
-    "Navy":       ["", "Ensign", "Lieutenant", "Lt Cmdr", "Commander", "Captain", "Admiral"],
-    "Army":       ["", "Lieutenant", "Captain", "Major", "Lt Colonel", "Colonel", "General"],
-    "Marines":    ["", "Lieutenant", "Captain", "Major", "Lt Colonel", "Colonel", "General"],
-    "Merchants":  ["", "4th Officer", "3rd Officer", "2nd Officer", "1st Officer", "Captain"],
-    "Scouts":     ["", ""],
-    "Others":     ["", ""]
-}
+# SERVICE_RANK_TITLES moved to centralized table module
 
 def get_rank_title(service: str, rank_number: int) -> str:
     """
@@ -1571,7 +1411,7 @@ def get_rank_title(service: str, rank_number: int) -> str:
     Returns:
         The rank title as a string, or an empty string if not found.
     """
-    titles = SERVICE_RANK_TITLES.get(service, [""])
+    titles = tables.RANK_TITLES.get(service, [""])
     if 0 <= rank_number < len(titles):
         return titles[rank_number]
     return ""
@@ -1647,6 +1487,43 @@ def get_enlistment_requirements(service: str, character_record: dict[str, Any]) 
     modifier, modifier_details = get_enlistment_modifiers(character_record["characteristics"], service)
     
     return target, modifier, modifier_details
+
+def calculate_enlistment_metrics(character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Calculate enlistment probabilities for all services
+    
+    Args:
+        character_record: The character's record with characteristics
+        
+    Returns:
+        Dictionary containing enlistment metrics for each service
+    """
+    if "characteristics" not in character_record:
+        raise ValueError("Character record missing characteristics")
+    
+    characteristics = character_record["characteristics"]
+    services = get_available_services()
+    metrics = {}
+    
+    for service in services:
+        service_key = service.lower()
+        
+        # Calculate enlistment probability using existing functions
+        enlist_target, enlist_modifier, enlist_details = get_enlistment_requirements(service, character_record)
+        enlist_prob = calculate_success_probability(enlist_target, enlist_modifier)
+        
+        metrics[service_key] = {
+            "service_name": service,
+            "enlist_probability": enlist_prob,
+            "target": enlist_target,
+            "modifier": enlist_modifier,
+            "modifier_details": enlist_details
+        }
+    
+    return {
+        "success": True,
+        "metrics": metrics
+    }
 
 if __name__ == "__main__":
     """

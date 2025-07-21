@@ -1,0 +1,152 @@
+/* PROPOSED RESPONSIVE LAYOUT IMPROVEMENTS */
+
+.terminal-container {
+    display: grid;
+    /* Use flexible columns instead of fixed 300px */
+    grid-template-columns: minmax(280px, 25vw) 1fr;
+    
+    /* Allow content-based row sizing */
+    grid-template-rows: auto minmax(200px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr);
+    
+    /* Use min-height instead of fixed height */
+    min-height: 100vh;
+    max-height: 100vh;
+    
+    grid-template-areas: 
+        "header header"
+        "sidebar right-top"
+        "sidebar right-middle"
+        "sidebar right-bottom";
+    
+    gap: clamp(2px, 0.5vw, 8px);
+    background: var(--color-bg);
+    
+    /* Add container queries support */
+    container-type: size;
+}
+
+/* Breakpoint 1: Medium screens (tablets) */
+@media (max-width: 1024px) {
+    .terminal-container {
+        grid-template-columns: minmax(250px, 30vw) 1fr;
+        grid-template-rows: auto minmax(180px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr);
+    }
+}
+
+/* Breakpoint 2: Small tablets */
+@media (max-width: 768px) {
+    .terminal-container {
+        grid-template-areas: 
+            "header"
+            "sidebar"
+            "right-top"
+            "right-middle"
+            "right-bottom";
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(200px, auto) minmax(150px, auto) minmax(100px, auto) minmax(100px, auto);
+        
+        /* Allow scrolling on small screens */
+        max-height: none;
+        min-height: 100vh;
+    }
+    
+    .sidebar {
+        border-right: none;
+        border-bottom: 2px solid var(--color-primary);
+        max-height: 300px; /* Prevent sidebar from taking too much space */
+        overflow-y: auto;
+    }
+}
+
+/* Breakpoint 3: Mobile phones */
+@media (max-width: 480px) {
+    .terminal-container {
+        gap: 4px;
+        grid-template-rows: auto minmax(150px, auto) minmax(120px, auto) minmax(80px, auto) minmax(80px, auto);
+    }
+    
+    .panel {
+        padding: var(--space-sm);
+    }
+    
+    .sidebar {
+        max-height: 250px;
+    }
+}
+
+/* Flexible panel sizing */
+.panel {
+    /* Allow panels to shrink/grow with content */
+    min-height: 0; /* Important for grid items */
+    display: flex;
+    flex-direction: column;
+}
+
+.panel > * {
+    flex-shrink: 0; /* Prevent content from being crushed */
+}
+
+.panel .section-content,
+.panel .event-record,
+.panel .term-record {
+    flex: 1; /* Allow these to grow */
+    min-height: 0; /* Allow shrinking */
+    overflow-y: auto; /* Add scrolling when needed */
+}
+
+/* Adaptive font sizes */
+.header {
+    font-size: clamp(18px, 4vw, 24px);
+    padding: clamp(8px, 2vw, 16px);
+}
+
+.btn {
+    font-size: clamp(12px, 2.5vw, 14px);
+    padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
+}
+
+.character-record,
+.event-record,
+.term-record {
+    font-size: clamp(12px, 2.5vw, 14px);
+}
+
+/* Container queries (for modern browsers) */
+@container (max-width: 600px) {
+    .terminal-container {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "header"
+            "sidebar"
+            "right-top"
+            "right-middle"
+            "right-bottom";
+    }
+}
+
+/* Ultra-wide screen support */
+@media (min-width: 1400px) {
+    .terminal-container {
+        grid-template-columns: minmax(300px, 20vw) 1fr;
+        max-width: 1800px; /* Prevent over-stretching */
+        margin: 0 auto; /* Center on very wide screens */
+    }
+}
+
+/* Print styles */
+@media print {
+    .terminal-container {
+        display: block;
+        height: auto;
+        max-height: none;
+    }
+    
+    .panel {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    
+    .sidebar {
+        display: none; /* Hide controls when printing */
+    }
+}

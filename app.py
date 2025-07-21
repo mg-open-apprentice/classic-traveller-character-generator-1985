@@ -4,6 +4,7 @@ import json
 import os
 import re
 import argparse
+import csv
 
 app = Flask(__name__)
 
@@ -84,7 +85,9 @@ def can_show_promotion_button(character_record):
     # If commission was attempted and failed this term, cannot promote
     if character_record.get('commission_failed_this_term', False):
         return False
-    # Promotion is available to both commissioned and non-commissioned characters
+    # Book 1 Rule: Only commissioned officers can be promoted
+    if not character_record.get('commissioned', False):
+        return False
     return True
 
 @app.route('/')
@@ -495,6 +498,171 @@ def api_enlistment_probabilities():
         "success": True,
         "probabilities": probabilities
     })
+
+@app.route('/api/dice_roll_report', methods=['POST'])
+def api_dice_roll_report():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    try:
+        # Generate CSV file path
+        character_name = current_character.get('name', 'Unknown')
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', character_name)
+        csv_filename = f'{safe_name}_dice_rolls.csv'
+        csv_path = f'characters/{csv_filename}'
+        
+        # Ensure characters directory exists
+        os.makedirs('characters', exist_ok=True)
+        
+        # Generate and save CSV report
+        generate_dice_roll_csv(current_character, csv_path)
+        
+        return jsonify({
+            "success": True,
+            "filename": csv_filename,
+            "path": csv_path,
+            "message": f"Dice roll report saved to {csv_path}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+def generate_dice_roll_csv(character_record, csv_path):
+    """
+    Generate a CSV file containing all dice rolls made during character generation
+    """
+    career_history = character_record.get('career_history', [])
+    
+    # Track term-by-term progression
+    current_term = 0
+    roll_number = 0
+    
+    # Open CSV file for writing
+    with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = [
+            'Roll_Number',
+            'Character_Name', 
+            'Character_Seed',
+            'Term',
+            'Event_Type',
+            'Action_Description',
+            'Roll_Result',
+            'Target_Number',
+            'Modifier',
+            'Modifier_Details',
+            'Total_Roll',
+            'Success',
+            'Outcome',
+            'Career_At_Time'
+        ]
+        
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        # Write character summary row
+        writer.writerow({
+            'Roll_Number': 'SUMMARY',
+            'Character_Name': character_record.get('name', 'Unknown'),
+            'Character_Seed': character_record.get('seed', 77),
+            'Term': f"Final Age: {character_record.get('age', 18)}",
+            'Event_Type': f"Career: {character_record.get('career', 'Unknown')}",
+            'Action_Description': f"Terms Served: {character_record.get('terms_served', 0)}",
+            'Roll_Result': f"UPP: {character_record.get('upp', '______')}",
+            'Target_Number': '',
+            'Modifier': '',
+            'Modifier_Details': '',
+            'Total_Roll': '',
+            'Success': '',
+            'Outcome': '',
+            'Career_At_Time': ''
+        })
+        
+        for event in career_history:
+            event_type = event.get('event_type', '')
+            
+            # Track term progression
+            if event_type == 'enlistment_attempt':
+                current_term = 1
+            elif event_type == 'reenlistment_attempt' and event.get('continue_career', False):
+                current_term += 1
+            
+            # Process events that involve dice rolls
+            if 'roll' in event and event.get('roll') is not None:
+                roll_number += 1
+                roll_info = extract_roll_info_for_csv(event, current_term, character_record)
+                if roll_info:
+                    roll_info['Roll_Number'] = roll_number
+                    roll_info['Character_Name'] = character_record.get('name', 'Unknown')
+                    roll_info['Character_Seed'] = character_record.get('seed', 77)
+                    writer.writerow(roll_info)
+
+def extract_roll_info_for_csv(event, term_number, character_record):
+    """Extract dice roll information from a career history event for CSV format"""
+    event_type = event.get('event_type', '')
+    roll = event.get('roll')
+    target = event.get('target')
+    modifier = event.get('modifier', 0)
+    success = event.get('success', False)
+    
+    # Map event types to readable descriptions
+    event_descriptions = {
+        'enlistment_attempt': f"Enlistment ({event.get('service', 'Unknown')})",
+        'survival_check': f"Survival",
+        'commission_check': f"Commission",
+        'promotion_check': f"Promotion",
+        'reenlistment_attempt': f"Reenlistment",
+        'skill_resolution': f"Skill Roll",
+        'mustering_out_cash_roll': "Mustering Out (Cash)",
+        'mustering_out_benefit_roll': "Mustering Out (Benefit)",
+        'ageing_check_detail': f"Ageing Check ({event.get('stat', 'Unknown')})"
+    }
+    
+    description = event_descriptions.get(event_type, event_type.replace('_', ' ').title())
+    
+    # Build result description
+    if event_type == 'enlistment_attempt':
+        if success:
+            result = f"Enlisted in {event.get('assigned_service', 'Unknown')}"
+        else:
+            result = f"Drafted into {event.get('assigned_service', 'Unknown')}"
+    elif event_type == 'survival_check':
+        result = "Survived" if success else "Injured"
+    elif event_type == 'commission_check':
+        result = f"Commissioned (Rank {event.get('rank', 1)})" if success else "Commission denied"
+    elif event_type == 'promotion_check':
+        result = f"Promoted to Rank {event.get('rank', 0)}" if success else "Promotion denied"
+    elif event_type == 'reenlistment_attempt':
+        result = event.get('status_text', 'Unknown outcome')
+    elif event_type == 'skill_resolution':
+        result = f"Gained: {event.get('skill_gained', 'Unknown skill')}"
+    elif event_type == 'mustering_out_cash_roll':
+        result = f"Received Cr{event.get('amount', 0):,}"
+    elif event_type == 'mustering_out_benefit_roll':
+        result = f"Received: {event.get('benefit', 'Unknown benefit')}"
+    elif event_type == 'ageing_check_detail':
+        if event.get('loss', 0) > 0:
+            result = f"Lost {event.get('loss')} {event.get('stat', 'stat')} ({event.get('old_value')} → {event.get('new_value')})"
+        else:
+            result = f"No {event.get('stat', 'stat')} loss"
+    else:
+        result = event.get('outcome', 'Unknown outcome')
+    
+    # Format modifier details as a single string
+    modifier_details_str = '; '.join(event.get('modifier_details', []))
+    
+    return {
+        'Term': term_number if term_number > 0 else '',
+        'Event_Type': event_type,
+        'Action_Description': description,
+        'Roll_Result': roll,
+        'Target_Number': target if target is not None else '',
+        'Modifier': modifier,
+        'Modifier_Details': modifier_details_str,
+        'Total_Roll': roll + modifier if roll is not None and modifier is not None else '',
+        'Success': 'Yes' if success else 'No',
+        'Outcome': result,
+        'Career_At_Time': event.get('career', character_record.get('career', ''))
+    }
 
 if __name__ == '__main__':
     print(f"Classic Traveller Character Generator starting with seed: {GLOBAL_SEED}")

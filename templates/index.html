@@ -22,6 +22,11 @@
                     <button class="btn" id="create-character-btn">Create Character</button>
                 </div>
                 
+                <!-- Enlist -->
+                <div class="section" id="enlist-section" style="display: none;">
+                    <button class="btn btn-success" id="enlist-btn">Enlist</button>
+                </div>
+                
                 <!-- Ageing & Reenlist -->
                 <div class="section" id="reenlist-section">
                     <div class="section-title">Reenlistment</div>
@@ -35,6 +40,11 @@
                 <div class="section" id="mustering-section">
                     <div class="section-title">Mustering Out</div>
                     <button class="btn" id="mustering-out-btn">Muster Out</button>
+                </div>
+                
+                <!-- Dice Roll Report -->
+                <div class="section">
+                    <button class="btn" id="dice-report-btn">Dice Roll Report</button>
                 </div>
                 
                 <!-- Delete Character -->
@@ -148,6 +158,17 @@
                         <div class="char-value" id="social-value">?</div>
                     </button>
                 </div>
+                
+                <!-- Service Metrics Panel (shown after characteristics are complete) -->
+                <div class="service-metrics-panel" id="service-metrics-panel" style="display: none;">
+                    <div class="metrics-header">
+                        <h3>Service Viability</h3>
+                        <p>Your character's chances in each service</p>
+                    </div>
+                    <div class="metrics-grid" id="enlistment-metrics-grid">
+                        <!-- Services will be dynamically sorted and colored by enlistment probability -->
+                    </div>
+                </div>
             </div>
             
             <!-- Actions Panel (shown during term activities) -->
@@ -243,6 +264,40 @@
         <!-- Right Bottom -->
         <div class="panel right-bottom">
             <div class="term-record">
+                <!-- Characteristics Display (shown during character generation) -->
+                <div class="characteristics-display" id="characteristics-display" style="display: none;">
+                    <div class="term-header">
+                        <div class="term-title">CHARACTER STATISTICS</div>
+                    </div>
+                    
+                    <div class="characteristics-grid-bottom">
+                        <div class="char-stat">
+                            <span class="char-stat-name">STR</span>
+                            <span class="char-stat-value" id="bottom-strength-value">-</span>
+                        </div>
+                        <div class="char-stat">
+                            <span class="char-stat-name">DEX</span>
+                            <span class="char-stat-value" id="bottom-dexterity-value">-</span>
+                        </div>
+                        <div class="char-stat">
+                            <span class="char-stat-name">END</span>
+                            <span class="char-stat-value" id="bottom-endurance-value">-</span>
+                        </div>
+                        <div class="char-stat">
+                            <span class="char-stat-name">INT</span>
+                            <span class="char-stat-value" id="bottom-intelligence-value">-</span>
+                        </div>
+                        <div class="char-stat">
+                            <span class="char-stat-name">EDU</span>
+                            <span class="char-stat-value" id="bottom-education-value">-</span>
+                        </div>
+                        <div class="char-stat">
+                            <span class="char-stat-name">SOC</span>
+                            <span class="char-stat-value" id="bottom-social-value">-</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Current Term Layout -->
                 <div class="term-display">
                     <div class="term-header">

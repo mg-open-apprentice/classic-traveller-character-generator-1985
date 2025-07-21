@@ -120,6 +120,68 @@ function getCharacteristicKey(abbrev) {
     return mapping[abbrev.toUpperCase()];
 }
 
+// Get color for stat value (2-12 range)
+function getStatColor(value) {
+    const colors = {
+        2: '#8B0000', 3: '#B22222', 4: '#DC143C',
+        5: '#FF4500', 6: '#FF8C00',
+        7: '#FFFF00', 8: '#ADFF2F',
+        9: '#32CD32', 10: '#228B22',
+        11: '#00CED1', 12: '#4169E1'
+    };
+    return colors[value] || '#666';
+}
+
+// Reveal characteristic with color and animation
+function revealCharacteristic(buttonId, statName, value) {
+    const button = document.getElementById(buttonId);
+    const valueElement = button.querySelector('.char-value');
+    
+    if (!button || !valueElement) {
+        console.error('Button or value element not found:', buttonId);
+        return;
+    }
+    
+    // Remove pre-roll state
+    button.classList.remove('pre-roll');
+    
+    // Set color based on value
+    const statColor = getStatColor(value);
+    button.style.setProperty('--stat-color', statColor);
+    button.style.borderColor = statColor;
+    button.style.color = statColor;
+    
+    // Reveal value with animation
+    valueElement.textContent = value;
+    button.classList.add('revealed');
+    
+    // Update UPP immediately
+    const charToUPPIndex = {
+        'strength': 0, 'dexterity': 1, 'endurance': 2,
+        'intelligence': 3, 'education': 4, 'social': 5
+    };
+    
+    if (statName in charToUPPIndex) {
+        const index = charToUPPIndex[statName];
+        const hexChar = value < 10 ? String(value) : String.fromCharCode(65 + value - 10);
+        updateUPPSlot(index, hexChar);
+    }
+    
+    // Update bottom panel characteristics display
+    updateBottomCharacteristics(statName, value);
+}
+
+// Update characteristics in bottom panel
+function updateBottomCharacteristics(charName, value) {
+    const bottomValueElement = document.getElementById(`bottom-${charName}-value`);
+    if (bottomValueElement) {
+        const statColor = getStatColor(value);
+        bottomValueElement.textContent = value;
+        bottomValueElement.style.color = statColor;
+        bottomValueElement.style.fontWeight = 'bold';
+    }
+}
+
 // Helper to update the UPP string in the UI
 function updateUPPSlot(index, hexChar) {
     let upp = document.getElementById('upp-string').textContent.split('');
@@ -191,6 +253,10 @@ document.getElementById('create-character-btn').onclick = function() {
             // Initialize character name display (no rank initially)
             await updateCharacterNameWithRank(data.name);
 
+            // Hide enlist button and bottom characteristics until complete
+            document.getElementById('enlist-section').style.display = 'none';
+            document.getElementById('characteristics-display').style.display = 'none';
+            
             // Show characteristics panel
             showCharacteristicsPanel();
 
@@ -210,15 +276,9 @@ function setupCharacteristicButton(btnId, charName) {
         })
         .then(res => res.json())
         .then(data => {
-            // Reveal the value in the button
-            const valueElement = document.getElementById(charName + '-value');
-            const button = document.getElementById(btnId);
-            
-            if (valueElement && button) {
-                valueElement.textContent = data.value;
-                button.classList.add('revealed');
-                button.style.pointerEvents = 'none'; // Disable further clicks
-            }
+            // Use the new reveal function with color and animation
+            revealCharacteristic(btnId, charName, data.value);
+            document.getElementById(btnId).style.pointerEvents = 'none'; // Disable further clicks
             
             remainingCharButtons--;
             
@@ -227,12 +287,11 @@ function setupCharacteristicButton(btnId, charName) {
                 document.getElementById('upp-string').textContent = data.upp;
             }
             
-            // If this was the last characteristic, transition to enlistment
+            // If this was the last characteristic, show Enlist button and metrics
             if (remainingCharButtons === 0) {
-                setTimeout(() => {
-                    hideCharacteristicsPanel();
-                    showEnlistmentProbabilities();
-                }, 1000); // Wait 1 second before transitioning
+                document.getElementById('enlist-section').style.display = 'block';
+                document.getElementById('characteristics-display').style.display = 'block';
+                showServiceMetrics();
                 
                 // Fetch available skill tables and show/hide skill buttons accordingly
                 fetch('/api/available_skill_tables')
@@ -261,6 +320,73 @@ setupCharacteristicButton('endurance-btn', 'endurance');
 setupCharacteristicButton('intelligence-btn', 'intelligence');
 setupCharacteristicButton('education-btn', 'education');
 setupCharacteristicButton('social-btn', 'social');
+
+// Show service metrics panel and fetch data from backend
+function showServiceMetrics() {
+    document.getElementById('service-metrics-panel').style.display = 'block';
+    
+    // Fetch enlistment metrics from backend
+    fetch('/api/enlistment_metrics', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.metrics) {
+                updateEnlistmentMetrics(data.metrics);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching enlistment metrics:', error);
+        });
+}
+
+// Update enlistment metrics display with sorting and color coding
+function updateEnlistmentMetrics(metrics) {
+    // Convert metrics to array and sort by enlistment percentage (best to worst)
+    const services = Object.entries(metrics).map(([key, data]) => ({
+        key: key,
+        name: data.service_name,
+        percentage: data.enlist_probability.percentage
+    })).sort((a, b) => b.percentage - a.percentage);
+    
+    // Get the metrics grid container
+    const gridContainer = document.getElementById('enlistment-metrics-grid');
+    gridContainer.innerHTML = ''; // Clear existing content
+    
+    // Apply characteristic color grammar based on ranking
+    services.forEach((service, index) => {
+        const color = getEnlistmentRankColor(index, services.length);
+        
+        const serviceElement = document.createElement('div');
+        serviceElement.className = 'metric-service';
+        serviceElement.innerHTML = `
+            <div class="service-name" style="color: ${color};">${service.name}</div>
+            <div class="metric-row">
+                <span class="metric-label">Enlist:</span>
+                <span class="metric-value" style="color: ${color}; font-weight: bold;">${service.percentage}%</span>
+            </div>
+        `;
+        
+        gridContainer.appendChild(serviceElement);
+    });
+}
+
+// Get color based on ranking (using characteristic color grammar)
+function getEnlistmentRankColor(rank, totalServices) {
+    // Map ranking to characteristic colors: best=blue, worst=red
+    const colors = ['#4169E1', '#00CED1', '#32CD32', '#FFFF00', '#FF8C00', '#8B0000']; // Blue to red
+    
+    if (rank < colors.length) {
+        return colors[rank];
+    }
+    
+    // Fallback for more than 6 services
+    return colors[colors.length - 1];
+}
+
+// Setup Enlist button
+document.getElementById('enlist-btn').onclick = function() {
+    hideCharacteristicsPanel();
+    showEnlistmentProbabilities();
+};
 
 function setupEnlistmentButton(btnId, serviceName) {
     document.getElementById(btnId).onclick = async function() {
@@ -730,12 +856,6 @@ function showSkillsPanelWithLayout(availableSkills) {
     const skillCount = Object.values(availableSkills).filter(Boolean).length;
     const skillsGrid = document.getElementById('skills-grid');
     
-    // Reset all buttons
-    document.getElementById('personal-skill-btn').style.display = 'none';
-    document.getElementById('service-skill-btn').style.display = 'none';
-    document.getElementById('advanced-skill-btn').style.display = 'none';
-    document.getElementById('education-skill-btn').style.display = 'none';
-    
     // Set grid layout based on skill count
     skillsGrid.className = 'skills-grid'; // Reset classes
     if (skillCount === 3) {
@@ -744,18 +864,17 @@ function showSkillsPanelWithLayout(availableSkills) {
         skillsGrid.classList.add('four-skills');
     }
     
-    // Show available skill buttons
-    if (availableSkills.personal) {
-        document.getElementById('personal-skill-btn').style.display = 'flex';
-    }
-    if (availableSkills.service) {
-        document.getElementById('service-skill-btn').style.display = 'flex';
-    }
-    if (availableSkills.advanced) {
-        document.getElementById('advanced-skill-btn').style.display = 'flex';
-    }
+    // Show all available skill buttons (keep them visible during skill selection)
+    // Always show the basic three tables
+    document.getElementById('personal-skill-btn').style.display = 'flex';
+    document.getElementById('service-skill-btn').style.display = 'flex';
+    document.getElementById('advanced-skill-btn').style.display = 'flex';
+    
+    // Show education table only if character qualifies (Education 8+)
     if (availableSkills.education) {
         document.getElementById('education-skill-btn').style.display = 'flex';
+    } else {
+        document.getElementById('education-skill-btn').style.display = 'none';
     }
 }
 
@@ -796,11 +915,21 @@ function showCharacteristicsPanel() {
     // Reset remaining button count
     remainingCharButtons = 6;
     
-    // Reset all buttons to unrevealed state
-    const characteristicButtons = document.querySelectorAll('.characteristic-btn');
-    characteristicButtons.forEach(button => {
-        button.classList.remove('revealed');
-        button.style.pointerEvents = 'auto';
+    // Hide enlist button until all characteristics are revealed
+    document.getElementById('enlist-section').style.display = 'none';
+    
+    // Reset all buttons to unrevealed state and add pre-roll animation
+    document.querySelectorAll('.characteristic-btn').forEach(btn => {
+        btn.classList.remove('revealed');
+        btn.classList.add('pre-roll');
+        btn.style.removeProperty('--stat-color');
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.pointerEvents = 'auto';
+        const valueElement = btn.querySelector('.char-value');
+        if (valueElement) {
+            valueElement.textContent = '?';
+        }
     });
     
     // Reset all values to ?
@@ -2319,5 +2448,25 @@ document.getElementById('ageing-btn').onclick = function() {
         } else {
             alert(data.error || 'Ageing check failed.');
         }
+    });
+};
+
+// Dice Roll Report functionality
+document.getElementById('dice-report-btn').onclick = function() {
+    fetch('/api/dice_roll_report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Dice roll report saved successfully!\n\nFile: ${data.filename}\nLocation: ${data.path}`);
+        } else {
+            alert(data.error || 'Failed to generate dice roll report.');
+        }
+    })
+    .catch(error => {
+        console.error('Error generating dice roll report:', error);
+        alert('Error generating dice roll report.');
     });
 };
