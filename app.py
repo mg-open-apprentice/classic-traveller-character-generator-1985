@@ -303,14 +303,8 @@ def api_resolve_skill():
     ageing_report = None
     available_options = None
     
-    # Check if ageing should be triggered
-    if current_character.get("ready_for_ageing", False):
-        rng = chargen.get_random_generator(current_character)
-        current_character = chargen.check_ageing(rng, current_character)
-        chargen.save_random_state(current_character, rng)
-        save_character_to_file()
-        ageing_events = [e for e in current_character.get('career_history', []) if e.get('event_type') == 'ageing_check']
-        ageing_report = ageing_events[-1] if ageing_events else None
+    # REMOVED: Automatic ageing - ageing should only happen when player clicks Ageing button
+    ageing_report = None
     
     # Always get available reenlistment options after skills are resolved
     # This ensures reenlistment options are available whether ageing was just completed or not
@@ -456,6 +450,33 @@ def api_calculate_probability():
     except (ValueError, TypeError):
         return jsonify({"success": False, "error": "Invalid target or modifiers"}), 400
 
+@app.route('/api/career_survival', methods=['POST'])
+def api_career_survival():
+    data = request.get_json() or {}
+    service = data.get('service')
+    characteristics = data.get('characteristics', {})
+    num_terms = data.get('num_terms', 1)
+    
+    if not service:
+        return jsonify({"success": False, "error": "Service required"}), 400
+    
+    if service not in ['Navy', 'Marines', 'Army', 'Scouts', 'Merchants', 'Others']:
+        return jsonify({"success": False, "error": "Invalid service"}), 400
+    
+    try:
+        num_terms = int(num_terms)
+        if num_terms < 1:
+            return jsonify({"success": False, "error": "Number of terms must be at least 1"}), 400
+        
+        survival_data = chargen.career_survival(service, characteristics, num_terms)
+        
+        return jsonify({
+            "success": True,
+            "survival_data": survival_data
+        })
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "error": "Invalid parameters"}), 400
+
 @app.route('/api/enlistment_probabilities', methods=['POST'])
 def api_enlistment_probabilities():
     global current_character
@@ -524,6 +545,70 @@ def api_dice_roll_report():
             "path": csv_path,
             "message": f"Dice roll report saved to {csv_path}"
         })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/current_character', methods=['GET'])
+def api_current_character():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    return jsonify({
+        "success": True,
+        "character": current_character
+    })
+
+@app.route('/api/action_probability', methods=['POST'])
+def api_action_probability():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    data = request.get_json() or {}
+    action_type = data.get('action_type')
+    
+    if not action_type:
+        return jsonify({"success": False, "error": "Action type not specified"}), 400
+    
+    # DEBUG: Log character state
+    print(f"[DEBUG] Action: {action_type}")
+    print(f"[DEBUG] Character commissioned: {current_character.get('commissioned')}")
+    print(f"[DEBUG] Character career: {current_character.get('career')}")
+    print(f"[DEBUG] Character rank: {current_character.get('rank')}")
+    
+    try:
+        if action_type == 'commission':
+            # Use Python rules to get commission requirements
+            target, modifiers, modifier_details = chargen.get_commission_requirements(current_character)
+        elif action_type == 'promotion':
+            # Use Python rules to get promotion requirements  
+            target, modifiers, modifier_details = chargen.get_promotion_requirements(current_character)
+        elif action_type == 'survival':
+            # Use Python rules to get survival requirements
+            target, modifiers, modifier_details = chargen.get_survival_requirements(current_character)
+        else:
+            return jsonify({"success": False, "error": "Invalid action type"}), 400
+        
+        # Check if action is eligible (target is not None)
+        if target is None:
+            return jsonify({
+                "success": False,
+                "error": "Action not available",
+                "reason": modifier_details[0] if modifier_details else "Not eligible"
+            })
+        
+        # Calculate probability using Python backend
+        probability_data = chargen.calculate_success_probability(target, modifiers)
+        
+        return jsonify({
+            "success": True,
+            "target": target,
+            "modifiers": modifiers,
+            "modifier_details": modifier_details,
+            "probability": probability_data
+        })
+        
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 

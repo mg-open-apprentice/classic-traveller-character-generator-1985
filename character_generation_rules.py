@@ -594,6 +594,134 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
     
     return character_record
 
+def get_survival_requirements(character_record: dict[str, Any]) -> tuple[int, int, list[str]]:
+    """
+    Get survival requirements for a character without rolling dice.
+    
+    Args:
+        character_record: The character's record
+        
+    Returns:
+        Tuple of (target, modifiers, modifier_details)
+    """
+    # Get career and characteristics
+    career = character_record["career"]
+    characteristics = character_record.get("characteristics", {})
+    
+    # Get survival target number
+    target = tables.SURVIVAL_TARGETS[career]
+    
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.SURVIVAL_BONUSES[career]
+    
+    # Calculate modifiers based on characteristics
+    modifier = 0
+    modifier_details = []
+    
+    # Apply modifiers based on characteristics
+    for char, req, bonus in career_bonuses:
+        if characteristics.get(char, 0) >= req:
+            modifier += bonus
+            modifier_details.append(f"{char.capitalize()} {characteristics.get(char, 0)}≥{req} (+{bonus})")
+    
+    return target, modifier, modifier_details
+
+def get_commission_requirements(character_record: dict[str, Any]) -> tuple[int, int, list[str]]:
+    """
+    Get commission requirements for a character without rolling dice.
+    
+    Args:
+        character_record: The character's record
+        
+    Returns:
+        Tuple of (target, modifiers, modifier_details)
+        Returns (None, None, []) if character is not eligible for commission
+    """
+    # Get career and characteristics
+    career = character_record["career"]
+    characteristics = character_record.get("characteristics", {})
+    
+    # Check if character is already commissioned (can only happen once in a career)
+    if character_record.get("commissioned", False):
+        return None, None, ["Already commissioned"]
+    
+    # Check if character is eligible for commission
+    if career in ['Scouts', 'Others']:
+        return None, None, [f"{career} does not have commissions"]
+    
+    current_term_number = get_current_term_number(character_record)
+    if character_record.get("drafted", False) and current_term_number == 1:
+        return None, None, ["Drafted characters cannot be commissioned in first term"]
+    
+    # Get commission target number
+    target = tables.COMMISSION_TARGETS[career]
+    
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.COMMISSION_BONUSES[career]
+    
+    # Calculate modifiers based on characteristics
+    modifier = 0
+    modifier_details = []
+    
+    # Apply modifiers based on characteristics
+    for char, req, bonus in career_bonuses:
+        if characteristics.get(char, 0) >= req:
+            modifier += bonus
+            modifier_details.append(f"{char.capitalize()} {characteristics.get(char, 0)}≥{req} (+{bonus})")
+    
+    return target, modifier, modifier_details
+
+def get_promotion_requirements(character_record: dict[str, Any]) -> tuple[int, int, list[str]]:
+    """
+    Get promotion requirements for a character without rolling dice.
+    
+    Args:
+        character_record: The character's record
+        
+    Returns:
+        Tuple of (target, modifiers, modifier_details)
+        Returns (None, None, []) if character is not eligible for promotion
+    """
+    # Get career and characteristics
+    career = character_record["career"]
+    characteristics = character_record.get("characteristics", {})
+    current_rank = character_record.get("rank", 0)
+    
+    # Check if character is eligible for promotion
+    # Book 1 Rule: Only commissioned officers can be promoted
+    # Non-commissioned characters (Rank 0) have no enlisted ranks to promote to
+    
+    # First check: Must be commissioned to be eligible for promotion
+    if not character_record.get("commissioned", False):
+        return None, None, ["Non-commissioned characters cannot be promoted (must obtain commission first)"]
+    
+    if career in ['Scouts', 'Others']:
+        return None, None, [f"{career} does not have promotions"]
+    
+    # Check for maximum rank limits
+    max_rank = tables.MAX_RANKS[career]
+    
+    if current_rank >= max_rank:
+        return None, None, [f"Character has reached maximum rank ({max_rank}) for {career}"]
+    
+    # Get promotion target number
+    target = tables.PROMOTION_TARGETS[career]
+    
+    # Get characteristic bonuses for this career
+    career_bonuses = tables.PROMOTION_BONUSES[career]
+    
+    # Calculate modifiers based on characteristics
+    modifier = 0
+    modifier_details = []
+    
+    # Apply modifiers based on characteristics
+    for char, req, bonus in career_bonuses:
+        if characteristics.get(char, 0) >= req:
+            modifier += bonus
+            modifier_details.append(f"{char.capitalize()} {characteristics.get(char, 0)}≥{req} (+{bonus})")
+    
+    return target, modifier, modifier_details
+
 def attempt_reenlistment(random_generator: random.Random, character_record: dict[str, Any], preference: str = 'reenlist') -> dict[str, Any]:
     """
     Attempt to reenlist a character for another term of service
@@ -1471,6 +1599,65 @@ def calculate_success_probability(target, modifiers=0):
     percentage = round((successful / 36) * 100)
     
     return {"percentage": percentage, "description": f"{percentage}%"}
+
+def career_survival(service: str, characteristics: dict[str, int], num_terms: int) -> dict[str, Any]:
+    """
+    Calculate probability of completing a full career (survival + re-enlistment).
+    
+    Args:
+        service: The service name (Navy, Marines, Army, Scouts, Merchants, Others)
+        characteristics: Character characteristics dict (e.g., {'intelligence': 8, 'endurance': 9})
+        num_terms: Number of terms to complete
+    
+    Returns:
+        dict: Contains career completion probability and breakdown
+    """
+    # Get survival target and bonuses for this service
+    survival_target = tables.SURVIVAL_TARGETS[service]
+    career_bonuses = tables.SURVIVAL_BONUSES[service]
+    
+    # Calculate survival modifiers based on characteristics
+    survival_modifier = 0
+    modifier_details = []
+    
+    for char, req, bonus in career_bonuses:
+        if characteristics.get(char, 0) >= req:
+            survival_modifier += bonus
+            char_name = char.capitalize()
+            modifier_details.append(f"{char_name} {characteristics[char]}≥{req} (+{bonus})")
+    
+    # Calculate single-term survival probability
+    survival_prob_data = calculate_success_probability(survival_target, survival_modifier)
+    survival_percentage = survival_prob_data["percentage"] / 100
+    
+    # Get re-enlistment target (no modifiers in Classic Traveller)
+    reenlist_target = tables.REENLISTMENT_TARGETS[service]
+    reenlist_prob_data = calculate_success_probability(reenlist_target, 0)
+    reenlist_percentage = reenlist_prob_data["percentage"] / 100
+    
+    # For N terms: N survival rolls + (N-1) re-enlistment rolls
+    # Each term requires: survival AND re-enlistment (except the last term)
+    if num_terms == 1:
+        # Only need to survive 1 term, no re-enlistment needed
+        career_probability = survival_percentage
+    else:
+        # Terms 1 through N-1: must survive AND re-enlist
+        # Term N: must survive only
+        terms_with_reenlist = survival_percentage * reenlist_percentage
+        final_term = survival_percentage
+        
+        career_probability = (terms_with_reenlist ** (num_terms - 1)) * final_term
+    
+    career_percentage = round(career_probability * 100, 2)
+    
+    return {
+        "service": service,
+        "num_terms": num_terms,
+        "survival_probability": round(survival_percentage * 100, 1),
+        "reenlist_probability": round(reenlist_percentage * 100, 1),
+        "career_probability": career_percentage,
+        "description": f"{career_percentage}% chance to complete {num_terms} terms"
+    }
 
 def get_enlistment_requirements(service: str, character_record: dict[str, Any]) -> Tuple[int, int, List[str]]:
     """
