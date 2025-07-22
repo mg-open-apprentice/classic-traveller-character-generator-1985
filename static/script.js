@@ -22,6 +22,18 @@ function disableButton(buttonId) {
     }
 }
 
+function completeButton(buttonId) {
+    // For survival/promotion buttons - make them green when completed
+    const btn = document.getElementById(buttonId);
+    if (btn) {
+        btn.style.backgroundColor = '#4f8';  // success green
+        btn.style.color = '#000';  // dark text on green background
+        btn.style.opacity = '0.8';
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
 function enableButton(buttonId) {
     const btn = document.getElementById(buttonId);
     if (btn) {
@@ -164,14 +176,29 @@ function showPromotionButton() {
 
 function showSkillsButton(characterData) {
     const skillEligibility = characterData.skill_eligibility || 0;
+    const btn = document.getElementById('left-skills-btn');
+    
     if (skillEligibility > 0) {
-        document.getElementById('left-skills-btn').style.display = 'block';
-        // Reset button state
-        const btn = document.getElementById('left-skills-btn');
+        btn.style.display = 'block';
+        // Reset button state - active
         btn.style.backgroundColor = '';
         btn.style.color = '';
+        btn.style.opacity = '1';
         btn.disabled = false;
-        btn.style.cursor = '';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.style.display = 'block';
+        // Completed state - use same green as survival/promotion
+        btn.style.backgroundColor = '#4f8';  // success green
+        btn.style.color = '#000';  // dark text on green background
+        btn.style.opacity = '0.8';
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+        
+        // Auto-advance to ageing after short delay
+        setTimeout(() => {
+            showAgeingButton();
+        }, 1500);
     }
 }
 
@@ -503,9 +530,9 @@ function setupCharacteristicButton(btnId, charName) {
                         if (data.success && data.available_tables) {
                             const available = data.available_tables;
                             document.getElementById('personal-skill-btn').style.display = available.personal ? 'block' : 'none';
-                            document.getElementById('service-skill-btn').style.display = available.service ? 'block' : 'none';
-                            document.getElementById('advanced-skill-btn').style.display = available.advanced ? 'block' : 'none';
-                            document.getElementById('education-skill-btn').style.display = available.education ? 'block' : 'none';
+                            // document.getElementById('service-skill-btn').style.display = available.service ? 'block' : 'none'; // Button removed
+                            // document.getElementById('advanced-skill-btn').style.display = available.advanced ? 'block' : 'none'; // Button removed
+                            // document.getElementById('education-skill-btn').style.display = available.education ? 'block' : 'none'; // Button removed
                             // Optionally show the skills section if at least one is available
                             const anyAvailable = available.personal || available.service || available.advanced || available.education;
                             const skillsSection = getSkillsSection();
@@ -833,9 +860,9 @@ function setupActionButton(btnId, actionType) {
                             if (tableData.success && tableData.available_tables) {
                                 const available = tableData.available_tables;
                                 document.getElementById('personal-skill-btn').style.display = available.personal ? 'block' : 'none';
-                                document.getElementById('service-skill-btn').style.display = available.service ? 'block' : 'none';
-                                document.getElementById('advanced-skill-btn').style.display = available.advanced ? 'block' : 'none';
-                                document.getElementById('education-skill-btn').style.display = available.education ? 'block' : 'none';
+                                // document.getElementById('service-skill-btn').style.display = available.service ? 'block' : 'none'; // Button removed
+                                // document.getElementById('advanced-skill-btn').style.display = available.advanced ? 'block' : 'none'; // Button removed
+                                // document.getElementById('education-skill-btn').style.display = available.education ? 'block' : 'none'; // Button removed
                                 
                                 const anyAvailable = available.personal || available.service || available.advanced || available.education;
                                 const skillsSection = getSkillsSection();
@@ -999,30 +1026,28 @@ function showSkillsPanelWithLayout(availableSkills) {
     // Show the skills panel
     showSkillsPanel();
     
-    // Count available skills
-    const skillCount = Object.values(availableSkills).filter(Boolean).length;
+    // Keep skills grid simple and static
     const skillsGrid = document.getElementById('skills-grid');
     
-    // Set grid layout based on skill count
-    skillsGrid.className = 'skills-grid'; // Reset classes
-    if (skillCount === 3) {
-        skillsGrid.classList.add('three-skills');
-    } else if (skillCount === 4) {
-        skillsGrid.classList.add('four-skills');
-    }
+    // Show all skill buttons but disable unavailable ones
+    const skillButtons = [
+        { id: 'personal-skill-btn', available: availableSkills.personal },
+        { id: 'service-skill-btn', available: availableSkills.service },
+        { id: 'advanced-skill-btn', available: availableSkills.advanced },
+        { id: 'education-skill-btn', available: availableSkills.education }
+    ];
     
-    // Show all available skill buttons (keep them visible during skill selection)
-    // Always show the basic three tables
-    document.getElementById('personal-skill-btn').style.display = 'flex';
-    document.getElementById('service-skill-btn').style.display = 'flex';
-    document.getElementById('advanced-skill-btn').style.display = 'flex';
-    
-    // Show education table only if character qualifies (Education 8+)
-    if (availableSkills.education) {
-        document.getElementById('education-skill-btn').style.display = 'flex';
-    } else {
-        document.getElementById('education-skill-btn').style.display = 'none';
-    }
+    skillButtons.forEach(({ id, available }) => {
+        const btn = document.getElementById(id);
+        btn.style.display = '';
+        btn.disabled = !available;
+        
+        if (available) {
+            btn.classList.remove('btn-disabled');
+        } else {
+            btn.classList.add('btn-disabled');
+        }
+    });
 }
 
 // Function to show reenlistment options
@@ -1573,18 +1598,28 @@ async function getRankTitle() {
 
 function setupSkillButton(btnId, tableChoice) {
     document.getElementById(btnId).onclick = function() {
+        console.log('Personal skills button clicked!');
         // Hide skills panel and show event panel with skill result
         hideSkillsPanel();
         
+        console.log('Sending skill request with table choice:', tableChoice);
         fetch('/api/resolve_skill', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({table_choice: tableChoice})
         })
-        .then(res => res.json())
+        .then(res => {
+            console.log('Skill API response received:', res.status);
+            return res.json();
+        })
         .then(data => {
+            console.log('Skill data received:', data);
             if (data.success && data.skill_event) {
-                // Skill resolved - no longer show old event display
+                // Show what skill was gained
+                const skill = data.skill_event.skill_gained || data.skill_event.result_type || 'Unknown skill';
+                console.log('About to show skill popup:', skill);
+                alert(`Skill gained: ${skill}`);
+                
                 // Update skill eligibility counter
                 if (data.skill_eligibility !== undefined) {
                     document.getElementById('top-skill-eligibility').textContent = data.skill_eligibility;
@@ -1658,16 +1693,10 @@ function setupSkillButton(btnId, tableChoice) {
 }
 
 // Legacy sidebar skill buttons (commented out)
-/*setupSkillButton('personal-skill-btn', 'personal');
-setupSkillButton('service-skill-btn', 'service');
-setupSkillButton('advanced-skill-btn', 'advanced');
-setupSkillButton('education-skill-btn', 'education');*/
 
 // New skills panel buttons
 setupSkillButton('personal-skill-btn', 'personal');
-setupSkillButton('service-skill-btn', 'service');
-setupSkillButton('advanced-skill-btn', 'advanced');
-setupSkillButton('education-skill-btn', 'education'); 
+setupSkillButton('service-skill-btn', 'service'); 
 
 function updateReenlistmentButtons(character, availableOptions) {
     const reenlistBtn = document.getElementById('reenlist-btn');
@@ -2705,9 +2734,33 @@ document.getElementById('dice-report-btn').onclick = function() {
 
 // Left panel term action buttons
 document.getElementById('left-survival-btn').onclick = function() {
-    document.getElementById('actions-panel').style.display = 'block';
+    console.log('Left survival button clicked!');
+    console.log('Actions panel element:', document.getElementById('actions-panel'));
+    
+    // Hide all other panels first
     document.getElementById('event-panel').style.display = 'none';
-    document.getElementById('survival-action-btn').style.display = 'block';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('skills-panel').style.display = 'none';
+    
+    // Show the actions panel
+    const actionsPanel = document.getElementById('actions-panel');
+    if (actionsPanel) {
+        actionsPanel.style.display = 'flex';
+        console.log('Set actions panel to flex');
+    } else {
+        console.error('Actions panel not found!');
+    }
+    
+    const survivalBtn = document.getElementById('survival-action-btn');
+    if (survivalBtn) {
+        survivalBtn.style.display = 'block';
+        console.log('Set survival button to block');
+    } else {
+        console.error('Survival action button not found!');
+    }
+    
+    console.log('Actions panel should now be visible!');
 };
 
 // Middle panel survival action button
@@ -2722,8 +2775,8 @@ document.getElementById('survival-action-btn').onclick = function() {
             // Hide the survival action button after it's clicked
             document.getElementById('survival-action-btn').style.display = 'none';
             
-            // Disable the left panel survival button
-            disableButton('left-survival-btn');
+            // Mark the left panel survival button as completed (green)
+            completeButton('left-survival-btn');
             
             // Show outcome text
             const outcome = data.survival_result?.outcome || 'survived';
@@ -2858,8 +2911,8 @@ document.getElementById('promotion-action-btn').onclick = async function() {
             // Hide the promotion action button after it's clicked
             document.getElementById('promotion-action-btn').style.display = 'none';
             
-            // Disable the left panel promotion button
-            disableButton('left-promotion-btn');
+            // Mark the left panel promotion button as completed (green)
+            completeButton('left-promotion-btn');
             
             // Show outcome text
             const success = data.promotion_result?.success || false;
@@ -2946,23 +2999,37 @@ document.getElementById('left-skills-btn').onclick = function() {
 
 // Function to show available skill tables
 function showAvailableSkillTables(availableTables) {
-    // Hide all skill buttons first
-    document.getElementById('personal-skill-btn').style.display = 'none';
-    document.getElementById('service-skill-btn').style.display = 'none';
-    document.getElementById('advanced-skill-btn').style.display = 'none';
-    document.getElementById('education-skill-btn').style.display = 'none';
+    // Define all skill table buttons
+    const allSkillButtons = [
+        { id: 'personal-skill-btn', table: 'personal' },
+        { id: 'service-skill-btn', table: 'service' },
+        { id: 'advanced-skill-btn', table: 'advanced' },
+        { id: 'education-skill-btn', table: 'education' }
+    ];
     
-    // Show only available skill table buttons and set up click handlers
-    availableTables.forEach(table => {
-        const tableId = table.toLowerCase() + '-skill-btn';
-        const button = document.getElementById(tableId);
+    // Show all buttons and configure based on availability
+    allSkillButtons.forEach(({ id, table }) => {
+        const button = document.getElementById(id);
         if (button) {
             button.style.display = 'block';
             
-            // Set up click handler to resolve skill from this table
-            button.onclick = function() {
-                resolveSkillFromTable(table.toLowerCase());
-            };
+            const isAvailable = availableTables.includes(table);
+            
+            if (isAvailable) {
+                // Available button - normal styling and active click handler
+                button.style.opacity = '1';
+                button.style.cursor = 'pointer';
+                button.disabled = false;
+                button.onclick = function() {
+                    resolveSkillFromTable(table.toLowerCase());
+                };
+            } else {
+                // Unavailable button - greyed out and inactive
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+                button.disabled = true;
+                button.onclick = null;
+            }
         }
     });
 }
@@ -2994,17 +3061,27 @@ function resolveSkillFromTable(tableName) {
                 const remainingEligibility = data.character.skill_eligibility || 0;
                 
                 if (remainingEligibility <= 0) {
-                    // No more skills available - hide the skills panel
+                    // No more skills available - hide the skills panel and complete skills button
                     document.getElementById('skills-panel').style.display = 'none';
+                    
+                    // Complete the skills button with green styling
+                    completeButton('left-skills-btn');
+                    
+                    // Auto-advance to ageing after short delay
+                    setTimeout(() => {
+                        showAgeingButton();
+                    }, 2000);
                 } else {
                     // Update header with new count and keep panel open
                     updateSkillsHeader(remainingEligibility);
                 }
             }
             
-            // Show what skill was gained
+            // Show outcome text for skill gained
             if (data.skill_event && data.skill_event.skill_gained) {
-                console.log('Skill gained:', data.skill_event.skill_gained);
+                const skillGained = data.skill_event.skill_gained;
+                const outcomeText = `Skill Development: Gained ${skillGained} skill!`;
+                updateOutcomeText(outcomeText);
             }
         } else {
             alert(data.error || 'Skill resolution failed.');
@@ -3018,15 +3095,118 @@ function resolveSkillFromTable(tableName) {
 
 // Left panel reenlist button
 document.getElementById('left-reenlist-btn').onclick = function() {
-    // Call reenlistment API with preference to continue
+    // Show the actions panel with reenlistment options
+    document.getElementById('actions-panel').style.display = 'block';
+    
+    // Hide other panels
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('skills-panel').style.display = 'none';
+    
+    // Create and show reenlistment action buttons (reenlist, discharge, retire)
+    const actionsGrid = document.querySelector('.actions-grid');
+    
+    // Clear existing action buttons
+    actionsGrid.innerHTML = '';
+    
+    // Create reenlist option
+    const reenlistBtn = document.createElement('button');
+    reenlistBtn.className = 'action-btn';
+    reenlistBtn.id = 'reenlist-action-btn';
+    reenlistBtn.innerHTML = '<div class="action-name">Reenlist</div><div class="action-probability" id="reenlist-action-prob">Calculating...</div>';
+    actionsGrid.appendChild(reenlistBtn);
+    
+    // Create discharge option
+    const dischargeBtn = document.createElement('button');
+    dischargeBtn.className = 'action-btn';
+    dischargeBtn.id = 'discharge-action-btn';
+    dischargeBtn.innerHTML = '<div class="action-name">Discharge</div><div class="action-probability" id="discharge-action-prob">Calculating...</div>';
+    actionsGrid.appendChild(dischargeBtn);
+    
+    // Fetch and display reenlistment probabilities
+    fetch('/api/action_probability', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action_type: 'reenlist'})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && data.probability) {
+            document.getElementById('reenlist-action-prob').textContent = data.probability.percentage + '%';
+        } else {
+            document.getElementById('reenlist-action-prob').textContent = 'Error';
+        }
+    });
+    
+    // For discharge, it's 11/12 chance of success (91.67%)
+    document.getElementById('discharge-action-prob').textContent = '91.67%';
+    
+    // Check current term number to show retire option if applicable
+    fetch('/api/current_character')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.character) {
+                const termNumber = data.character.terms_served || 0;
+                
+                // Show retire option if in 5th+ term
+                if (termNumber >= 4) {  // 4+ terms_served means 5th+ term
+                    const retireBtn = document.createElement('button');
+                    retireBtn.className = 'action-btn';
+                    retireBtn.id = 'retire-action-btn';
+                    retireBtn.innerHTML = '<div class="action-name">Retire</div><div class="action-probability" id="retire-action-prob">91.67%</div>';
+                    actionsGrid.appendChild(retireBtn);
+                    
+                    // Set up retire button handler
+                    retireBtn.onclick = function() {
+                        processReenlistmentChoice('retire');
+                    };
+                }
+            }
+        });
+    
+    // Set up click handlers for reenlist and discharge buttons
+    reenlistBtn.onclick = function() {
+        processReenlistmentChoice('reenlist');
+    };
+    
+    dischargeBtn.onclick = function() {
+        processReenlistmentChoice('discharge');
+    };
+}
+
+// Function to process reenlistment choice
+function processReenlistmentChoice(preference) {
+    // Call reenlistment API with selected preference
     fetch('/api/reenlist', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({preference: 'reenlist'})
+        body: JSON.stringify({preference: preference})
     })
     .then(res => res.json())
     .then(data => {
         if (data.success) {
+            // Hide action buttons after processing
+            const actionsGrid = document.querySelector('.actions-grid');
+            actionsGrid.innerHTML = '';
+            
+            // Mark the left reenlist button as completed (green)
+            completeButton('left-reenlist-btn');
+            
+            // Show outcome text for reenlistment
+            if (data.reenlistment_result) {
+                const result = data.reenlistment_result;
+                const roll = result.roll || 'N/A';
+                const target = result.target || 'N/A';
+                const outcome = result.status_text || result.outcome || 'unknown';
+                const preference = result.preference || 'unknown';
+                
+                const outcomeText = roll !== 'N/A' 
+                    ? `Reenlistment (${preference}): Rolled ${roll} vs target ${target} - ${outcome.charAt(0).toUpperCase() + outcome.slice(1)}!`
+                    : `Reenlistment: ${outcome.charAt(0).toUpperCase() + outcome.slice(1)}!`;
+                updateOutcomeText(outcomeText);
+            }
+            
             // Update character display
             if (data.character) {
                 updateTermPanel(data.character);
@@ -3052,8 +3232,6 @@ document.getElementById('left-reenlist-btn').onclick = function() {
         console.error('Error during reenlistment:', error);
         alert('Error during reenlistment.');
     });
-    
-    // Gray out reenlist button
 };
 
 // Leave button - triggers mustering out
@@ -3152,6 +3330,14 @@ document.getElementById('left-ageing-btn').onclick = function() {
                 if (data.success) {
                     // Hide the ageing action button after it's clicked
                     document.getElementById('ageing-action-btn').style.display = 'none';
+                    
+                    // Complete the left ageing button with green styling
+                    completeButton('left-ageing-btn');
+                    
+                    // Show outcome text for ageing
+                    const ageIncreased = data.age_increased || 4;
+                    const outcomeText = `Ageing Check: Aged ${ageIncreased} years`;
+                    updateOutcomeText(outcomeText);
                     
                     // Update character display and panels
                     if (data.character) {

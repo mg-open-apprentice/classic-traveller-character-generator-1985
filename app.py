@@ -587,6 +587,14 @@ def api_action_probability():
         elif action_type == 'survival':
             # Use Python rules to get survival requirements
             target, modifiers, modifier_details = chargen.get_survival_requirements(current_character)
+        elif action_type == 'reenlist':
+            # Use Python rules to get reenlistment requirements
+            career = current_character.get('career')
+            if not career:
+                return jsonify({"success": False, "error": "Character has no career"}), 400
+            target = chargen.tables.REENLISTMENT_TARGETS[career]
+            modifiers = 0  # No modifiers for reenlistment in Classic Traveller
+            modifier_details = [f"Reenlistment target for {career}"]
         else:
             return jsonify({"success": False, "error": "Invalid action type"}), 400
         

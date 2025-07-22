@@ -875,21 +875,13 @@ body {
 }
 
 .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: 1fr;
-    gap: var(--space-md);
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-rows: 1fr !important;
+    gap: var(--space-md) !important;
     flex: 1;
-}
-
-.skills-grid.three-skills {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 1fr;
-}
-
-.skills-grid.four-skills {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    width: 100%;
+    min-height: 120px;
 }
 
 .skill-btn {
@@ -951,42 +943,6 @@ body {
     visibility: hidden;
 }
 
-/* Mobile adjustments for skills */
-@media (max-width: 768px) {
-    .skills-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--space-sm);
-    }
-    
-    .skills-grid.three-skills {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-    }
-    
-    .skills-grid.four-skills {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-    }
-    
-    .skill-btn {
-        min-height: 70px;
-        padding: var(--space-sm);
-    }
-}
-
-@media (max-width: 480px) {
-    .skill-btn {
-        min-height: 60px;
-    }
-    
-    .skill-name {
-        font-size: 11px;
-    }
-    
-    .skill-description {
-        font-size: 9px;
-    }
-}
 
 /* Enlistment Panel Styles */
 .enlistment-panel {
