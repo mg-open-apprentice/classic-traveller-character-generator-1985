@@ -449,7 +449,8 @@ document.getElementById('create-character-btn').onclick = function() {
     fetch('/api/create_character', {method: 'POST'})
         .then(res => res.json())
         .then(async data => {
-            // Display the generated name as the third item in the top line
+            // Store the original character name and display it
+            originalCharacterName = data.name;
             document.getElementById('char-name').textContent = data.name;
             document.getElementById('char-age').textContent = 'Age: ' + data.age;
             document.getElementById('char-terms').textContent = 'Terms: ' + data.terms_served;
@@ -494,7 +495,6 @@ function setupCharacteristicButton(btnId, charName) {
             if (remainingCharButtons === 0) {
                 document.getElementById('enlist-section').style.display = 'block';
                 document.getElementById('characteristics-display').style.display = 'block';
-                showServiceMetrics();
                 
                 // Fetch available skill tables and show/hide skill buttons accordingly
                 fetch('/api/available_skill_tables')
@@ -525,21 +525,7 @@ setupCharacteristicButton('education-btn', 'education');
 setupCharacteristicButton('social-btn', 'social');
 
 // Show service metrics panel and fetch data from backend
-function showServiceMetrics() {
-    document.getElementById('service-metrics-panel').style.display = 'block';
-    
-    // Fetch enlistment probabilities from backend
-    fetch('/api/enlistment_probabilities', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success && data.probabilities) {
-                updateEnlistmentMetrics(data.probabilities);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching enlistment metrics:', error);
-        });
-}
+// REMOVED: showServiceMetrics function - duplicate of enlistment panel
 
 // Update enlistment metrics display with sorting and color coding
 function updateEnlistmentMetrics(metrics) {
@@ -573,17 +559,7 @@ function updateEnlistmentMetrics(metrics) {
 }
 
 // Get color based on ranking (using characteristic color grammar)
-function getEnlistmentRankColor(rank, totalServices) {
-    // Map ranking to characteristic colors: best=blue, worst=red
-    const colors = ['#4169E1', '#00CED1', '#32CD32', '#FFFF00', '#FF8C00', '#8B0000']; // Blue to red
-    
-    if (rank < colors.length) {
-        return colors[rank];
-    }
-    
-    // Fallback for more than 6 services
-    return colors[colors.length - 1];
-}
+// REMOVED: getEnlistmentRankColor function - no longer needed
 
 // Setup Enlist button
 document.getElementById('enlist-btn').onclick = function() {
@@ -1241,8 +1217,8 @@ async function updateRankDisplay(rank) {
         if (response.ok) {
             const data = await response.json();
             if (data.success && data.rank_title) {
-                // Update rank title display
-                document.getElementById('char-rank-number').textContent = data.rank_title;
+                // Only show rank title in character name, clear the separate rank display
+                document.getElementById('char-rank-number').textContent = '';
                 
                 // Update character name with rank prefix if commissioned (rank > 0)
                 updateCharacterNameWithRank(data.rank_title, data.rank > 0);
@@ -1262,18 +1238,23 @@ async function updateRankDisplay(rank) {
     }
 }
 
+// Store the original character name globally to avoid overwriting issues
+let originalCharacterName = '';
+
 function updateCharacterNameWithRank(rankTitle, isCommissioned) {
     const nameElement = document.getElementById('char-name');
-    const currentText = nameElement.textContent;
     
-    // Remove any existing rank prefix (anything before the last word)
-    const words = currentText.split(' ');
-    const actualName = words[words.length - 1]; // Last word is the name
+    // Only update if we have the original character name stored
+    if (!originalCharacterName) {
+        console.warn('No original character name stored, skipping rank update');
+        return;
+    }
     
+    // Update display: rank + name on far left, or just name if not commissioned
     if (isCommissioned && rankTitle) {
-        nameElement.textContent = `${rankTitle} ${actualName}`;
+        nameElement.textContent = `${rankTitle} ${originalCharacterName}`;
     } else {
-        nameElement.textContent = actualName;
+        nameElement.textContent = originalCharacterName;
     }
 }
 
@@ -1527,17 +1508,7 @@ async function getRankTitle() {
     return "";
 }
 
-// Function to update character name display with rank title
-async function updateCharacterNameWithRank(characterName) {
-    const rankTitle = await getRankTitle();
-    const charNameElement = document.getElementById('char-name');
-    
-    if (rankTitle && rankTitle.trim() !== '') {
-        charNameElement.textContent = `${rankTitle} ${characterName}`;
-    } else {
-        charNameElement.textContent = characterName;
-    }
-} 
+// REMOVED: Duplicate function that was causing Lieutenant Lieutenant issue 
 
 // Legacy promotion button handler (now handled in actions panel)
 /*document.getElementById('promotion-btn').onclick = function() {
