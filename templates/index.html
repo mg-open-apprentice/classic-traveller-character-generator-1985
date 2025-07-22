@@ -56,6 +56,7 @@
                             <span id="upp-string">______</span>
                             <span class="upp-age" id="char-age">Age</span>
                             <span class="upp-terms" id="char-terms">Terms</span>
+                            <span class="upp-rank" id="char-rank" style="display: none;">Rank 0</span>
                         </span>
                         <span id="char-rank-number" style="margin-left: 12px;"></span>
                         <span id="top-skill-eligibility" style="margin-left: 12px; color: #0ff; font-size: 16px; font-weight: bold;"></span>
@@ -80,7 +81,7 @@
         <!-- Right Middle -->
         <div class="panel right-middle">
             <!-- Event Record Panel (default) -->
-            <div class="event-record" id="event-panel">
+            <div class="event-record" id="event-panel" style="display: none;">
                 <div class="event-grid">
                     <!-- Top Row -->
                     <div class="event-item">
@@ -285,8 +286,18 @@
                     </div>
                 </div>
                 
+                <!-- Outcome Display Area -->
+                <div class="outcome-display" id="outcome-display" style="display: none;">
+                    <div class="outcome-header">
+                        <div class="outcome-title">LATEST OUTCOME</div>
+                    </div>
+                    <div class="outcome-content">
+                        <div class="outcome-text" id="outcome-text">Ready for action...</div>
+                    </div>
+                </div>
+                
                 <!-- Current Term Layout -->
-                <div class="term-display">
+                <div class="term-display" style="display: none;">
                     <div class="term-header">
                         <div class="term-title">PRE-ENLISTMENT</div>
                     </div>

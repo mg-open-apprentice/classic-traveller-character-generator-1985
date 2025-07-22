@@ -54,6 +54,16 @@ function handleCommissionSuccess() {
     commissionSuccessful = true;
 }
 
+// Outcome display functions
+function showOutcomeDisplay() {
+    document.getElementById('outcome-display').style.display = 'block';
+}
+
+function updateOutcomeText(text) {
+    document.getElementById('outcome-text').textContent = text;
+    showOutcomeDisplay();
+}
+
 // CHARACTER GENERATION STATE MACHINE
 // 1. Create Character -> Generate Characteristics
 // 2. All Characteristics -> Show Enlist
@@ -446,9 +456,6 @@ document.getElementById('create-character-btn').onclick = function() {
             document.getElementById('upp-string').textContent = data.upp || '______';
             document.getElementById('char-service').textContent = 'Service';
             
-            // Initialize character name display (no rank initially)
-            await updateCharacterNameWithRank(data.name);
-
             // Hide enlist button and bottom characteristics until complete
             document.getElementById('enlist-section').style.display = 'none';
             document.getElementById('characteristics-display').style.display = 'none';
@@ -614,15 +621,23 @@ function setupEnlistmentButton(btnId, serviceName) {
                 // Hide all middle panel sections - start with clean slate
                 document.getElementById('actions-panel').style.display = 'none';
                 document.getElementById('skills-panel').style.display = 'none';
-                document.getElementById('event-panel').style.display = 'block'; // Show default event panel (empty)
+                document.getElementById('event-panel').style.display = 'none'; // Keep event panel hidden
                 
                 const service = data.enlistment_result.assigned_service || data.career || '';
                 const outcome = data.enlistment_result.outcome || '';
                 const capitalizedOutcome = outcome.charAt(0).toUpperCase() + outcome.slice(1);
                 document.getElementById('char-service').textContent = `${service} ${capitalizedOutcome}`;
                 
+                // Show enlistment outcome text
+                const roll = data.enlistment_result.roll || 0;
+                const target = data.enlistment_result.target || 0;
+                const outcomeText = outcome === 'enlisted' 
+                    ? `Enlistment Successful: Rolled ${roll} vs target ${target} - Enlisted in ${service}!`
+                    : `Enlistment Failed: Rolled ${roll} vs target ${target} - Drafted into ${service}.`;
+                updateOutcomeText(outcomeText);
+                
                 const name = document.getElementById('char-name').textContent;
-                await updateRankDisplay(0);
+                updateRankDisplay(0);
                 
                 // Update action probabilities for the new character
                 if (data.character) {
@@ -1217,16 +1232,78 @@ function hideSkillsPanel() {
 }
 
 async function updateRankDisplay(rank) {
-    const rankTitle = await getRankTitle();
-    document.getElementById('char-rank-number').textContent = (rank && rank > 0) ? `Rank: ${rank}` : '';
+    try {
+        const response = await fetch('/api/get_rank_title', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.rank_title) {
+                // Update rank title display
+                document.getElementById('char-rank-number').textContent = data.rank_title;
+                
+                // Update character name with rank prefix if commissioned (rank > 0)
+                updateCharacterNameWithRank(data.rank_title, data.rank > 0);
+                
+                // Update service status (enlisted vs commissioned)
+                updateServiceStatus(data.rank > 0);
+                
+                // Show/update rank number in UPP area
+                updateRankNumber(data.rank);
+            } else {
+                document.getElementById('char-rank-number').textContent = '';
+            }
+        }
+    } catch (error) {
+        console.error('Error getting rank title:', error);
+        document.getElementById('char-rank-number').textContent = '';
+    }
+}
+
+function updateCharacterNameWithRank(rankTitle, isCommissioned) {
+    const nameElement = document.getElementById('char-name');
+    const currentText = nameElement.textContent;
     
-    // Also update character name with rank title
-    const charNameElement = document.getElementById('char-name');
-    const currentName = charNameElement.textContent;
-    // Extract just the character name (assume it's the last two words: FirstName LastName)
-    const nameParts = currentName.trim().split(/\s+/);
-    const baseName = nameParts.slice(-2).join(' '); // Get last two words
-    await updateCharacterNameWithRank(baseName);
+    // Remove any existing rank prefix (anything before the last word)
+    const words = currentText.split(' ');
+    const actualName = words[words.length - 1]; // Last word is the name
+    
+    if (isCommissioned && rankTitle) {
+        nameElement.textContent = `${rankTitle} ${actualName}`;
+    } else {
+        nameElement.textContent = actualName;
+    }
+}
+
+function updateServiceStatus(isCommissioned) {
+    const serviceElement = document.getElementById('char-service');
+    const currentText = serviceElement.textContent;
+    
+    // Extract service name (first word) and update status
+    const words = currentText.split(' ');
+    const serviceName = words[0]; // First word is the service name
+    
+    if (isCommissioned) {
+        serviceElement.textContent = `${serviceName} Commissioned`;
+    } else {
+        // Keep existing status if not commissioned (could be Enlisted, Drafted, etc.)
+        if (!currentText.includes('Commissioned')) {
+            // Don't change if already showing non-commissioned status
+            return;
+        }
+    }
+}
+
+function updateRankNumber(rank) {
+    const rankElement = document.getElementById('char-rank');
+    if (rank > 0) {
+        rankElement.textContent = `Rank ${rank}`;
+        rankElement.style.display = 'inline';
+    } else {
+        rankElement.style.display = 'none';
+    }
 }
 
 // Add click handlers for demonstration purposes
@@ -2674,6 +2751,16 @@ document.getElementById('survival-action-btn').onclick = function() {
             // Hide the survival action button after it's clicked
             document.getElementById('survival-action-btn').style.display = 'none';
             
+            // Disable the left panel survival button
+            disableButton('left-survival-btn');
+            
+            // Show outcome text
+            const outcome = data.survival_result?.outcome || 'survived';
+            const roll = data.survival_result?.roll || 0;
+            const target = data.survival_result?.target || 0;
+            const outcomeText = `Survival Check: Rolled ${roll} vs target ${target} - ${outcome.charAt(0).toUpperCase() + outcome.slice(1)}!`;
+            updateOutcomeText(outcomeText);
+            
             // Update character display and panels
             if (data.character) {
                 updateTermPanel(data.character);
@@ -2740,7 +2827,7 @@ document.getElementById('left-promotion-btn').onclick = function() {
 // REMOVED: calculatePromotionProbabilityBasic - all calculations now done in Python backend
 
 // Middle panel commission action button
-document.getElementById('commission-action-btn').onclick = function() {
+document.getElementById('commission-action-btn').onclick = async function() {
     fetch('/api/commission', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'}
@@ -2751,6 +2838,19 @@ document.getElementById('commission-action-btn').onclick = function() {
             // Hide the commission action button after it's clicked
             document.getElementById('commission-action-btn').style.display = 'none';
             
+            // Disable the left panel commission button
+            disableButton('left-commission-btn');
+            
+            // Show outcome text
+            const success = data.commission_result?.success || false;
+            const roll = data.commission_result?.roll || 0;
+            const target = data.commission_result?.target || 0;
+            const rank = data.commission_result?.rank || 0;
+            const outcomeText = success 
+                ? `Commission Successful: Rolled ${roll} vs target ${target} - Promoted to Rank ${rank}!`
+                : `Commission Failed: Rolled ${roll} vs target ${target} - Better luck next time.`;
+            updateOutcomeText(outcomeText);
+            
             // Update character display and panels
             if (data.character) {
                 updateTermPanel(data.character);
@@ -2759,6 +2859,8 @@ document.getElementById('commission-action-btn').onclick = function() {
                 // Check if commission was successful
                 if (data.commission_result && data.commission_result.success) {
                     handleCommissionSuccess();
+                    // Update rank display after successful commission
+                    updateRankDisplay(data.commission_result.rank || 1);
                 }
             }
             
@@ -2774,7 +2876,7 @@ document.getElementById('commission-action-btn').onclick = function() {
 };
 
 // Middle panel promotion action button
-document.getElementById('promotion-action-btn').onclick = function() {
+document.getElementById('promotion-action-btn').onclick = async function() {
     fetch('/api/promotion', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'}
@@ -2785,10 +2887,28 @@ document.getElementById('promotion-action-btn').onclick = function() {
             // Hide the promotion action button after it's clicked
             document.getElementById('promotion-action-btn').style.display = 'none';
             
+            // Disable the left panel promotion button
+            disableButton('left-promotion-btn');
+            
+            // Show outcome text
+            const success = data.promotion_result?.success || false;
+            const roll = data.promotion_result?.roll || 0;
+            const target = data.promotion_result?.target || 0;
+            const rank = data.promotion_result?.rank || 0;
+            const outcomeText = success 
+                ? `Promotion Successful: Rolled ${roll} vs target ${target} - Promoted to Rank ${rank}!`
+                : `Promotion Failed: Rolled ${roll} vs target ${target} - Remain at current rank.`;
+            updateOutcomeText(outcomeText);
+            
             // Update character display and panels
             if (data.character) {
                 updateTermPanel(data.character);
                 updateEventPanel(data.character);
+                
+                // Update rank display after successful promotion
+                if (success && data.promotion_result) {
+                    updateRankDisplay(data.promotion_result.rank || 0);
+                }
             }
             
             // No state machine - keep all buttons visible
