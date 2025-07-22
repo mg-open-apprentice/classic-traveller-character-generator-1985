@@ -1232,6 +1232,32 @@ function hideSkillsPanel() {
     // Don't show old event panel anymore - it's superseded
 }
 
+function showMusteringOutPanel(totalBenefits) {
+    document.getElementById('event-panel').style.display = 'none';
+    document.getElementById('enlistment-panel').style.display = 'none';
+    document.getElementById('characteristics-panel').style.display = 'none';
+    document.getElementById('actions-panel').style.display = 'none';
+    document.getElementById('skills-panel').style.display = 'none';
+    document.getElementById('mustering-out-panel').style.display = 'flex';
+    
+    // Show/hide buttons based on total benefits available
+    if (totalBenefits !== undefined) {
+        const maxCashRolls = Math.min(totalBenefits, 3); // max 3 buttons (0, 1, 2) or totalBenefits if lower
+        
+        // Always show 0 cash rolls option
+        document.getElementById('cash-0-btn').style.display = 'block';
+        
+        // Show other options based on available benefits
+        document.getElementById('cash-1-btn').style.display = maxCashRolls >= 1 ? 'block' : 'none';
+        document.getElementById('cash-2-btn').style.display = maxCashRolls >= 2 ? 'block' : 'none';
+        document.getElementById('cash-3-btn').style.display = maxCashRolls >= 3 ? 'block' : 'none';
+    }
+}
+
+function hideMusteringOutPanel() {
+    document.getElementById('mustering-out-panel').style.display = 'none';
+}
+
 async function updateRankDisplay(rank) {
     try {
         const response = await fetch('/api/get_rank_title', {
@@ -1976,6 +2002,18 @@ function updateTermPanel(character) {
     } else {
         // If not mustered out, remove the mustering out summary if present
         if (moDiv) moDiv.remove();
+        
+        // Check if ready for mustering out and show panel automatically
+        if (character.ready_for_mustering_out) {
+            console.log('Character is ready for mustering out - showing panel');
+            // Calculate total benefits (terms + rank bonuses)
+            let totalBenefits = character.terms_served || 1;
+            const rank = character.rank || 0;
+            if (rank >= 1 && rank <= 2) totalBenefits += 1;
+            else if (rank >= 3 && rank <= 4) totalBenefits += 2;
+            else if (rank >= 5 && rank <= 6) totalBenefits += 3;
+            showMusteringOutPanel(totalBenefits);
+        }
         
         // Title is already updated in updateCharacterDisplay function
     }
@@ -3269,33 +3307,65 @@ document.getElementById('leave-btn').onclick = function() {
     disableButton('leave-btn');
 };
 
-// Muster Out button
+// Muster Out button - show mustering out panel
 document.getElementById('mustering-out-btn').onclick = function() {
-    // Call mustering out API
-    fetch('/api/muster_out', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({cash_rolls: 0}) // Default to 0 for now
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert('Character mustered out successfully!');
-            if (data.character) {
-                updateTermPanel(data.character);
+    // Fetch current character to get total benefits
+    fetch('/api/current_character')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.character) {
+                const character = data.character;
+                // Calculate total benefits (terms + rank bonuses)
+                let totalBenefits = character.terms_served || 1;
+                const rank = character.rank || 0;
+                if (rank >= 1 && rank <= 2) totalBenefits += 1;
+                else if (rank >= 3 && rank <= 4) totalBenefits += 2;
+                else if (rank >= 5 && rank <= 6) totalBenefits += 3;
+                showMusteringOutPanel(totalBenefits);
+                completeButton('mustering-out-btn');
             }
-        } else {
-            alert(data.error || 'Mustering out failed.');
-        }
-    })
-    .catch(error => {
-        console.error('Error during muster out:', error);
-        alert('Error during muster out.');
-    });
-    
-    // Gray out muster out button
-    disableButton('mustering-out-btn');
+        })
+        .catch(error => {
+            console.error('Error fetching character:', error);
+            // Fallback - show panel without limits
+            showMusteringOutPanel();
+            completeButton('mustering-out-btn');
+        });
 };
+
+// Setup mustering out cash roll button handlers
+function setupMusteringOutButton(btnId, cashRolls) {
+    document.getElementById(btnId).onclick = function() {
+        // Call mustering out API with selected cash rolls
+        fetch('/api/muster_out', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({cash_rolls: cashRolls})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateOutcomeText(`Mustering out with ${cashRolls} cash rolls completed.`);
+                hideMusteringOutPanel();
+                if (data.character) {
+                    updateTermPanel(data.character);
+                }
+            } else {
+                alert(data.error || 'Mustering out failed.');
+            }
+        })
+        .catch(error => {
+            console.error('Error during muster out:', error);
+            alert('Error during muster out.');
+        });
+    };
+}
+
+// Setup all mustering out buttons
+setupMusteringOutButton('cash-0-btn', 0);
+setupMusteringOutButton('cash-1-btn', 1); 
+setupMusteringOutButton('cash-2-btn', 2);
+setupMusteringOutButton('cash-3-btn', 3);
 
 // Left panel ageing button
 document.getElementById('left-ageing-btn').onclick = function() {
