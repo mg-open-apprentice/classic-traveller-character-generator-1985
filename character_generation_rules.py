@@ -1250,10 +1250,25 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     skill_event["skill_eligibilities_consumed"] = 1
     skill_event["skill_eligibilities_remaining"] = character_record["skill_eligibility"]
     
-    # Check if skills are now completed and set ready_for_ageing flag
+    # Check if skills are now completed
     if character_record["skill_eligibility"] <= 0:
-        character_record["ready_for_ageing"] = True
         character_record["ready_for_skills"] = False
+        
+        # Check if aging is needed for current age
+        current_age = character_record.get("age", 18)
+        ageing_thresholds = tables.AGING_THRESHOLDS
+        advanced_ageing_start = tables.ADVANCED_AGING_START
+        
+        # Determine if aging checks are required
+        needs_aging = (current_age in ageing_thresholds or 
+                      current_age >= advanced_ageing_start)
+        
+        if needs_aging:
+            character_record["ready_for_ageing"] = True
+        else:
+            # No aging needed - skip directly to reenlistment
+            character_record["ready_for_ageing"] = False
+            character_record["ready_for_reenlistment"] = True
     
     # Add the skill resolution event to the character's career history
     character_record["career_history"].append(skill_event)
