@@ -3592,3 +3592,115 @@ document.getElementById('left-ageing-btn').onclick = function() {
     
     // Gray out ageing button
 };
+
+function updateCharacterDisplay(character) {
+    // Update character name and service
+    if (character.name) {
+        document.getElementById('char-name').textContent = character.name;
+    }
+    if (character.career) {
+        document.getElementById('char-service').textContent = character.career;
+    }
+    
+    // Update UPP and basic info
+    if (character.upp) {
+        document.getElementById('upp-string').textContent = character.upp;
+    }
+    if (character.age) {
+        document.getElementById('char-age').textContent = `Age ${character.age}`;
+    }
+    if (character.terms_served !== undefined) {
+        document.getElementById('char-terms').textContent = `Terms ${character.terms_served}`;
+    }
+    
+    // Update rank if commissioned
+    if (character.commissioned && character.rank) {
+        document.getElementById('char-rank').style.display = 'inline';
+        document.getElementById('char-rank').textContent = `Rank ${character.rank}`;
+    }
+    
+    // Update skills and benefits display
+    updateSkillsDisplay(character);
+    updateBenefitsDisplay(character);
+    
+    // Update characteristics display in bottom panel
+    updateCharacteristicsBottomDisplay(character);
+}
+
+function updateCharacteristicsBottomDisplay(character) {
+    if (character.characteristics) {
+        const chars = character.characteristics;
+        document.getElementById('bottom-strength-value').textContent = chars.strength || '-';
+        document.getElementById('bottom-dexterity-value').textContent = chars.dexterity || '-';
+        document.getElementById('bottom-endurance-value').textContent = chars.endurance || '-';
+        document.getElementById('bottom-intelligence-value').textContent = chars.intelligence || '-';
+        document.getElementById('bottom-education-value').textContent = chars.education || '-';
+        document.getElementById('bottom-social-value').textContent = chars.social || '-';
+        
+        // Show the characteristics display
+        document.getElementById('characteristics-display').style.display = 'block';
+        document.getElementById('outcome-display').style.display = 'none';
+    }
+}
+
+// ===============================================================================
+// PAGE INITIALIZATION
+// ===============================================================================
+
+// Initialize the page when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded - checking for existing character...');
+    
+    // Try to load existing character state
+    fetch('/api/current_character')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.character) {
+                console.log('Found existing character:', data.character.name);
+                initializeUIForCharacter(data.character);
+            } else {
+                console.log('No existing character - showing create character button');
+                // Default state - just the create character button should be visible
+            }
+        })
+        .catch(error => {
+            console.log('No existing character or error loading:', error);
+            // Default state - just the create character button should be visible
+        });
+});
+
+function initializeUIForCharacter(character) {
+    // Update character display
+    updateCharacterDisplay(character);
+    updateTermPanel(character);
+    
+    // Determine what phase the character is in and show appropriate UI
+    if (!character.career) {
+        // Character created but not enlisted - show enlist button
+        document.getElementById('enlist-section').style.display = 'block';
+        showEnlistmentProbabilities();
+    } else if (character.survival_outcome === 'pending') {
+        // Character needs to do survival for current term
+        document.getElementById('actions-panel').style.display = 'block';
+        document.getElementById('survival-action-btn').style.display = 'block';
+    } else if (character.ready_for_skills) {
+        // Character ready for skill resolution
+        showSkillsButton(character);
+    } else if (character.ready_for_ageing) {
+        // Character ready for ageing
+        console.log('Character ready for ageing');
+        // Ageing button should be available in left panel
+    } else if (character.ready_for_reenlistment) {
+        // Character ready for reenlistment
+        console.log('Character ready for reenlistment');
+        // Reenlistment options should be available
+    } else if (character.ready_for_mustering_out) {
+        // Character ready for mustering out
+        showMusteringOutPanel(character.terms_served || 1);
+    }
+    
+    // Update action probabilities if character has characteristics
+    if (character.characteristics) {
+        updateActionProbabilities(character);
+    }
+}
