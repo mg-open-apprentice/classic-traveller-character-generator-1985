@@ -697,7 +697,9 @@ function updateActionProbabilities(character) {
     }
     
     // Always show survival button as active
-    survivalBtn.style.display = 'block';
+    if (survivalBtn) {
+        survivalBtn.style.display = 'block';
+    }
     // Get survival probability from Python backend (NO JavaScript calculations!)
     fetch('/api/action_probability', {
         method: 'POST',
