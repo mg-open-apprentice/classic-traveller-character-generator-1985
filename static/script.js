@@ -3680,11 +3680,12 @@ function initializeUIForCharacter(character) {
     if (!character.career) {
         // Character created but not enlisted - show enlist button
         document.getElementById('enlist-section').style.display = 'block';
-        showEnlistmentProbabilities();
+        // Don't call showEnlistmentProbabilities() here - character already enlisted
     } else if (character.survival_outcome === 'pending') {
         // Character needs to do survival for current term
         document.getElementById('actions-panel').style.display = 'block';
         document.getElementById('survival-action-btn').style.display = 'block';
+        // Don't call updateActionProbabilities here - it causes errors
     } else if (character.ready_for_skills) {
         // Character ready for skill resolution
         showSkillsButton(character);
