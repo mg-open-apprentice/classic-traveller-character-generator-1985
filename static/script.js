@@ -683,8 +683,10 @@ function updateActionProbabilities(character) {
     
     // Reset visual states
     [survivalBtn, commissionBtn, promotionBtn].forEach(btn => {
-        btn.classList.remove('completed', 'disabled');
-        btn.style.pointerEvents = 'auto';
+        if (btn) {
+            btn.classList.remove('completed', 'disabled');
+            btn.style.pointerEvents = 'auto';
+        }
     });
     
     if (!character || !character.characteristics) {
@@ -703,6 +705,16 @@ function updateActionProbabilities(character) {
     .then(data => {
         if (data.success && data.probability) {
             updateActionProbabilityDisplay('survival-action-prob', data.probability.percentage);
+            
+            // Add mouseover handler for survival button
+            if (survivalBtn && data.modifier_details) {
+                survivalBtn.onmouseover = function() {
+                    highlightCharacteristicsForService('survival', data.modifier_details);
+                };
+                survivalBtn.onmouseout = function() {
+                    clearCharacteristicHighlights();
+                };
+            }
         } else {
             document.getElementById('survival-action-prob').textContent = '-';
         }
@@ -1133,13 +1145,37 @@ function showEnlistmentProbabilities() {
         if (data.success && data.probabilities) {
             const probs = data.probabilities;
             
-            // Update probability displays and apply bonus color classes
-            updateEnlistmentProbabilityAndColor('navy', 'navy-prob', 'navy-btn', probs.navy);
-            updateEnlistmentProbabilityAndColor('marines', 'marines-prob', 'marines-btn', probs.marines);
-            updateEnlistmentProbabilityAndColor('army', 'army-prob', 'army-btn', probs.army);
-            updateEnlistmentProbabilityAndColor('scouts', 'scouts-prob', 'scouts-btn', probs.scouts);
-            updateEnlistmentProbabilityAndColor('merchants', 'merchants-prob', 'merchants-btn', probs.merchants);
-            updateEnlistmentProbabilityAndColor('others', 'others-prob', 'others-btn', probs.others);
+            // Create array of services with their data for sorting
+            const services = [
+                { name: 'navy', displayName: 'Navy', btnId: 'navy-btn', probId: 'navy-prob', data: probs.navy },
+                { name: 'marines', displayName: 'Marines', btnId: 'marines-btn', probId: 'marines-prob', data: probs.marines },
+                { name: 'army', displayName: 'Army', btnId: 'army-btn', probId: 'army-prob', data: probs.army },
+                { name: 'scouts', displayName: 'Scouts', btnId: 'scouts-btn', probId: 'scouts-prob', data: probs.scouts },
+                { name: 'merchants', displayName: 'Merchants', btnId: 'merchants-btn', probId: 'merchants-prob', data: probs.merchants },
+                { name: 'others', displayName: 'Others', btnId: 'others-btn', probId: 'others-prob', data: probs.others }
+            ];
+            
+            // Sort services by probability (highest first)
+            services.sort((a, b) => {
+                const aPercent = parseFloat(a.data.percentage) || 0;
+                const bPercent = parseFloat(b.data.percentage) || 0;
+                return bPercent - aPercent;
+            });
+            
+            // Get the enlistment grid container
+            const enlistmentGrid = document.querySelector('.enlistment-grid');
+            
+            // Reorder buttons in the grid based on sorted probabilities
+            services.forEach(service => {
+                const button = document.getElementById(service.btnId);
+                if (button && enlistmentGrid) {
+                    // Remove button from current position and append to end
+                    enlistmentGrid.appendChild(button);
+                }
+                
+                // Update probability display and color
+                updateEnlistmentProbabilityAndColor(service.name, service.probId, service.btnId, service.data);
+            });
         }
     })
     .catch(error => {
@@ -1176,23 +1212,61 @@ function updateEnlistmentProbabilityAndColor(serviceName, probId, btnId, probDat
             });
         }
         
-        // Apply bonus CSS class to button
+        // Add mouseover/mouseout handlers to highlight characteristics
         if (btnElement) {
-            // Remove existing bonus classes
+            // Remove existing bonus classes - all buttons will be green
             btnElement.classList.remove('bonus-1', 'bonus-2', 'bonus-3');
             
-            // Apply appropriate bonus class
-            if (totalBonus >= 3) {
-                btnElement.classList.add('bonus-3');
-            } else if (totalBonus >= 2) {
-                btnElement.classList.add('bonus-2');
-            } else if (totalBonus >= 1) {
-                btnElement.classList.add('bonus-1');
-            }
+            // Add mouse event handlers to highlight characteristics
+            btnElement.onmouseover = function() {
+                highlightCharacteristicsForService(serviceName, probData.modifier_details);
+            };
+            
+            btnElement.onmouseout = function() {
+                clearCharacteristicHighlights();
+            };
         }
     } else if (probElement) {
         probElement.textContent = '-'; // Fallback
     }
+}
+
+// Highlight characteristics that provide bonuses for a service
+function highlightCharacteristicsForService(serviceName, modifierDetails) {
+    if (!modifierDetails || modifierDetails.length === 0) return;
+    
+    modifierDetails.forEach(detail => {
+        // Parse strings like "Dexterity 9≥6 (+1)" or "Endurance 10≥5 (+2)"
+        const match = detail.match(/^(\w+)\s+\d+≥\d+\s+\(\+(\d+)\)/);
+        if (match) {
+            const characteristic = match[1].toLowerCase();
+            const bonus = parseInt(match[2]);
+            
+            // Find the characteristic box in the bottom panel
+            const charElement = document.getElementById(`bottom-${characteristic}-value`);
+            if (charElement && charElement.parentElement) {
+                const charBox = charElement.parentElement; // The .char-stat container
+                // Apply border color based on bonus amount
+                if (bonus >= 2) {
+                    charBox.style.border = '2px solid yellow';
+                } else if (bonus >= 1) {
+                    charBox.style.border = '2px solid cyan';
+                }
+            }
+        }
+    });
+}
+
+// Clear all characteristic highlights
+function clearCharacteristicHighlights() {
+    const characteristics = ['strength', 'dexterity', 'endurance', 'intelligence', 'education', 'social'];
+    characteristics.forEach(char => {
+        const charElement = document.getElementById(`bottom-${char}-value`);
+        if (charElement && charElement.parentElement) {
+            const charBox = charElement.parentElement; // The .char-stat container
+            charBox.style.border = ''; // Reset border to default
+        }
+    });
 }
 
 
@@ -1858,7 +1932,9 @@ document.getElementById('reenlist-btn').onclick = function() {
 };
 */
 
-document.getElementById('leave-btn').onclick = function() {
+const leaveBtnHandler1 = document.getElementById('leave-btn');
+if (leaveBtnHandler1) {
+    leaveBtnHandler1.onclick = function() {
     // Use 'retire' if button says Retire, otherwise 'leave'
     const pref = this.textContent === 'Retire' ? 'retire' : 'leave';
     fetch('/api/reenlist', {
@@ -1913,7 +1989,8 @@ document.getElementById('leave-btn').onclick = function() {
             alert(data.error || (pref === 'retire' ? 'Retirement failed.' : 'Leave failed.'));
         }
     });
-}; 
+    };
+} 
 
 function updateTermPanel(character) {
     // This function updates the term panel with character information
@@ -1980,6 +2057,7 @@ function updateTermPanel(character) {
     const termRecord = document.querySelector('.term-record');
     let moDiv = document.getElementById('mustering-out-summary');
     if (character.mustering_out_benefits) {
+        console.log('Generating mustering out report with new format');
         // Remove all children from termRecord except the mustering out summary
         Array.from(termRecord.children).forEach(child => {
             if (child.id !== 'mustering-out-summary') termRecord.removeChild(child);
@@ -1990,30 +2068,45 @@ function updateTermPanel(character) {
             moDiv.className = 'section';
             termRecord.appendChild(moDiv);
         }
-        // Format the mustering out report in four categories like term panel
+        // Format the mustering out report using outcome display format
         const mo = character.mustering_out_benefits;
-        let summary = `<div class="term-title" style="color:#fff; font-weight:bold; border-bottom:1px solid #333; padding-bottom:3px; margin-bottom:10px;">MUSTERING OUT REPORT</div>`;
-        summary += `<div class="term-item"><span class="term-action">Benefits</span><span class="term-outcome"><span style="color:#00ffff; font-weight:bold;">${mo.items && mo.items.length > 0 ? mo.items.join(', ').toUpperCase() : 'NONE'}</span></span></div>`;
-        summary += `<div class="term-item"><span class="term-action">Personal</span><span class="term-outcome"><span style="color:#ff6600; font-weight:bold;">${mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0 ? Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat.toUpperCase()}+${val}`).join(', ') : 'NONE'}</span></span></div>`;
-        summary += `<div class="term-item"><span class="term-action">Cash</span><span class="term-outcome"><span style="color:#00ff00; font-weight:bold;">CR${mo.cash ? mo.cash.toLocaleString() : 0}</span></span></div>`;
-        summary += `<div class="term-item"><span class="term-action">Retirement Pay</span><span class="term-outcome"><span style="color:#ffff00; font-weight:bold;">${mo.retirement_pay ? `CR${mo.retirement_pay.toLocaleString()}` : 'NONE'}</span></span></div>`;
+        
+        // Collect all mustering out results into a single line
+        let results = [];
+        
+        // Add items (benefits)
+        if (mo.items && mo.items.length > 0) {
+            results.push(mo.items.join(', '));
+        }
+        
+        // Add characteristic boosts
+        if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
+            const boosts = Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat.toUpperCase()}+${val}`);
+            results.push(boosts.join(', '));
+        }
+        
+        // Add cash (with space between CR and amount)
+        if (mo.cash && mo.cash > 0) {
+            results.push(`CR ${mo.cash.toLocaleString()}`);
+        }
+        
+        // Add retirement pay
+        if (mo.retirement_pay && mo.retirement_pay > 0) {
+            results.push(`CR ${mo.retirement_pay.toLocaleString()}/yr pension`);
+        }
+        
+        // Create outcome display format (same as "Latest Outcome" but with different title)
+        const resultText = results.length > 0 ? results.join(', ') : 'None';
+        let summary = `<div class="outcome-header"><div class="outcome-title">MUSTERING OUT BENEFITS</div></div>`;
+        summary += `<div class="outcome-content"><div class="outcome-text">${resultText}</div></div>`;
         moDiv.innerHTML = summary;
         return;
     } else {
         // If not mustered out, remove the mustering out summary if present
         if (moDiv) moDiv.remove();
         
-        // Check if ready for mustering out and show panel automatically
-        if (character.ready_for_mustering_out) {
-            console.log('Character is ready for mustering out - showing panel');
-            // Calculate total benefits (terms + rank bonuses)
-            let totalBenefits = character.terms_served || 1;
-            const rank = character.rank || 0;
-            if (rank >= 1 && rank <= 2) totalBenefits += 1;
-            else if (rank >= 3 && rank <= 4) totalBenefits += 2;
-            else if (rank >= 5 && rank <= 6) totalBenefits += 3;
-            showMusteringOutPanel(totalBenefits);
-        }
+        // REMOVED: Automatic mustering out panel trigger
+        // Now only triggered by explicit left sidebar button click
         
         // Title is already updated in updateCharacterDisplay function
     }
@@ -2062,15 +2155,15 @@ function updateSkillsDisplay(character) {
     const skillsDisplay = document.getElementById('skills-display');
     if (skillsDisplay) {
         if (Object.keys(skillCounts).length > 0) {
-            // Create horizontal skill items
-            let skillsHTML = '';
+            // Create horizontal skill items with Skills label inline
+            let skillsHTML = '<span class="section-label">Skills </span>';
             Object.entries(skillCounts).forEach(([skill, count]) => {
                 const displayText = count > 1 ? `${skill}-${count}` : skill;
                 skillsHTML += `<span class="skill-item">${displayText}</span>`;
             });
             skillsDisplay.innerHTML = skillsHTML;
         } else {
-            skillsDisplay.innerHTML = 'None';
+            skillsDisplay.innerHTML = '<span class="section-label">Skills </span>None';
         }
     }
 }
@@ -2116,9 +2209,9 @@ function updateBenefitsDisplay(character) {
         }
         
         if (benefits.length > 0) {
-            benefitsDisplay.textContent = benefits.join(', ');
+            benefitsDisplay.innerHTML = '<span class="section-label">Benefits </span>' + benefits.join(', ');
         } else {
-            benefitsDisplay.textContent = 'None';
+            benefitsDisplay.innerHTML = '<span class="section-label">Benefits </span>None';
         }
     }
 }
@@ -2658,91 +2751,7 @@ function getSkillsSection() {
     return null;
 }
 
-document.getElementById('mustering-out-btn').onclick = function() {
-    // Remove the Muster Out button
-    const musteringSection = document.getElementById('mustering-section');
-    const musterOutBtn = document.getElementById('mustering-out-btn');
-    if (musterOutBtn) musteringSection.removeChild(musterOutBtn);
-
-    // Create select dropdown for cash rolls
-    const label = document.createElement('label');
-    label.setAttribute('for', 'cash-rolls');
-    label.textContent = 'Number of Cash Rolls:';
-    label.style.marginRight = '8px';
-
-    const select = document.createElement('select');
-    select.id = 'cash-rolls';
-    select.name = 'cash-rolls';
-    for (let i = 0; i <= 3; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = i;
-        select.appendChild(option);
-    }
-    select.style.marginRight = '8px';
-
-    // Create confirm button
-    const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'btn';
-    confirmBtn.id = 'confirm-mustering-btn';
-    confirmBtn.textContent = 'Confirm Mustering Out';
-    confirmBtn.onclick = function() {
-        const cashRolls = select.value;
-        fetch('/api/muster_out', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({cash_rolls: cashRolls})
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Format the mustering out results
-                const mo = data.mustering_out || {};
-                let summary = `<strong>Mustering Out Results:</strong><br>`;
-                summary += `Cash: <span style="color:lime;">Cr${mo.cash ? mo.cash.toLocaleString() : 0}</span><br>`;
-                if (mo.items && mo.items.length > 0) {
-                    summary += `Items: <span style="color:cyan;">${mo.items.join(', ')}</span><br>`;
-                }
-                if (mo.characteristic_boosts && Object.keys(mo.characteristic_boosts).length > 0) {
-                    summary += `Stat Boosts: <span style="color:orange;">`;
-                    summary += Object.entries(mo.characteristic_boosts).map(([stat, val]) => `${stat}+${val}`).join(', ');
-                    summary += `</span><br>`;
-                }
-                if (mo.cash_roll_details && mo.cash_roll_details.length > 0) {
-                    summary += `<em>Cash Rolls:</em> `;
-                    summary += mo.cash_roll_details.map(r => r.total_roll).join(', ') + '<br>';
-                }
-                if (mo.benefit_roll_details && mo.benefit_roll_details.length > 0) {
-                    summary += `<em>Benefit Rolls:</em> `;
-                    summary += mo.benefit_roll_details.map(r => r.benefit).join(', ') + '<br>';
-                }
-
-                // Display in the bottom panel (or wherever you want)
-                const termRecord = document.querySelector('.term-record');
-                let moDiv = document.getElementById('mustering-out-summary');
-                if (!moDiv) {
-                    moDiv = document.createElement('div');
-                    moDiv.id = 'mustering-out-summary';
-                    moDiv.className = 'section';
-                    termRecord.appendChild(moDiv);
-                }
-                moDiv.innerHTML = summary;
-
-                // Optionally, update the character display as well
-                if (data.character) {
-                    updateTermPanel(data.character);
-                }
-            } else {
-                alert(data.error || 'Mustering out failed.');
-            }
-        });
-    };
-
-    // Add elements to the mustering section
-    musteringSection.appendChild(label);
-    musteringSection.appendChild(select);
-    musteringSection.appendChild(confirmBtn);
-};
+// REMOVED: Old duplicate muster out button handler that created dropdown interface
 
 
 
@@ -2856,6 +2865,17 @@ document.getElementById('left-commission-btn').onclick = function() {
     .then(data => {
         if (data.success && data.probability) {
             document.getElementById('commission-action-prob').textContent = data.probability.percentage + '%';
+            
+            // Add mouseover handler for commission button
+            const commissionBtn = document.getElementById('commission-action-btn');
+            if (commissionBtn && data.modifier_details) {
+                commissionBtn.onmouseover = function() {
+                    highlightCharacteristicsForService('commission', data.modifier_details);
+                };
+                commissionBtn.onmouseout = function() {
+                    clearCharacteristicHighlights();
+                };
+            }
         } else {
             document.getElementById('commission-action-prob').textContent = 'Error';
         }
@@ -2880,8 +2900,24 @@ document.getElementById('left-promotion-btn').onclick = function() {
     .then(data => {
         if (data.success && data.probability) {
             document.getElementById('promotion-action-prob').textContent = data.probability.percentage + '%';
+            
+            // Add mouseover handler for promotion button
+            const promotionBtn = document.getElementById('promotion-action-btn');
+            if (promotionBtn && data.modifier_details) {
+                promotionBtn.onmouseover = function() {
+                    highlightCharacteristicsForService('promotion', data.modifier_details);
+                };
+                promotionBtn.onmouseout = function() {
+                    clearCharacteristicHighlights();
+                };
+            }
         } else {
-            document.getElementById('promotion-action-prob').textContent = 'Error';
+            // Commission failed or not available - grey out promotion button
+            const promotionBtn = document.getElementById('promotion-action-btn');
+            promotionBtn.style.opacity = '0.5';
+            promotionBtn.disabled = true;
+            promotionBtn.style.cursor = 'not-allowed';
+            document.getElementById('promotion-action-prob').textContent = 'N/A';
         }
     });
 };
@@ -3152,14 +3188,14 @@ document.getElementById('left-reenlist-btn').onclick = function() {
     const reenlistBtn = document.createElement('button');
     reenlistBtn.className = 'action-btn';
     reenlistBtn.id = 'reenlist-action-btn';
-    reenlistBtn.innerHTML = '<div class="action-name">Reenlist</div><div class="action-probability" id="reenlist-action-prob">Calculating...</div>';
+    reenlistBtn.innerHTML = '<div class="action-name">Reenlist</div><div class="action-probability" id="reenlist-action-prob">-</div>';
     actionsGrid.appendChild(reenlistBtn);
     
     // Create discharge option
     const dischargeBtn = document.createElement('button');
     dischargeBtn.className = 'action-btn';
     dischargeBtn.id = 'discharge-action-btn';
-    dischargeBtn.innerHTML = '<div class="action-name">Discharge</div><div class="action-probability" id="discharge-action-prob">Calculating...</div>';
+    dischargeBtn.innerHTML = '<div class="action-name">Discharge</div><div class="action-probability" id="discharge-action-prob">-</div>';
     actionsGrid.appendChild(dischargeBtn);
     
     // Fetch and display reenlistment probabilities
@@ -3223,10 +3259,12 @@ function processReenlistmentChoice(preference) {
     })
     .then(res => res.json())
     .then(data => {
+        console.log('Reenlistment response:', data);
         if (data.success) {
+            console.log('Processing successful reenlistment...');
             // Hide action buttons after processing
             const actionsGrid = document.querySelector('.actions-grid');
-            actionsGrid.innerHTML = '';
+            if (actionsGrid) actionsGrid.innerHTML = '';
             
             // Mark the left reenlist button as completed (green)
             completeButton('left-reenlist-btn');
@@ -3247,9 +3285,19 @@ function processReenlistmentChoice(preference) {
             
             // Update character display
             if (data.character) {
-                updateTermPanel(data.character);
-                updateEventPanel(data.character);
+                try {
+                    updateTermPanel(data.character);
+                } catch (e) {
+                    console.error('Error in updateTermPanel:', e);
+                }
+                try {
+                    updateEventPanel(data.character);
+                } catch (e) {
+                    console.error('Error in updateEventPanel:', e);
+                }
             }
+            
+            // Normal character updates completed
             
             // Check if new term started or career ended
             if (data.new_term) {
@@ -3261,6 +3309,75 @@ function processReenlistmentChoice(preference) {
                 }
                 // Reset term buttons for new term
                 resetTermButtons();
+                
+                // Show actions panel and enable survival button for new term
+                showActionsPanel();
+                if (data.character) {
+                    updateActionProbabilities(data.character);
+                }
+            } else if (data.reenlistment_result) {
+                // Check if career ended (failed reenlist or successful leave/retire)
+                const result = data.reenlistment_result;
+                const preference = result.preference || '';
+                const outcome = result.outcome || '';
+                
+                // Career ends on failed reenlistment OR successful discharge/retire
+                if ((preference === 'reenlist' && outcome === 'failed') || 
+                    (preference === 'discharge' && outcome === 'success') ||
+                    (preference === 'retire' && outcome === 'success')) {
+                    
+                    console.log('Career ended - will show single Muster Out action button after updates');
+                    
+                    // Grey out and disable reenlist button in sidebar
+                    const reenlistBtn = document.getElementById('left-reenlist-btn');
+                    reenlistBtn.style.backgroundColor = '#666';
+                    reenlistBtn.style.color = '#999';
+                    reenlistBtn.disabled = true;
+                    reenlistBtn.style.cursor = 'not-allowed';
+                    
+                    // Career ended - show single Muster Out action button in middle panel
+                    
+                    // Clear actions grid and create single Muster Out button
+                    const actionsGrid = document.querySelector('.actions-grid');
+                    if (actionsGrid) actionsGrid.innerHTML = '';
+                    
+                    // Create single Muster Out action button
+                    const musterOutActionBtn = document.createElement('button');
+                    musterOutActionBtn.className = 'action-btn';
+                    musterOutActionBtn.id = 'muster-out-action-btn';
+                    musterOutActionBtn.innerHTML = '<div class="action-name">Muster Out</div><div class="action-probability" id="muster-out-action-prob">-</div>';
+                    
+                    // Add styling to ensure it displays properly
+                    musterOutActionBtn.style.display = 'flex';
+                    musterOutActionBtn.style.flexDirection = 'column';
+                    musterOutActionBtn.style.justifyContent = 'center';
+                    musterOutActionBtn.style.alignItems = 'center';
+                    
+                    actionsGrid.appendChild(musterOutActionBtn);
+                    
+                    // Set up click handler for muster out action button
+                    musterOutActionBtn.onclick = function() {
+                        // Calculate total benefits
+                        const character = data.character;
+                        let totalBenefits = character.terms_served || 1;
+                        const rank = character.rank || 0;
+                        if (rank >= 1 && rank <= 2) totalBenefits += 1;
+                        else if (rank >= 3 && rank <= 4) totalBenefits += 2;
+                        else if (rank >= 5 && rank <= 6) totalBenefits += 3;
+                        
+                        // Show the mustering out panel with cash roll options
+                        showMusteringOutPanel(totalBenefits);
+                        
+                        // Complete the left sidebar muster out button if it exists
+                        const leftMusterBtn = document.getElementById('mustering-out-btn');
+                        if (leftMusterBtn) {
+                            completeButton('mustering-out-btn');
+                        }
+                    };
+                    
+                    // Keep actions panel visible to show the muster out button
+                    document.getElementById('actions-panel').style.display = 'block';
+                }
             }
         } else {
             alert(data.error || 'Reenlistment failed.');
@@ -3273,7 +3390,9 @@ function processReenlistmentChoice(preference) {
 };
 
 // Leave button - triggers mustering out
-document.getElementById('leave-btn').onclick = function() {
+const leaveBtnHandler2 = document.getElementById('leave-btn');
+if (leaveBtnHandler2) {
+    leaveBtnHandler2.onclick = function() {
     // Call reenlistment API with preference to leave/retire
     fetch('/api/reenlist', {
         method: 'POST',
@@ -3305,7 +3424,8 @@ document.getElementById('leave-btn').onclick = function() {
     
     // Gray out leave button
     disableButton('leave-btn');
-};
+    };
+}
 
 // Muster Out button - show mustering out panel
 document.getElementById('mustering-out-btn').onclick = function() {
@@ -3386,8 +3506,21 @@ document.getElementById('left-ageing-btn').onclick = function() {
         ageingBtn = document.createElement('button');
         ageingBtn.className = 'action-btn';
         ageingBtn.id = 'ageing-action-btn';
-        ageingBtn.innerHTML = '<div class="action-name">Ageing</div><div class="action-probability" id="ageing-action-prob">Age four years</div>';
-        actionsGrid.appendChild(ageingBtn);
+        ageingBtn.innerHTML = '<div class="action-name">Age 4 years</div><div class="action-probability" id="ageing-action-prob">-</div>';
+        
+        // Insert at the beginning of the grid to match other button positions
+        const firstChild = actionsGrid.firstChild;
+        if (firstChild) {
+            actionsGrid.insertBefore(ageingBtn, firstChild);
+        } else {
+            actionsGrid.appendChild(ageingBtn);
+        }
+        
+        // Ensure consistent styling
+        ageingBtn.style.display = 'flex';
+        ageingBtn.style.flexDirection = 'column';
+        ageingBtn.style.justifyContent = 'center';
+        ageingBtn.style.alignItems = 'center';
         
         // Set up the click handler for the ageing action button
         ageingBtn.onclick = function() {

@@ -1116,12 +1116,11 @@ body {
 
 .mustering-out-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-md);
     flex: 1;
     width: 100%;
-    min-height: 160px;
+    min-height: 80px;
 }
 
 .mustering-out-btn {
@@ -1169,8 +1168,7 @@ body {
 /* Mobile adjustments for mustering out */
 @media (max-width: 768px) {
     .mustering-out-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: var(--space-sm);
     }
     
