@@ -158,10 +158,20 @@ function showCommissionButton() {
     document.getElementById('left-commission-btn').style.display = 'block';
     // Reset button state
     const btn = document.getElementById('left-commission-btn');
-    btn.style.backgroundColor = '';
-    btn.style.color = '';
-    btn.disabled = false;
-    btn.style.cursor = '';
+    
+    // Check if current character is Scouts or Others
+    if (currentCharacter && isScoutsOrOthers(currentCharacter)) {
+        // Grey out button for Scouts/Others
+        btn.style.backgroundColor = '#666';
+        btn.style.color = '#999';
+        btn.disabled = true;
+        btn.style.cursor = 'not-allowed';
+    } else {
+        btn.style.backgroundColor = '';
+        btn.style.color = '';
+        btn.disabled = false;
+        btn.style.cursor = '';
+    }
 }
 
 function showPromotionButton() {
@@ -729,8 +739,15 @@ function updateActionProbabilities(character) {
     });
     
     // Hide commission and promotion buttons - they should only appear when left panel buttons are clicked
-    commissionBtn.style.display = 'none';
-    promotionBtn.style.display = 'none';
+    // Only manipulate these buttons if the service actually supports commission/promotion
+    if (!isScoutsOrOthers(character)) {
+        if (commissionBtn) {
+            commissionBtn.style.display = 'none';
+        }
+        if (promotionBtn) {
+            promotionBtn.style.display = 'none';
+        }
+    }
     
     // Reset survival probability display
     document.getElementById('survival-action-prob').textContent = '-';
@@ -778,6 +795,9 @@ function canShowCommissionButton(character) {
 
 function canShowPromotionButton(character) {
     if (!character) return false;
+    
+    // Must be commissioned before promotion is possible
+    if (!character.commissioned) return false;
     
     // Drafted characters can't get promotion
     if (character.drafted) return false;
@@ -3336,11 +3356,9 @@ function processReenlistmentChoice(preference) {
                 // Reset term buttons for new term
                 resetTermButtons();
                 
-                // Show actions panel and enable survival button for new term
+                // Show actions panel for new term
                 showActionsPanel();
-                if (data.character) {
-                    updateActionProbabilities(data.character);
-                }
+                // Note: updateActionProbabilities will be called when user clicks survival button
             } else if (data.reenlistment_result) {
                 // Check if career ended (failed reenlist or successful leave/retire)
                 const result = data.reenlistment_result;
