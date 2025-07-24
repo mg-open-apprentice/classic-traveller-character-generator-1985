@@ -50,6 +50,12 @@ The application suffers from **dual business logic** - game rules are implemente
 - **Backend**: Has all character state needed to determine valid actions
 - **Impact**: Frontend makes game rule decisions instead of rendering backend decisions
 
+### 8. Term Transition Management
+**Issue**: Frontend manages term progression and UI state transitions
+- **Frontend**: Complex logic to handle new term setup, term title updates, button resets
+- **Backend**: Character data contains `terms_served` and all state needed to determine current phase
+- **Impact**: Frontend orchestrates workflow transitions instead of querying backend for current valid actions
+
 ## Root Cause Analysis
 
 The fundamental issue is **mixed responsibility** - the frontend acts as both:
