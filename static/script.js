@@ -654,6 +654,9 @@ function setupEnlistmentButton(btnId, serviceName) {
                     updateTermPanel(data.character);
                 }
                 
+                // Apply button states determined by backend
+                applyButtonStates(data);
+                
                 // Buttons are now always visible in HTML - no need to show/hide
                 
                 // No need for state machine - all buttons are always visible
@@ -1229,6 +1232,18 @@ function updateEnlistmentProbabilityAndColor(serviceName, probId, btnId, probDat
     } else if (probElement) {
         probElement.textContent = '-'; // Fallback
     }
+}
+
+// Apply button states from backend API response
+function applyButtonStates(apiResponse) {
+    // Backend determines all button states - frontend just applies them
+    if (apiResponse.show_commission === false) {
+        disableButton('left-commission-btn');
+    }
+    if (apiResponse.show_promotion === false) {
+        disableButton('left-promotion-btn');
+    }
+    // Note: We could add show_survival, show_skills, etc. here as needed
 }
 
 // Highlight characteristics that provide bonuses for a service
@@ -2838,6 +2853,9 @@ document.getElementById('survival-action-btn').onclick = function() {
                 updateEventPanel(data.character);
             }
             
+            // Apply button states determined by backend
+            applyButtonStates(data);
+            
             // No state machine - keep all buttons visible
         } else {
             alert(data.error || 'Survival check failed.');
@@ -2960,6 +2978,9 @@ document.getElementById('commission-action-btn').onclick = async function() {
                     // Update rank display after successful commission
                     updateRankDisplay(data.commission_result.rank || 1);
                 }
+                
+                // Apply button states determined by backend
+                applyButtonStates(data);
             }
             
             // No need for state machine - all buttons stay visible
@@ -3008,6 +3029,9 @@ document.getElementById('promotion-action-btn').onclick = async function() {
                     updateRankDisplay(data.promotion_result.rank || 0);
                 }
             }
+            
+            // Apply button states determined by backend
+            applyButtonStates(data);
             
             // No state machine - keep all buttons visible
         } else {
