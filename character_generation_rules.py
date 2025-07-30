@@ -115,14 +115,16 @@ def create_character_record() -> dict[str, Any]:
         "characteristics": {},
         "skills": {},
         "career_history": [],  # Track career progression and generation events
-        "skill_eligibility": 0,  # Track available skill points
-        "ready_for_skills": False,  # Flag to indicate if character is ready for skill resolution
-        "ready_for_ageing": False,  # Flag to indicate if character is ready for ageing
-        "survival_outcome": "pending",  # "pending", "survived", or "injured"
+        "skill_roll_eligibility": 0,  # Track available skill points
+        "survival_outcome": None,  # "survived" or "injured" (historical record, not "pending")  
         "seed": 77,
         "random_state": None,  # Store random generator state for consistent sequences
-        "commission_attempted_this_term": False, # Flag to track if a commission attempt was made in the current term
-        "commission_failed_this_term": False, # Flag to track if a commission attempt failed in the current term
+        # New simplified readiness flags per state-control-rules.md
+        "rdy_for_survival_check": False,
+        "rdy_for_commission_check": False,
+        "rdy_for_promotion_check": False,
+        "rdy_for_ageing_check": False,
+        "rdy_for_reenlistment": False
     }
 
 def get_current_term_number(character_record: dict[str, Any]) -> int:
@@ -280,6 +282,9 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
         character_record["drafted"] = True
         enlistment_result["outcome"] = "drafted"
         enlistment_result["assigned_service"] = drafted_service
+    
+    # Per state-control-rules.md: After Enlistment/Draft, ready for survival
+    character_record["rdy_for_survival_check"] = True
 
     # Add the enlistment attempt to the character's history
     character_record["career_history"].append(enlistment_result)
@@ -324,25 +329,32 @@ def check_survival(random_generator: random.Random, character_record: dict[str, 
     total = roll + modifier
     survived = total >= target
     
-    # Determine outcome (age advancement handled in check_ageing function)
+    # Per state-control-rules.md: After Survival Check
+    character_record["rdy_for_survival_check"] = False
+    
     if survived:
         outcome = "survived"
-        # Grant skill eligibilities for new term
-        increment_skill_eligibility_for_term(character_record)
-        # DO NOT complete term here - terms_served increments only at term completion
-        # Store survival outcome for reenlistment logic
         character_record["survival_outcome"] = "survived"
-        # Set ready for skills flag for survived characters
-        character_record["ready_for_skills"] = True
+        # Grant skill eligibilities for survival (proper amount based on term/career)
+        increment_skill_eligibility_for_term(character_record)
+        
+        # Determine next readiness state based on service and eligibility
+        career = character_record.get("career", "")
+        if career in ['Scouts', 'Others']:
+            # Skip commission/promotion for Scouts/Others - proceed to skills phase
+            pass  # skill_roll_eligibility will be consumed in skills phase
+        elif not character_record.get("commissioned", False):
+            # Eligible for commission (other rules checked elsewhere)
+            character_record["rdy_for_commission_check"] = True
+        elif character_record.get("commissioned", False):
+            # Already commissioned, check promotion eligibility
+            character_record["rdy_for_promotion_check"] = True
+            
     else:
-        outcome = "injured"
-        # Injured characters do NOT get skill eligibilities - skip commission/promotion/skills
-        # Store survival outcome for reenlistment logic
+        outcome = "injured" 
         character_record["survival_outcome"] = "injured"
-        # Set ready for skills flag to false for injured characters
-        character_record["ready_for_skills"] = False
-        # Set ready for ageing flag for injured characters (they skip skills entirely)
-        character_record["ready_for_ageing"] = True
+        # Injured characters skip commission/promotion/skills - go straight to ageing
+        character_record["rdy_for_ageing_check"] = True
     
     # Create the survival result
     survival_result = {
@@ -451,7 +463,9 @@ def check_commission(random_generator: random.Random, character_record: dict[str
     commission_result["total"] = total
     commission_result["success"] = commissioned
     
-    # Update character record based on outcome
+    # Per state-control-rules.md: After Commission Attempt
+    character_record["rdy_for_commission_check"] = False
+    
     if commissioned:
         # Set commissioned flag in the main character record (permanent status)
         character_record["commissioned"] = True
@@ -460,19 +474,22 @@ def check_commission(random_generator: random.Random, character_record: dict[str
         commission_result["career"] = career
         commission_result["outcome"] = "commissioned as officer"
         # Grant +1 skill eligibility for successful commission
-        character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + 1
+        character_record["skill_roll_eligibility"] = character_record.get("skill_roll_eligibility", 0) + 1
         commission_result["skill_eligibilities_granted"] = 1
-        character_record["commission_failed_this_term"] = False
+        
+        # Determine next state: if now commissioned and eligible for promotion
+        # (Additional promotion eligibility rules will be checked when promotion is attempted)
+        character_record["rdy_for_promotion_check"] = True
+        
     else:
         commission_result["rank"] = 0  # No rank if not commissioned
         commission_result["career"] = career
         commission_result["outcome"] = "not commissioned"
         commission_result["skill_eligibilities_granted"] = 0
-        character_record["commission_failed_this_term"] = True
+        # If commission failed, proceed to skills phase (no promotion possible)
     
     # Add the commission check to the character's career history
     character_record["career_history"].append(commission_result)
-    character_record["commission_attempted_this_term"] = True
     return character_record
 
 def check_promotion(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
@@ -581,13 +598,16 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         promotion_result["outcome"] = f"promoted to rank {new_rank}"
         
         # Grant +1 skill eligibility for successful promotion
-        character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + 1
+        character_record["skill_roll_eligibility"] = character_record.get("skill_roll_eligibility", 0) + 1
         promotion_result["skill_eligibilities_granted"] = 1
     else:
         promotion_result["rank"] = current_rank  # Keep current rank if not promoted
         promotion_result["career"] = career
         promotion_result["outcome"] = "not promoted"
         promotion_result["skill_eligibilities_granted"] = 0
+    
+    # Per state-control-rules.md: After Promotion Attempt
+    character_record["rdy_for_promotion_check"] = False
     
     # Add the promotion check to the character's career history
     character_record["career_history"].append(promotion_result)
@@ -873,27 +893,21 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         character_record["terms_served"] = old_terms + 1
     
     # Reset reenlistment readiness flag
-    character_record["ready_for_reenlistment"] = False
+    character_record["rdy_for_reenlistment"] = False
     
-    # Set appropriate next step based on reenlistment outcome
+    # Per state-control-rules.md: After Reenlistment
     if continue_career:
-        # Character will continue - set up for new term
-        character_record["ready_for_skills"] = False
-        character_record["ready_for_ageing"] = False
-        character_record["skill_eligibility"] = 0
-        character_record["survival_outcome"] = "pending"
-        # Reset commission attempt flag for new term
-        character_record["commission_attempted_this_term"] = False
-        character_record["commission_failed_this_term"] = False
-        
-        # Increment skill eligibility for the new term
-        increment_skill_eligibility_for_term(character_record)
+        # Reset all readiness flags and start new term
+        character_record["rdy_for_survival_check"] = True
+        character_record["rdy_for_commission_check"] = False  # Will be set by survival check
+        character_record["rdy_for_promotion_check"] = False   # Will be set by survival check  
+        character_record["rdy_for_ageing_check"] = False
+        character_record["rdy_for_reenlistment"] = False
+        character_record["skill_roll_eligibility"] = 0
+        character_record["survival_outcome"] = None
         
         # Add indication that a new term has started
         reenlistment_result["new_term_started"] = True
-    else:
-        # Character is leaving service - ready for mustering out
-        character_record["ready_for_mustering_out"] = True
 
     return character_record
 
@@ -997,13 +1011,9 @@ def check_ageing_characteristics(random_generator: random.Random, character_reco
     latest_ageing["ageing_effects"] = ageing_effects
     latest_ageing["total_effects"] = len(ageing_effects)
     
-    # Reset the ready_for_ageing flag after ageing is completed
-    character_record["ready_for_ageing"] = False
-    
-    # Mark the current term as completed if we have a terms array
-    if "terms" in character_record and character_record["terms"]:
-        # Mark the last term as completed
-        character_record["terms"][-1]["completed"] = True
+    # Per state-control-rules.md: After Ageing
+    character_record["rdy_for_ageing_check"] = False
+    character_record["rdy_for_reenlistment"] = True
     
     return character_record
 
@@ -1140,9 +1150,9 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     if "career" not in character_record:
         raise ValueError("Character record missing required field: 'career'")
     # Check if character has skill eligibilities available
-    skill_eligibility = character_record.get("skill_eligibility", 0)
-    if skill_eligibility <= 0:
-        raise ValueError("Character has no skill eligibilities available")
+    skill_roll_eligibility = character_record.get("skill_roll_eligibility", 0)
+    if skill_roll_eligibility <= 0:
+        raise ValueError("No skill rolls remaining this term - complete ageing to continue")
     
     # Get career
     career = character_record["career"]
@@ -1172,9 +1182,9 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     else:
         # Validate table choice
         if table_choice not in available_tables:
-            raise ValueError(f"Invalid table choice: {table_choice}")
+            raise ValueError(f"'{table_choice}' table does not exist for {career}")
         if not available_tables[table_choice]:
-            raise ValueError(f"Table not available: {table_choice}")
+            raise ValueError(f"'{table_choice}' table not available - check your rank/commission status")
         skill_event["table_choice_method"] = "player"
     
     skill_event["table_choice"] = table_choice
@@ -1184,7 +1194,7 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     
     # Ensure the table exists for this career
     if table_choice not in career_tables:
-        raise ValueError(f"Table {table_choice} not found for career {career}")
+        raise ValueError(f"'{table_choice}' table not found for {career} career")
     
     table = career_tables[table_choice]
     
@@ -1201,26 +1211,38 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     skill_event["skill_gained"] = skill_name
     
     # Process the skill result
-    if skill_name.startswith('+1'):
-        # This is a characteristic increase
-        char_short = skill_name.split()[1]  # Get the short form (STR, DEX, etc.)
+    if '+1' in skill_name or '+2' in skill_name:
+        # This is a characteristic increase - handle different formats
+        char_short = None
+        
+        if skill_name.startswith('+1 ') or skill_name.startswith('+2 '):
+            # Format: "+1 STR" or "+2 INT"
+            char_short = skill_name.split()[1]
+        elif ' +1' in skill_name or ' +2' in skill_name:
+            # Format: "STR +1" or "INT +2"
+            char_short = skill_name.split()[0]
         
         # Map the short form to the full characteristic name
         char_map = {
             'STR': 'strength',
-            'DEX': 'dexterity',
+            'DEX': 'dexterity', 
             'END': 'endurance',
             'INT': 'intelligence',
             'EDU': 'education',
             'SOC': 'social'
         }
         
-        characteristic = char_map.get(char_short, '').lower()
+        characteristic = char_map.get(char_short, '').lower() if char_short else None
+        
+        # Extract the bonus amount
+        bonus = 1  # default
+        if '+2' in skill_name:
+            bonus = 2
         
         # Update the characteristic
         if characteristic and characteristic in character_record.get("characteristics", {}):
             old_value = character_record["characteristics"][characteristic]
-            character_record["characteristics"][characteristic] += 1
+            character_record["characteristics"][characteristic] += bonus
             new_value = character_record["characteristics"][characteristic]
             
             skill_event["result_type"] = "characteristic_increase"
@@ -1246,29 +1268,14 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
             character_record["skills"][skill_name] = 1
     
     # Consume one skill eligibility
-    character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) - 1
+    character_record["skill_roll_eligibility"] = character_record.get("skill_roll_eligibility", 0) - 1
     skill_event["skill_eligibilities_consumed"] = 1
-    skill_event["skill_eligibilities_remaining"] = character_record["skill_eligibility"]
+    skill_event["skill_eligibilities_remaining"] = character_record["skill_roll_eligibility"]
     
     # Check if skills are now completed
-    if character_record["skill_eligibility"] <= 0:
-        character_record["ready_for_skills"] = False
-        
-        # Check if aging is needed for current age
-        current_age = character_record.get("age", 18)
-        ageing_thresholds = tables.AGING_THRESHOLDS
-        advanced_ageing_start = tables.ADVANCED_AGING_START
-        
-        # Determine if aging checks are required
-        needs_aging = (current_age in ageing_thresholds or 
-                      current_age >= advanced_ageing_start)
-        
-        if needs_aging:
-            character_record["ready_for_ageing"] = True
-        else:
-            # No aging needed - skip directly to reenlistment
-            character_record["ready_for_ageing"] = False
-            character_record["ready_for_reenlistment"] = True
+    if character_record["skill_roll_eligibility"] <= 0:
+        # Skills phase complete - move to ageing
+        character_record["rdy_for_ageing_check"] = True
     
     # Add the skill resolution event to the character's career history
     character_record["career_history"].append(skill_event)
@@ -1513,21 +1520,13 @@ def increment_skill_eligibility_for_term(character_record: dict) -> None:
     else:
         skill_eligibilities_granted = 2 if career == "Scouts" else 1
     
-    character_record["skill_eligibility"] = character_record.get("skill_eligibility", 0) + skill_eligibilities_granted
+    character_record["skill_roll_eligibility"] = character_record.get("skill_roll_eligibility", 0) + skill_eligibilities_granted
 
 def get_available_reenlistment_options(character_record):
     options = []
     
-    # Check if character is ready for reenlistment (after skills are complete, before aging)
-    # Character should be ready for reenlistment if:
-    # 1. They have completed their skills and are ready for reenlistment decision
-    # 2. They are injured and need medical discharge  
-    ready_for_reenlistment = (
-        character_record.get('ready_for_reenlistment', False) and  # Skills are complete, ready for reenlistment
-        not character_record.get('ready_for_skills', False)       # Skills are complete
-    )
-    
-    if not ready_for_reenlistment:
+    # Check if character is ready for reenlistment using new state control model
+    if not character_record.get('rdy_for_reenlistment', False):
         return options  # Empty list - character not ready for reenlistment
     
     if character_record.get('survival_outcome') == 'injured':
@@ -1576,8 +1575,8 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
     # Step 2: Check for characteristic effects
     character_record = check_ageing_characteristics(random_generator, character_record)
     
-    # ADD: Set ready_for_reenlistment flag when ageing is complete
-    character_record["ready_for_reenlistment"] = True
+    # Per state-control-rules.md: After Ageing
+    character_record["rdy_for_reenlistment"] = True
     
     return character_record
 

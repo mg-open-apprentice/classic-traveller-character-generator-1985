@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Commission Button Test</title>
+</head>
+<body>
+    <h1>Commission Button Test</h1>
+    
+    <div id="outcome-display" style="display: none; border: 1px solid green; padding: 10px; margin: 10px;">
+        <h3>Outcome</h3>
+        <div id="outcome-text">Ready for action...</div>
+    </div>
+    
+    <button id="commission-action-btn" style="display: block; padding: 10px; margin: 10px;">
+        <div>Commission</div>
+        <div id="commission-action-prob">83%</div>
+    </button>
+    
+    <button id="left-commission-btn" style="padding: 10px; margin: 10px;">Left Commission</button>
+    
+    <script>
+        function showOutcomeDisplay() {
+            document.getElementById('outcome-display').style.display = 'block';
+        }
+
+        function updateOutcomeText(text) {
+            document.getElementById('outcome-text').textContent = text;
+            showOutcomeDisplay();
+        }
+
+        function disableButton(buttonId) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.style.opacity = '0.5';
+                btn.disabled = true;
+                btn.style.cursor = 'not-allowed';
+            }
+        }
+
+        function showCommissionButton() {
+            console.log('showCommissionButton() called');
+            
+            // Show big middle panel button - add retry logic for DOM timing issues
+            let bigBtn = document.getElementById('commission-action-btn');
+            console.log('Commission action button found:', bigBtn !== null);
+            
+            // If element not found, try again after a short delay (DOM timing issue)
+            if (!bigBtn) {
+                console.warn('commission-action-btn not found on first try, retrying...');
+                setTimeout(() => {
+                    bigBtn = document.getElementById('commission-action-btn');
+                    if (!bigBtn) {
+                        console.error('CRITICAL: commission-action-btn element not found in DOM even after retry!');
+                        return;
+                    }
+                    setupCommissionButton(bigBtn);
+                }, 10);
+                return;
+            }
+            
+            setupCommissionButton(bigBtn);
+        }
+
+        function setupCommissionButton(bigBtn) {
+            console.log('setupCommissionButton called with element:', bigBtn !== null);
+            if (bigBtn) {
+                bigBtn.style.display = 'block';
+                
+                // Always set up the click handler
+                bigBtn.onclick = function() {
+                    console.log('Commission button clicked! Starting API call...');
+                    updateOutcomeText('Commission test clicked - API call would happen here');
+                    
+                    // Simulate API response
+                    setTimeout(() => {
+                        updateOutcomeText('Commission Failed: Test roll 3 vs target 5 - Better luck next time.');
+                        disableButton('left-commission-btn');
+                    }, 500);
+                };
+                
+                console.log('Commission button handler attached successfully');
+            } else {
+                console.error('Commission button not found in setupCommissionButton!');
+            }
+        }
+
+        // Test button
+        document.getElementById('left-commission-btn').onclick = function() {
+            console.log('Left commission button clicked');
+            showCommissionButton();
+        };
+        
+        // Auto-setup on page load
+        showCommissionButton();
+        
+        console.log('Test page loaded and commission button setup');
+    </script>
+</body>
+</html>

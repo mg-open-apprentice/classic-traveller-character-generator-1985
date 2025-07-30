@@ -9,8 +9,15 @@
 <body>
     <div class="terminal-container">
         <!-- Header -->
-        <div class="header">
+        <div class="header" style="position: relative;">
             Classic Traveller Character Generator
+            <!-- Debug Seed Input (TODO: Remove in production) -->
+            <div class="debug-seed-panel" id="debug-seed-panel" style="position: absolute; top: 5px; right: 10px; background: rgba(0,50,0,0.8); padding: 5px 8px; border: 1px solid #0f0; border-radius: 3px; font-family: 'Orbitron', monospace; font-size: 11px; z-index: 1000;">
+                <label for="seed-input" style="color: #0f0; margin-right: 4px;">SEED:</label>
+                <input type="number" id="seed-input" value="77" style="width: 60px; background: #000; color: #0f0; border: 1px solid #0f0; padding: 1px 3px; font-size: 11px;">
+                <button id="set-seed-btn" style="background: #003300; color: #0f0; border: 1px solid #0f0; padding: 1px 6px; margin-left: 3px; cursor: pointer; font-size: 11px;">SET</button>
+                <span id="current-seed-display" style="color: #0f0; margin-left: 6px; font-size: 9px;">Current: 77</span>
+            </div>
         </div>
         
         <!-- Left Sidebar -->

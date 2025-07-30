@@ -1,21 +1,35 @@
 {
-  "name": "Atlas Nebulae",
+  "name": "Cosmo Apex",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
-    "strength": 8,
+    "strength": 6,
     "dexterity": 7,
-    "endurance": 3,
-    "intelligence": 12,
-    "education": 9,
-    "social": 11
+    "endurance": 7,
+    "intelligence": 10,
+    "education": 8,
+    "social": 5
   },
   "skills": {},
-  "career_history": [],
-  "skill_eligibility": 0,
-  "ready_for_skills": false,
-  "ready_for_ageing": false,
-  "survival_outcome": "pending",
+  "career_history": [
+    {
+      "event_type": "enlistment_attempt",
+      "service": "Army",
+      "roll": 7,
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 7\u22656 (+1)",
+        "Endurance 7\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 10,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
+    }
+  ],
+  "skill_roll_eligibility": 0,
+  "survival_outcome": null,
   "seed": 42,
   "random_state": [
     3,
@@ -644,11 +658,15 @@
       1840566970,
       4008707741,
       1079217633,
-      4
+      2
     ],
     null
   ],
-  "commission_attempted_this_term": false,
-  "commission_failed_this_term": false,
-  "upp": "873C9B"
+  "rdy_for_survival_check": true,
+  "rdy_for_commission_check": false,
+  "rdy_for_promotion_check": false,
+  "rdy_for_ageing_check": false,
+  "rdy_for_reenlistment": false,
+  "upp": "677A85",
+  "career": "Army"
 }

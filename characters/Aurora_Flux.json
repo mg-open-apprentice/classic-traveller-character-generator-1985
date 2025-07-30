@@ -1,21 +1,133 @@
 {
-  "name": "Astra Quantum",
-  "age": 18,
-  "terms_served": 0,
+  "name": "Aurora Flux",
+  "age": 22,
+  "terms_served": 1,
   "characteristics": {
-    "strength": 6,
-    "dexterity": 9,
-    "endurance": 10,
-    "intelligence": 6,
-    "education": 6,
-    "social": 7
+    "strength": 4,
+    "dexterity": 8,
+    "endurance": 6,
+    "intelligence": 3,
+    "education": 7,
+    "social": 4
   },
-  "skills": {},
-  "career_history": [],
-  "skill_eligibility": 0,
-  "ready_for_skills": false,
-  "ready_for_ageing": false,
-  "survival_outcome": "pending",
+  "skills": {
+    "Gun Combat": 1,
+    "Tactics": 1
+  },
+  "career_history": [
+    {
+      "event_type": "enlistment_attempt",
+      "service": "Army",
+      "roll": 6,
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 8\u22656 (+1)",
+        "Endurance 6\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 9,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 4,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 6,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "commission_check",
+      "career": "Army",
+      "applicable": true,
+      "target": 5,
+      "modifier": 0,
+      "modifier_details": [],
+      "roll": 3,
+      "total": 3,
+      "success": false,
+      "rank": 0,
+      "outcome": "not commissioned",
+      "skill_eligibilities_granted": 0
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 3,
+      "skill_gained": "Gun Combat",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 4,
+      "skill_gained": "Tactics",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 18,
+      "current_age": 22,
+      "age_increase": 4,
+      "checks_performed": [],
+      "ageing_effects": [],
+      "total_effects": 0
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 22,
+      "preference": "reenlist",
+      "roll": 10,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 4,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 6,
+      "success": true,
+      "outcome": "survived"
+    }
+  ],
+  "skill_roll_eligibility": 1,
+  "survival_outcome": "survived",
   "seed": 77,
   "random_state": [
     3,
@@ -644,11 +756,15 @@
       1049490170,
       62653711,
       2027954952,
-      5
+      17
     ],
     null
   ],
-  "commission_attempted_this_term": false,
-  "commission_failed_this_term": false,
-  "upp": "69A667"
+  "rdy_for_survival_check": false,
+  "rdy_for_commission_check": true,
+  "rdy_for_promotion_check": false,
+  "rdy_for_ageing_check": false,
+  "rdy_for_reenlistment": false,
+  "upp": "486374",
+  "career": "Army"
 }
