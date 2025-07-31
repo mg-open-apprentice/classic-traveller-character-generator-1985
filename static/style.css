@@ -8,6 +8,12 @@
     --color-danger: #f44;
     --color-success: #4f8;
     
+    /* Characteristic bonus colors */
+    --char-excellent: #00ff00; /* +3 bonus - bright green */
+    --char-good: #80ff80;      /* +2 bonus - light green */
+    --char-average: #ffff00;   /* +1 bonus - yellow */
+    --char-poor: #ff4444;      /* negative bonus - red */
+    
     /* Spacing System */
     --space-xs: 2px;
     --space-sm: 5px;
@@ -1041,6 +1047,22 @@ body {
     font-weight: bold;
     text-transform: uppercase;
     margin-bottom: var(--space-xs);
+    color: var(--color-accent);
+}
+
+.service-career {
+    font-size: clamp(10px, 1.5vw, 12px);
+    color: var(--color-secondary);
+    margin-bottom: var(--space-xs);
+    font-style: italic;
+}
+
+.service-contract {
+    font-size: clamp(9px, 1.5vw, 11px);
+    color: var(--color-success);
+    margin-bottom: var(--space-xs);
+    text-transform: uppercase;
+    font-weight: bold;
 }
 
 .service-probability {
@@ -1074,11 +1096,20 @@ body {
 
 @media (max-width: 480px) {
     .enlistment-btn {
-        min-height: 60px;
+        min-height: 80px;
+        padding: var(--space-sm);
     }
     
     .service-name {
         font-size: 12px;
+    }
+    
+    .service-career {
+        font-size: 9px;
+    }
+    
+    .service-contract {
+        font-size: 8px;
     }
     
     .service-probability {
@@ -1546,5 +1577,191 @@ body {
     
     .sidebar {
         display: none; /* Hide controls when printing */
+    }
+}
+
+/* Characteristic value color coding */
+.char-excellent {
+    color: var(--char-excellent) !important;
+    font-weight: bold;
+}
+
+.char-good {
+    color: var(--char-good) !important;
+    font-weight: bold;
+}
+
+.char-average {
+    color: var(--char-average) !important;
+}
+
+.char-poor {
+    color: var(--char-poor) !important;
+}
+
+/* Roll Panel Styles - Survival & Commission */
+.roll-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-lg);
+    background: var(--color-bg);
+}
+
+.roll-header {
+    text-align: center;
+    margin-bottom: var(--space-xl);
+}
+
+.roll-header h3 {
+    color: var(--color-accent);
+    font-family: var(--font-display);
+    font-size: clamp(18px, 4vw, 24px);
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px currentColor;
+}
+
+.roll-header p {
+    color: var(--color-secondary);
+    font-size: clamp(12px, 2.5vw, 16px);
+    margin: 0;
+    font-family: var(--font-mono);
+}
+
+.roll-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1fr;
+    gap: var(--space-lg);
+    flex: 1;
+    min-height: 200px;
+}
+
+.roll-box {
+    background: var(--color-bg);
+    border: 3px solid var(--color-primary);
+    border-radius: var(--border-radius);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: var(--transition);
+}
+
+.roll-box:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 15px var(--color-primary);
+}
+
+.roll-box-header {
+    color: var(--color-secondary);
+    font-family: var(--font-display);
+    font-size: clamp(11px, 2vw, 14px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--space-sm);
+    font-weight: bold;
+}
+
+.roll-box-value {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: clamp(20px, 5vw, 32px);
+    font-weight: bold;
+    text-shadow: 0 0 8px currentColor;
+}
+
+.roll-button-box {
+    border-color: var(--color-success);
+    background: linear-gradient(135deg, var(--color-bg) 0%, rgba(0, 255, 0, 0.1) 100%);
+}
+
+.roll-button-box:hover {
+    border-color: var(--color-success);
+    box-shadow: 0 0 20px var(--color-success);
+    transform: translateY(-2px);
+}
+
+.roll-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-success);
+    font-family: var(--font-display);
+    font-size: clamp(14px, 3vw, 18px);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    width: 100%;
+    text-shadow: 0 0 5px currentColor;
+}
+
+.roll-btn:hover {
+    color: var(--color-accent);
+    text-shadow: 0 0 10px currentColor;
+    transform: scale(1.05);
+}
+
+.roll-btn:active {
+    transform: scale(0.95);
+}
+
+.roll-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.roll-btn-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 20px;
+}
+
+/* Mobile adjustments for roll panel */
+@media (max-width: 768px) {
+    .roll-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: var(--space-md);
+        min-height: auto;
+    }
+    
+    .roll-box {
+        padding: var(--space-md);
+        min-height: 80px;
+    }
+    
+    .roll-header h3 {
+        font-size: clamp(16px, 6vw, 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .roll-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, auto);
+        gap: var(--space-md);
+    }
+    
+    .roll-panel {
+        padding: var(--space-md);
+    }
+    
+    .roll-box {
+        padding: var(--space-sm);
+        min-height: 70px;
+    }
+    
+    .roll-box-value {
+        font-size: clamp(18px, 6vw, 24px);
     }
 } 

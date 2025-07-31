@@ -84,39 +84,29 @@
         
         <!-- Right Middle -->
         <div class="panel right-middle">
-            <!-- Event Record Panel (default) -->
-            <div class="event-record" id="event-panel" style="display: none;">
-                <div class="event-grid">
-                    <!-- Top Row -->
-                    <div class="event-item">
-                        <div class="event-header">Test</div>
-                        <div class="event-value" id="event-test">-</div>
+            <!-- Unified Roll Panel -->
+            <div class="roll-panel" id="roll-panel" style="display: none;">
+                <div class="roll-header">
+                    <h3 id="roll-title">Survival Check</h3>
+                    <p id="roll-description">Roll 2d6 to survive this term</p>
+                </div>
+                <div class="roll-grid">
+                    <div class="roll-box">
+                        <div class="roll-box-header">Target</div>
+                        <div class="roll-box-value" id="roll-target">-</div>
                     </div>
-                    
-                    <div class="event-item">
-                        <div class="event-header">Target</div>
-                        <div class="event-value" id="event-target">-</div>
+                    <div class="roll-box">
+                        <div class="roll-box-header">Bonuses</div>
+                        <div class="roll-box-value" id="roll-bonuses">0</div>
                     </div>
-                    
-                    <div class="event-item">
-                        <div class="event-header">Characteristics</div>
-                        <div class="event-value" id="event-characteristics">-</div>
+                    <div class="roll-box roll-button-box">
+                        <button class="roll-btn" id="roll-dice-btn">
+                            <div class="roll-btn-text">Roll 2d6</div>
+                        </button>
                     </div>
-                    
-                    <!-- Bottom Row -->
-                    <div class="event-item">
-                        <div class="event-header">Probability</div>
-                        <div class="event-value" id="event-probability">-</div>
-                    </div>
-                    
-                    <div class="event-item">
-                        <div class="event-header">Roll</div>
-                        <div class="event-value" id="event-roll">-</div>
-                    </div>
-                    
-                    <div class="event-item">
-                        <div class="event-header">Outcome</div>
-                        <div class="event-value" id="event-outcome">-</div>
+                    <div class="roll-box">
+                        <div class="roll-box-header">Outcome</div>
+                        <div class="roll-box-value" id="roll-outcome">-</div>
                     </div>
                 </div>
             </div>
@@ -124,7 +114,7 @@
             <!-- Characteristics Panel (shown when ready for characteristics) -->
             <div class="characteristics-panel" id="characteristics-panel" style="display: none;">
                 <div class="characteristics-header">
-                    <h3>Generate Characteristics</h3>
+                    <h3>PHASE: CHARACTER CREATION - Generate Characteristics</h3>
                     <p>Click each characteristic to reveal its value</p>
                 </div>
                 <div class="characteristics-grid">
@@ -153,40 +143,12 @@
                         <div class="char-value" id="social-value">?</div>
                     </button>
                 </div>
-                
-                <!-- Service Metrics Panel REMOVED - duplicate of enlistment panel -->
-            </div>
-            
-            <!-- Actions Panel (shown during term activities) -->
-            <div class="actions-panel" id="actions-panel" style="display: none;">
-                <div class="actions-header">
-                    <h3>Term Actions</h3>
-                    <p>Select an action to attempt this term</p>
-                </div>
-                <div class="actions-grid">
-                    <button class="action-btn" id="survival-action-btn">
-                        <div class="action-name">Survival</div>
-                        <div class="action-probability" id="survival-action-prob">-</div>
-                    </button>
-                    <button class="action-btn" id="commission-action-btn" style="display: none;">
-                        <div class="action-name">Commission</div>
-                        <div class="action-probability" id="commission-action-prob">-</div>
-                    </button>
-                    <button class="action-btn" id="promotion-action-btn" style="display: none;">
-                        <div class="action-name">Promotion</div>
-                        <div class="action-probability" id="promotion-action-prob">-</div>
-                    </button>
-                    <!-- Empty slots for 3x2 grid consistency -->
-                    <div class="action-placeholder"></div>
-                    <div class="action-placeholder"></div>
-                    <div class="action-placeholder"></div>
-                </div>
             </div>
             
             <!-- Skills Panel (shown when ready for skills) -->
             <div class="skills-panel" id="skills-panel" style="display: none;">
                 <div class="skills-header">
-                    <h3>Skill Development</h3>
+                    <h3>PHASE: SKILL DEVELOPMENT - Skill Development</h3>
                     <p>Choose a skill table to develop your character</p>
                 </div>
                 <div class="skills-grid" id="skills-grid">
@@ -212,32 +174,45 @@
             <!-- Enlistment Panel (shown when ready for enlistment) -->
             <div class="enlistment-panel" id="enlistment-panel" style="display: none;">
                 <div class="enlistment-header">
-                    <h3>Choose Your Service</h3>
-                    <p>Select a military service to attempt enlistment</p>
+                    <h3>PHASE: ENLISTMENT - Choose Your Service</h3>
+                    <p>Select a military service to attempt enlistment<br>
+                    <small style="color: #666;">Success = Enlisted Contract | Failure = Drafted into Random Service</small></p>
                 </div>
                 <div class="enlistment-grid">
                     <button class="enlistment-btn" id="navy-btn">
                         <div class="service-name">Navy</div>
+                        <div class="service-career">Naval Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="navy-prob">-</div>
                     </button>
                     <button class="enlistment-btn" id="marines-btn">
                         <div class="service-name">Marines</div>
+                        <div class="service-career">Marine Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="marines-prob">-</div>
                     </button>
                     <button class="enlistment-btn" id="army-btn">
                         <div class="service-name">Army</div>
+                        <div class="service-career">Military Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="army-prob">-</div>
                     </button>
                     <button class="enlistment-btn" id="scouts-btn">
                         <div class="service-name">Scouts</div>
+                        <div class="service-career">Explorer Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="scouts-prob">-</div>
                     </button>
                     <button class="enlistment-btn" id="merchants-btn">
                         <div class="service-name">Merchants</div>
+                        <div class="service-career">Commercial Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="merchants-prob">-</div>
                     </button>
                     <button class="enlistment-btn" id="others-btn">
                         <div class="service-name">Others</div>
+                        <div class="service-career">Civilian Career</div>
+                        <div class="service-contract">Enlisted Service</div>
                         <div class="service-probability" id="others-prob">-</div>
                     </button>
                 </div>
@@ -246,7 +221,7 @@
             <!-- Mustering Out Panel (shown when ready for mustering out) -->
             <div class="mustering-out-panel" id="mustering-out-panel" style="display: none;">
                 <div class="mustering-out-header">
-                    <h3>Mustering Out</h3>
+                    <h3>PHASE: MUSTERING OUT - Mustering Out</h3>
                     <p>Choose how many cash rolls to take (remainder will be benefits)</p>
                 </div>
                 <div class="mustering-out-grid">
@@ -351,19 +326,6 @@
                     </div>
                 </div>
                 
-                <!-- Alternative: Mustering Out Layout -->
-                <div class="muster-display" style="display: none;">
-                    <div class="muster-header">
-                        <div class="muster-title">Mustering Out</div>
-                    </div>
-                    
-                    <div class="muster-section">
-                        <div class="muster-item">Cash</div>
-                        <div class="muster-item">Pension</div>
-                        <div class="muster-item">Acquisitions</div>
-                        <div class="muster-item">Benefits</div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
