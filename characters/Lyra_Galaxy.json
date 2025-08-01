@@ -1,7 +1,7 @@
 {
   "name": "Lyra Galaxy",
-  "age": 22,
-  "terms_served": 1,
+  "age": 18,
+  "terms_served": 0,
   "characteristics": {
     "strength": 4,
     "dexterity": 8,
@@ -10,10 +10,7 @@
     "education": 7,
     "social": 4
   },
-  "skills": {
-    "Electronic": 1,
-    "Forward Observer": 1
-  },
+  "skills": {},
   "career_history": [
     {
       "event_type": "enlistment_attempt",
@@ -56,77 +53,9 @@
       "rank": 0,
       "outcome": "not commissioned",
       "skill_eligibilities_granted": 0
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 1
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 4,
-      "skill_gained": "Forward Observer",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check",
-      "previous_age": 18,
-      "current_age": 22,
-      "age_increase": 4,
-      "checks_performed": [],
-      "ageing_effects": [],
-      "total_effects": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 22,
-      "preference": "reenlist",
-      "roll": 10,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 4,
-      "modifier": 2,
-      "modifier_details": [
-        "Education 7\u22656 (+2)"
-      ],
-      "target": 5,
-      "total": 6,
-      "success": true,
-      "outcome": "survived"
     }
   ],
-  "skill_roll_eligibility": 1,
+  "skill_roll_eligibility": 2,
   "survival_outcome": "survived",
   "seed": 77,
   "random_state": [
@@ -756,12 +685,12 @@
       1049490170,
       62653711,
       2027954952,
-      17
+      9
     ],
     null
   ],
   "rdy_for_survival_check": false,
-  "rdy_for_commission_check": true,
+  "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,

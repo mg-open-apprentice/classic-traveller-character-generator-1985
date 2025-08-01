@@ -285,6 +285,17 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     
     # Per state-control-rules.md: After Enlistment/Draft, ready for survival
     character_record["rdy_for_survival_check"] = True
+    
+    # Reset commission and promotion flags based on new service assignment
+    assigned_service = character_record["career"]
+    if assigned_service in ['Scouts', 'Others']:
+        # Scouts and Others never have commission or promotion opportunities
+        character_record["rdy_for_commission_check"] = False
+        character_record["rdy_for_promotion_check"] = False
+    else:
+        # Army, Navy, Marines, Merchants can potentially get commissions later
+        character_record["rdy_for_commission_check"] = False  # Will be set after survival
+        character_record["rdy_for_promotion_check"] = False
 
     # Add the enlistment attempt to the character's history
     character_record["career_history"].append(enlistment_result)

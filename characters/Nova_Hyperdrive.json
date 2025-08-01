@@ -1,28 +1,18 @@
 {
-  "name": "Orion Pulsar",
+  "name": "Nova Hyperdrive",
   "age": 18,
-  "terms_served": 1,
-  "characteristics": {
-    "strength": 4,
-    "dexterity": 8,
-    "endurance": 6,
-    "intelligence": 3,
-    "education": 7,
-    "social": 4
-  },
+  "terms_served": 0,
+  "characteristics": {},
   "skills": {},
   "career_history": [
     {
       "event_type": "enlistment_attempt",
       "service": "Army",
       "roll": 6,
-      "modifier": 3,
-      "modifier_details": [
-        "Dexterity 8\u22656 (+1)",
-        "Endurance 6\u22655 (+2)"
-      ],
+      "modifier": 0,
+      "modifier_details": [],
       "target": 5,
-      "total": 9,
+      "total": 6,
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
@@ -31,44 +21,16 @@
       "event_type": "survival_check",
       "career": "Army",
       "roll": 4,
-      "modifier": 2,
-      "modifier_details": [
-        "Education 7\u22656 (+2)"
-      ],
-      "target": 5,
-      "total": 6,
-      "success": true,
-      "outcome": "survived"
-    },
-    {
-      "event_type": "commission_check",
-      "career": "Army",
-      "applicable": true,
-      "target": 5,
       "modifier": 0,
       "modifier_details": [],
-      "roll": 3,
-      "total": 3,
+      "target": 5,
+      "total": 4,
       "success": false,
-      "rank": 0,
-      "outcome": "not commissioned",
-      "skill_eligibilities_granted": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 18,
-      "preference": "reenlist",
-      "roll": 7,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
+      "outcome": "injured"
     }
   ],
   "skill_roll_eligibility": 0,
-  "survival_outcome": null,
+  "survival_outcome": "injured",
   "seed": 77,
   "random_state": [
     3,
@@ -697,15 +659,15 @@
       1049490170,
       62653711,
       2027954952,
-      11
+      5
     ],
     null
   ],
-  "rdy_for_survival_check": true,
+  "rdy_for_survival_check": false,
   "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
-  "rdy_for_ageing_check": false,
+  "rdy_for_ageing_check": true,
   "rdy_for_reenlistment": false,
-  "upp": "486374",
+  "upp": "______",
   "career": "Army"
 }

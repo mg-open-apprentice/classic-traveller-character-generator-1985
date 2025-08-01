@@ -1,7 +1,7 @@
 {
-  "name": "Orion Pulsar",
+  "name": "Cassius Cipher",
   "age": 18,
-  "terms_served": 1,
+  "terms_served": 0,
   "characteristics": {
     "strength": 4,
     "dexterity": 8,
@@ -41,34 +41,77 @@
       "outcome": "survived"
     },
     {
-      "event_type": "commission_check",
-      "career": "Army",
-      "applicable": true,
-      "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
+      "event_type": "enlistment_attempt",
+      "service": "Army",
       "roll": 3,
-      "total": 3,
-      "success": false,
-      "rank": 0,
-      "outcome": "not commissioned",
-      "skill_eligibilities_granted": 0
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 8\u22656 (+1)",
+        "Endurance 6\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 6,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
     },
     {
-      "event_type": "reenlistment_attempt",
+      "event_type": "survival_check",
       "career": "Army",
-      "age": 18,
-      "preference": "reenlist",
       "roll": 7,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 9,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 10,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 12,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "enlistment_attempt",
+      "service": "Army",
+      "roll": 4,
+      "modifier": 3,
+      "modifier_details": [
+        "Dexterity 8\u22656 (+1)",
+        "Endurance 6\u22655 (+2)"
+      ],
+      "target": 5,
+      "total": 7,
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 11,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 13,
+      "success": true,
+      "outcome": "survived"
     }
   ],
-  "skill_roll_eligibility": 0,
-  "survival_outcome": null,
+  "skill_roll_eligibility": 8,
+  "survival_outcome": "survived",
   "seed": 77,
   "random_state": [
     3,
@@ -697,12 +740,12 @@
       1049490170,
       62653711,
       2027954952,
-      11
+      19
     ],
     null
   ],
-  "rdy_for_survival_check": true,
-  "rdy_for_commission_check": false,
+  "rdy_for_survival_check": false,
+  "rdy_for_commission_check": true,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,

@@ -64,6 +64,18 @@ function setupEventListeners() {
         promotionBtn.addEventListener('click', showPromotionRoll);
     }
     
+    // Skills button (left sidebar)
+    const skillsBtn = document.getElementById('left-skills-btn');
+    if (skillsBtn) {
+        skillsBtn.addEventListener('click', showSkillsPanel);
+    }
+    
+    // Ageing button (left sidebar)
+    const ageingBtn = document.getElementById('left-ageing-btn');
+    if (ageingBtn) {
+        ageingBtn.addEventListener('click', showAgeingPanel);
+    }
+    
     // Reenlist button (left sidebar)
     const reenlistBtn = document.getElementById('left-reenlist-btn');
     if (reenlistBtn) {
@@ -99,9 +111,16 @@ async function loadCurrentCharacter() {
                 updateCharacterDisplay();
                 updateUIState();
             }
+        } else if (response.status === 400) {
+            // No character exists yet - this is normal on page load
+            console.log('No current character - ready for character creation');
+            currentCharacter = null;
+            updateUIState(); // This will enable all buttons
         }
     } catch (error) {
         console.log('No current character loaded');
+        currentCharacter = null;
+        updateUIState();
     }
 }
 
@@ -154,6 +173,55 @@ function updateCharacterDisplay() {
         const rank = currentCharacter.rank || 0;
         charTerms.textContent = `Terms ${terms} Rank ${rank}`;
     }
+    
+    // Update skills display
+    updateSkillsDisplay();
+}
+
+function updateSkillsDisplay() {
+    if (!currentCharacter) return;
+    
+    const skillsDisplay = document.getElementById('skills-display');
+    if (!skillsDisplay) return;
+    
+    const skills = currentCharacter.skills || {};
+    const skillEntries = Object.entries(skills);
+    
+    if (skillEntries.length === 0) {
+        skillsDisplay.innerHTML = '<span class="section-label">Skills </span>None';
+    } else {
+        const skillTexts = skillEntries.map(([skill, level]) => {
+            return level > 1 ? `${skill}-${level}` : skill;
+        });
+        skillsDisplay.innerHTML = `<span class="section-label">Skills </span>${skillTexts.join(', ')}`;
+    }
+}
+
+function hasCompletedActionThisTerm(actionType) {
+    if (!currentCharacter) return false;
+    
+    const currentTerm = (currentCharacter.terms_served || 0) + 1;
+    const careerHistory = currentCharacter.career_history || [];
+    
+    // Find the start of the current term
+    let currentTermStartIndex = 0;
+    for (let i = careerHistory.length - 1; i >= 0; i--) {
+        const event = careerHistory[i];
+        if (event.event_type === 'reenlistment_attempt' && event.new_term_started) {
+            currentTermStartIndex = i + 1;
+            break;
+        }
+    }
+    
+    // Check if the action has been completed since the current term started
+    for (let i = currentTermStartIndex; i < careerHistory.length; i++) {
+        const event = careerHistory[i];
+        if (event.event_type === actionType) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 function updateUIState() {
@@ -164,6 +232,9 @@ function updateUIState() {
     if (currentCharacter.name && enlistSection) {
         enlistSection.style.display = 'block';
     }
+    
+    // Update button states based on character readiness flags
+    updateButtonStates();
     
     // Check what phase we're in
     if (currentCharacter.upp === '______') {
@@ -183,6 +254,118 @@ function updateUIState() {
         // User must manually click the appropriate button in left sidebar
         hideAllPanels();
     }
+}
+
+function updateButtonStates() {
+    if (!currentCharacter) {
+        // No character loaded - enable all buttons
+        enableAllButtons();
+        return;
+    }
+    
+    const survivalBtn = document.getElementById('left-survival-btn');
+    const commissionBtn = document.getElementById('left-commission-btn');
+    const promotionBtn = document.getElementById('left-promotion-btn');
+    const skillsBtn = document.getElementById('left-skills-btn');
+    const ageingBtn = document.getElementById('left-ageing-btn');
+    const reenlistBtn = document.getElementById('left-reenlist-btn');
+    
+    if (currentCharacter.career) {
+        // Service has been assigned - apply simple rules
+        
+        // Survival button: disable if already completed this term
+        if (survivalBtn) {
+            if (hasCompletedActionThisTerm('survival_check')) {
+                disableButton(survivalBtn);
+            } else {
+                enableButton(survivalBtn);
+            }
+        }
+        
+        // Commission button: simple rules
+        if (commissionBtn) {
+            if (currentCharacter.career === 'Scouts' || currentCharacter.career === 'Others') {
+                disableButton(commissionBtn); // Scouts/Others never get commissions
+            } else if (currentCharacter.commissioned) {
+                disableButton(commissionBtn); // Already commissioned
+            } else if (hasCompletedActionThisTerm('commission_check')) {
+                disableButton(commissionBtn); // Already tried this term
+            } else {
+                enableButton(commissionBtn); // Available for Army/Navy/Marines/Merchants
+            }
+        }
+        
+        // Promotion button: simple rules
+        if (promotionBtn) {
+            if (currentCharacter.career === 'Scouts' || currentCharacter.career === 'Others') {
+                disableButton(promotionBtn); // Scouts/Others never get promotions
+            } else if (!currentCharacter.commissioned) {
+                disableButton(promotionBtn); // Must be commissioned first
+            } else if (hasCompletedActionThisTerm('promotion_check')) {
+                disableButton(promotionBtn); // Already tried this term
+            } else {
+                enableButton(promotionBtn); // Available for commissioned officers
+            }
+        }
+        
+        // Skills button: enable if skill rolls available
+        if (skillsBtn) {
+            if (currentCharacter.skill_roll_eligibility > 0) {
+                enableButton(skillsBtn);
+            } else {
+                disableButton(skillsBtn);
+            }
+        }
+        
+        // Other buttons: enable unless already completed
+        if (ageingBtn) {
+            if (hasCompletedActionThisTerm('ageing_check')) {
+                disableButton(ageingBtn);
+            } else {
+                enableButton(ageingBtn);
+            }
+        }
+        
+        if (reenlistBtn) {
+            if (hasCompletedActionThisTerm('reenlistment_attempt')) {
+                disableButton(reenlistBtn);
+            } else {
+                enableButton(reenlistBtn);
+            }
+        }
+        
+    } else {
+        // Character exists but no service assigned yet - enable all buttons
+        enableAllButtons();
+    }
+}
+
+function enableAllButtons() {
+    const survivalBtn = document.getElementById('left-survival-btn');
+    const commissionBtn = document.getElementById('left-commission-btn');
+    const promotionBtn = document.getElementById('left-promotion-btn');
+    const skillsBtn = document.getElementById('left-skills-btn');
+    const ageingBtn = document.getElementById('left-ageing-btn');
+    const reenlistBtn = document.getElementById('left-reenlist-btn');
+    
+    if (survivalBtn) enableButton(survivalBtn);
+    if (commissionBtn) enableButton(commissionBtn);
+    if (promotionBtn) enableButton(promotionBtn);
+    if (skillsBtn) enableButton(skillsBtn);
+    if (ageingBtn) enableButton(ageingBtn);
+    if (reenlistBtn) enableButton(reenlistBtn);
+}
+
+function enableButton(button) {
+    button.disabled = false;
+    button.classList.remove('btn-disabled');
+    button.style.pointerEvents = 'auto';
+}
+
+function disableButton(button) {
+    button.disabled = true;
+    button.classList.add('btn-disabled');
+    button.style.pointerEvents = 'none';
 }
 
 async function showSurvivalRoll() {
@@ -308,6 +491,7 @@ function hideAllPanels() {
         'roll-panel',
         'characteristics-panel', 
         'skills-panel',
+        'ageing-panel',
         'enlistment-panel',
         'mustering-out-panel'
     ];
@@ -318,6 +502,153 @@ function hideAllPanels() {
     });
     
     // Note: characteristics-display stays visible once shown
+}
+
+async function showSkillsPanel() {
+    if (!currentCharacter) return;
+    
+    // Hide other panels
+    hideAllPanels();
+    
+    // Show skills panel
+    const skillsPanel = document.getElementById('skills-panel');
+    if (skillsPanel) {
+        skillsPanel.style.display = 'block';
+    }
+    
+    // Show appropriate skill table buttons based on education
+    const educationLevel = currentCharacter.characteristics?.education || 0;
+    const showEducationTable = educationLevel >= 8;
+    
+    // Always show these three tables
+    const personalBtn = document.getElementById('personal-skill-btn');
+    const serviceBtn = document.getElementById('service-skill-btn');
+    const advancedBtn = document.getElementById('advanced-skill-btn');
+    const educationBtn = document.getElementById('education-skill-btn');
+    
+    if (personalBtn) personalBtn.style.display = 'block';
+    if (serviceBtn) serviceBtn.style.display = 'block';
+    if (advancedBtn) advancedBtn.style.display = 'block';
+    
+    // Show education table only if education 8+
+    if (educationBtn) {
+        educationBtn.style.display = showEducationTable ? 'block' : 'none';
+    }
+    
+    // Add event listeners for skill table buttons
+    setupSkillTableListeners();
+}
+
+function setupSkillTableListeners() {
+    const skillButtons = [
+        { id: 'personal-skill-btn', table: 'personal' },
+        { id: 'service-skill-btn', table: 'service' },
+        { id: 'advanced-skill-btn', table: 'advanced' },
+        { id: 'education-skill-btn', table: 'education' }
+    ];
+    
+    skillButtons.forEach(({ id, table }) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            // Remove existing listeners to avoid duplicates
+            btn.replaceWith(btn.cloneNode(true));
+            const newBtn = document.getElementById(id);
+            newBtn.addEventListener('click', () => rollOnSkillTable(table));
+        }
+    });
+}
+
+async function rollOnSkillTable(tableName) {
+    if (!currentCharacter) return;
+    
+    try {
+        const response = await fetch('/api/resolve_skill', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                table_choice: tableName
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update character data
+            currentCharacter = data.character;
+            
+            // Show skill result in UI (no popup)
+            const skillEvent = data.skill_event;
+            if (skillEvent) {
+                console.log(`Skill gained: ${skillEvent.skill_gained || 'Unknown skill'}`);
+            }
+            
+            // Update character display
+            updateCharacterDisplay();
+            updateButtonStates();
+            
+            // Check if more skill rolls are available
+            if (currentCharacter.skill_roll_eligibility > 0) {
+                // Stay in skills panel for next roll
+                showSkillsPanel();
+            } else {
+                // No more skills available, hide panel
+                hideAllPanels();
+            }
+        }
+    } catch (error) {
+        console.error('Error rolling skill:', error);
+    }
+}
+
+function showAgeingPanel() {
+    if (!currentCharacter) return;
+    
+    // Hide other panels
+    hideAllPanels();
+    
+    // Show ageing panel
+    const ageingPanel = document.getElementById('ageing-panel');
+    if (ageingPanel) {
+        ageingPanel.style.display = 'block';
+    }
+    
+    // Set up the +4 years button
+    const addYearsBtn = document.getElementById('add-years-btn');
+    if (addYearsBtn) {
+        // Remove existing listeners to avoid duplicates
+        addYearsBtn.replaceWith(addYearsBtn.cloneNode(true));
+        const newBtn = document.getElementById('add-years-btn');
+        newBtn.addEventListener('click', performAgeing);
+    }
+}
+
+async function performAgeing() {
+    if (!currentCharacter) return;
+    
+    try {
+        const response = await fetch('/api/ageing', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update character data
+            currentCharacter = data.character;
+            
+            // Update character display
+            updateCharacterDisplay();
+            updateButtonStates();
+            
+            // Hide ageing panel
+            hideAllPanels();
+        }
+    } catch (error) {
+        console.error('Error performing ageing:', error);
+    }
 }
 
 async function handleRollDice() {
@@ -398,6 +729,8 @@ async function performCommissionRoll() {
             
             // Update character display
             updateCharacterDisplay();
+            // Update button states but don't auto-show panels (preserve roll outcome)
+            updateButtonStates();
             
             // Keep roll outcome visible until user clicks another button
             // No automatic UI state update
@@ -601,7 +934,12 @@ function showEnlistmentPanel() {
 
 async function loadEnlistmentProbabilities() {
     try {
-        const response = await fetch('/api/enlistment_probabilities');
+        const response = await fetch('/api/enlistment_probabilities', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         const data = await response.json();
         
         if (data.success) {

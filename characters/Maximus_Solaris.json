@@ -1,7 +1,7 @@
 {
-  "name": "Orion Pulsar",
+  "name": "Maximus Solaris",
   "age": 18,
-  "terms_served": 1,
+  "terms_served": 0,
   "characteristics": {
     "strength": 4,
     "dexterity": 8,
@@ -26,45 +26,6 @@
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 4,
-      "modifier": 2,
-      "modifier_details": [
-        "Education 7\u22656 (+2)"
-      ],
-      "target": 5,
-      "total": 6,
-      "success": true,
-      "outcome": "survived"
-    },
-    {
-      "event_type": "commission_check",
-      "career": "Army",
-      "applicable": true,
-      "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 3,
-      "total": 3,
-      "success": false,
-      "rank": 0,
-      "outcome": "not commissioned",
-      "skill_eligibilities_granted": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 18,
-      "preference": "reenlist",
-      "roll": 7,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
     }
   ],
   "skill_roll_eligibility": 0,
@@ -697,7 +658,7 @@
       1049490170,
       62653711,
       2027954952,
-      11
+      3
     ],
     null
   ],

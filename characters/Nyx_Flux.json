@@ -1,5 +1,5 @@
 {
-  "name": "Aurora Flux",
+  "name": "Nyx Flux",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
@@ -26,23 +26,10 @@
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 7,
-      "modifier": 2,
-      "modifier_details": [
-        "Education 8\u22656 (+2)"
-      ],
-      "target": 5,
-      "total": 9,
-      "success": true,
-      "outcome": "survived"
     }
   ],
-  "skill_roll_eligibility": 2,
-  "survival_outcome": "survived",
+  "skill_roll_eligibility": 0,
+  "survival_outcome": null,
   "seed": 42,
   "random_state": [
     3,
@@ -671,12 +658,12 @@
       1840566970,
       4008707741,
       1079217633,
-      4
+      2
     ],
     null
   ],
-  "rdy_for_survival_check": false,
-  "rdy_for_commission_check": true,
+  "rdy_for_survival_check": true,
+  "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,

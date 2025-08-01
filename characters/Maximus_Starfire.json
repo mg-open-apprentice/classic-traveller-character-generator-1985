@@ -1,5 +1,5 @@
 {
-  "name": "Aurora Flux",
+  "name": "Maximus Starfire",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
@@ -39,9 +39,42 @@
       "total": 9,
       "success": true,
       "outcome": "survived"
+    },
+    {
+      "event_type": "commission_check",
+      "career": "Army",
+      "applicable": true,
+      "target": 5,
+      "modifier": 1,
+      "modifier_details": [
+        "Endurance 7\u22657 (+1)"
+      ],
+      "roll": 5,
+      "total": 6,
+      "success": true,
+      "rank": 1,
+      "outcome": "commissioned as officer",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 1,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 8\u22657 (+1)"
+      ],
+      "roll": 4,
+      "total": 5,
+      "success": false,
+      "rank": 1,
+      "outcome": "not promoted",
+      "skill_eligibilities_granted": 0
     }
   ],
-  "skill_roll_eligibility": 2,
+  "skill_roll_eligibility": 3,
   "survival_outcome": "survived",
   "seed": 42,
   "random_state": [
@@ -671,15 +704,17 @@
       1840566970,
       4008707741,
       1079217633,
-      4
+      8
     ],
     null
   ],
   "rdy_for_survival_check": false,
-  "rdy_for_commission_check": true,
+  "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,
   "upp": "677A85",
-  "career": "Army"
+  "career": "Army",
+  "commissioned": true,
+  "rank": 1
 }
