@@ -56,22 +56,16 @@ def index():
 @app.route('/api/create_character', methods=['POST'])
 def api_create_character():
     global current_character
-    # Clear any existing character completely
+    # Completely wipe any existing character
     current_character = None
     
-    # Create completely fresh character with advanced RNG
-    if current_character is not None:
-        # Use existing character's RNG to advance to next name
-        rng = chargen.get_random_generator(current_character)
-    else:
-        # Start fresh but advance the seed a bit to get different names
-        import time
-        import random
-        temp_rng = random.Random(GLOBAL_SEED + int(time.time()) % 1000)
-        rng = temp_rng
+    # Create completely fresh character with time-based RNG for unique names
+    import time
+    import random
+    temp_rng = random.Random(GLOBAL_SEED + int(time.time()) % 1000)
     
     current_character = chargen.create_character_record()
-    current_character["name"] = chargen.generate_character_name(rng)
+    current_character["name"] = chargen.generate_character_name(temp_rng)
     current_character["upp"] = "______"  # Reset UPP for new character
     current_character["seed"] = GLOBAL_SEED  # Store the seed used for this character
     
@@ -568,6 +562,7 @@ def api_action_probability():
             "success": True,
             "target": target,
             "modifiers": modifiers,
+            "total_modifier": modifiers,
             "modifier_details": modifier_details,
             "probability": probability_data
         })

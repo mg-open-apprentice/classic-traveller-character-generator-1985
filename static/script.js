@@ -64,6 +64,12 @@ function setupEventListeners() {
         promotionBtn.addEventListener('click', showPromotionRoll);
     }
     
+    // Reenlist button (left sidebar)
+    const reenlistBtn = document.getElementById('left-reenlist-btn');
+    if (reenlistBtn) {
+        reenlistBtn.addEventListener('click', showReenlistRoll);
+    }
+    
     // Characteristic buttons
     const charButtons = ['strength', 'dexterity', 'endurance', 'intelligence', 'education', 'social'];
     charButtons.forEach(char => {
@@ -143,7 +149,11 @@ function updateCharacterDisplay() {
         charService.textContent = serviceText;
     }
     if (charAge) charAge.textContent = `Age ${currentCharacter.age || 18}`;
-    if (charTerms) charTerms.textContent = `Terms ${currentCharacter.terms_served || 0}`;
+    if (charTerms) {
+        const terms = currentCharacter.terms_served || 0;
+        const rank = currentCharacter.rank || 0;
+        charTerms.textContent = `Terms ${terms} Rank ${rank}`;
+    }
 }
 
 function updateUIState() {
@@ -319,6 +329,8 @@ async function handleRollDice() {
         await performCommissionRoll();
     } else if (rollType === 'promotion') {
         await performPromotionRoll();
+    } else if (rollType === 'reenlistment') {
+        await performReenlistRoll();
     }
 }
 
@@ -433,6 +445,73 @@ async function performPromotionRoll() {
         }
     } catch (error) {
         console.error('Error performing promotion roll:', error);
+        rollOutcome.textContent = 'Error performing roll';
+    } finally {
+        rollDiceBtn.disabled = false;
+    }
+}
+
+async function showReenlistRoll() {
+    if (!currentCharacter) return;
+    
+    // Get reenlistment requirements from backend
+    try {
+        const response = await fetch('/api/action_probability', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action_type: 'reenlist'
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            setupRollPanel('reenlistment', data);
+            showRollPanel();
+        }
+    } catch (error) {
+        console.error('Error getting reenlistment data:', error);
+    }
+}
+
+async function performReenlistRoll() {
+    try {
+        // Disable button during roll
+        rollDiceBtn.disabled = true;
+        rollOutcome.textContent = 'Rolling...';
+        
+        const response = await fetch('/api/reenlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                preference: 'reenlist'
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update character data
+            currentCharacter = data.character;
+            
+            // Show result
+            const result = data.reenlistment_result;
+            const outcome = result.continue_career ? 'REENLISTED' : result.outcome.toUpperCase();
+            rollOutcome.textContent = `${result.roll} + ${result.modifier} = ${result.total} - ${outcome}`;
+            
+            // Update character display
+            updateCharacterDisplay();
+            
+            // Keep roll outcome visible until user clicks another button
+            // No automatic UI state update
+        } else {
+            rollOutcome.textContent = 'Error: ' + data.error;
+        }
+    } catch (error) {
+        console.error('Error performing reenlistment roll:', error);
         rollOutcome.textContent = 'Error performing roll';
     } finally {
         rollDiceBtn.disabled = false;
