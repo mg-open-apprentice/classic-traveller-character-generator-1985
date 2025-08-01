@@ -1,7 +1,7 @@
 {
-  "name": "Pheonix Flux",
-  "age": 18,
-  "terms_served": 0,
+  "name": "Elexis Cosmos",
+  "age": 26,
+  "terms_served": 2,
   "characteristics": {
     "strength": 9,
     "dexterity": 4,
@@ -10,35 +10,248 @@
     "education": 7,
     "social": 10
   },
-  "skills": {},
+  "skills": {
+    "Vehicle": 2,
+    "Mechanical": 2,
+    "Blade Combat": 1,
+    "Gun Combat": 1
+  },
   "career_history": [
     {
       "event_type": "enlistment_attempt",
-      "service": "Scouts",
+      "service": "Army",
       "roll": 3,
       "modifier": 2,
       "modifier_details": [
-        "Strength 9\u22658 (+2)"
+        "Endurance 11\u22655 (+2)"
       ],
-      "target": 7,
+      "target": 5,
       "total": 5,
-      "success": false,
-      "outcome": "drafted",
-      "assigned_service": "Merchants"
+      "success": true,
+      "outcome": "enlisted",
+      "assigned_service": "Army"
     },
     {
       "event_type": "survival_check",
-      "career": "Merchants",
-      "roll": 6,
-      "modifier": 0,
-      "modifier_details": [],
+      "career": "Army",
+      "roll": 9,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
       "target": 5,
-      "total": 6,
+      "total": 11,
       "success": true,
       "outcome": "survived"
+    },
+    {
+      "event_type": "commission_check",
+      "career": "Army",
+      "applicable": true,
+      "target": 5,
+      "modifier": 1,
+      "modifier_details": [
+        "Endurance 11\u22657 (+1)"
+      ],
+      "roll": 5,
+      "total": 6,
+      "success": true,
+      "rank": 1,
+      "outcome": "commissioned as officer",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 1,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 7\u22657 (+1)"
+      ],
+      "roll": 11,
+      "total": 12,
+      "success": true,
+      "rank": 2,
+      "outcome": "promoted to rank 2",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 1,
+      "skill_gained": "Vehicle",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 3
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 2,
+      "skill_gained": "Mechanical",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 2
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 5,
+      "skill_gained": "Blade Combat",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "advanced",
+      "roll": 2,
+      "skill_gained": "Mechanical",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 18,
+      "current_age": 22,
+      "age_increase": 4,
+      "checks_performed": [],
+      "ageing_effects": [],
+      "total_effects": 0
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 22,
+      "preference": "reenlist",
+      "roll": 7,
+      "target": 7,
+      "outcome": "reenlisted",
+      "status_text": "reenlisted",
+      "continue_career": true,
+      "new_term_started": true
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Army",
+      "roll": 8,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
+      "target": 5,
+      "total": 10,
+      "success": true,
+      "outcome": "survived"
+    },
+    {
+      "event_type": "promotion_check",
+      "career": "Army",
+      "current_rank": 2,
+      "applicable": true,
+      "target": 6,
+      "modifier": 1,
+      "modifier_details": [
+        "Education 7\u22657 (+1)"
+      ],
+      "roll": 7,
+      "total": 8,
+      "success": true,
+      "rank": 3,
+      "outcome": "promoted to rank 3",
+      "skill_eligibilities_granted": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 1,
+      "skill_gained": "Vehicle",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 1
+    },
+    {
+      "event_type": "skill_resolution",
+      "career": "Army",
+      "available_tables": {
+        "personal": true,
+        "service": true,
+        "advanced": true,
+        "education": false
+      },
+      "table_choice_method": "player",
+      "table_choice": "service",
+      "roll": 3,
+      "skill_gained": "Gun Combat",
+      "result_type": "skill_gain",
+      "skill_eligibilities_consumed": 1,
+      "skill_eligibilities_remaining": 0
+    },
+    {
+      "event_type": "ageing_check",
+      "previous_age": 22,
+      "current_age": 26,
+      "age_increase": 4,
+      "checks_performed": [],
+      "ageing_effects": [],
+      "total_effects": 0
+    },
+    {
+      "event_type": "reenlistment_attempt",
+      "career": "Army",
+      "age": 26,
+      "preference": "reenlist",
+      "roll": 4,
+      "target": 7,
+      "outcome": "discharged",
+      "status_text": "military discharge",
+      "continue_career": false
     }
   ],
-  "skill_roll_eligibility": 2,
+  "skill_roll_eligibility": 0,
   "survival_outcome": "survived",
   "seed": 100023,
   "random_state": [
@@ -668,16 +881,17 @@
       3855355420,
       198070820,
       1339322491,
-      7
+      31
     ],
     null
   ],
   "rdy_for_survival_check": false,
-  "rdy_for_commission_check": true,
+  "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,
   "upp": "94B47A",
-  "career": "Merchants",
-  "drafted": true
+  "career": "Army",
+  "commissioned": true,
+  "rank": 3
 }

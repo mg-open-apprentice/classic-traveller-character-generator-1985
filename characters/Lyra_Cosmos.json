@@ -1,5 +1,5 @@
 {
-  "name": "Pheonix Flux",
+  "name": "Lyra Cosmos",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
@@ -14,14 +14,12 @@
   "career_history": [
     {
       "event_type": "enlistment_attempt",
-      "service": "Scouts",
+      "service": "Navy",
       "roll": 3,
-      "modifier": 2,
-      "modifier_details": [
-        "Strength 9\u22658 (+2)"
-      ],
-      "target": 7,
-      "total": 5,
+      "modifier": 0,
+      "modifier_details": [],
+      "target": 8,
+      "total": 3,
       "success": false,
       "outcome": "drafted",
       "assigned_service": "Merchants"
@@ -36,9 +34,20 @@
       "total": 6,
       "success": true,
       "outcome": "survived"
+    },
+    {
+      "event_type": "survival_check",
+      "career": "Merchants",
+      "roll": 9,
+      "modifier": 0,
+      "modifier_details": [],
+      "target": 5,
+      "total": 9,
+      "success": true,
+      "outcome": "survived"
     }
   ],
-  "skill_roll_eligibility": 2,
+  "skill_roll_eligibility": 4,
   "survival_outcome": "survived",
   "seed": 100023,
   "random_state": [
@@ -668,7 +677,7 @@
       3855355420,
       198070820,
       1339322491,
-      7
+      9
     ],
     null
   ],

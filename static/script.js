@@ -82,6 +82,21 @@ function setupEventListeners() {
         reenlistBtn.addEventListener('click', showReenlistRoll);
     }
     
+    // Muster out button (left sidebar)
+    const musterOutBtn = document.getElementById('mustering-out-btn');
+    if (musterOutBtn) {
+        musterOutBtn.addEventListener('click', showMusterOutPanel);
+    }
+    
+    // Muster out cash roll buttons
+    const cashButtons = ['cash-0-btn', 'cash-1-btn', 'cash-2-btn', 'cash-3-btn'];
+    cashButtons.forEach((btnId, index) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', () => performMusterOut(index));
+        }
+    });
+    
     // Characteristic buttons
     const charButtons = ['strength', 'dexterity', 'endurance', 'intelligence', 'education', 'social'];
     charButtons.forEach(char => {
@@ -193,8 +208,28 @@ function updateCharacterDisplay() {
         creditsDisplay.textContent = `CR ${credits.toLocaleString()}`;
     }
     
+    // Update benefits display
+    updateBenefitsDisplay();
+    
     // Update skills display
     updateSkillsDisplay();
+}
+
+function updateBenefitsDisplay() {
+    if (!currentCharacter) return;
+    
+    const benefitsDisplay = document.getElementById('benefits-display');
+    if (!benefitsDisplay) return;
+    
+    const musteringOutBenefits = currentCharacter.mustering_out_benefits;
+    if (musteringOutBenefits && musteringOutBenefits.items && musteringOutBenefits.items.length > 0) {
+        // Character has mustered out and received benefits
+        const items = musteringOutBenefits.items;
+        benefitsDisplay.innerHTML = `<span class="section-label">Benefits </span>${items.join(', ')}`;
+    } else {
+        // No benefits yet
+        benefitsDisplay.innerHTML = '<span class="section-label">Benefits </span>None';
+    }
 }
 
 function updateSkillsDisplay() {
@@ -293,6 +328,7 @@ async function updateButtonStates() {
         }
         
         const availableActions = data.available_actions || [];
+        console.log('Available actions:', availableActions);
         
         // Update button states based on backend response
         const buttonMap = {
@@ -301,7 +337,8 @@ async function updateButtonStates() {
             'promotion': 'left-promotion-btn',
             'skills': 'left-skills-btn',
             'ageing': 'left-ageing-btn',
-            'reenlistment': 'left-reenlist-btn'
+            'reenlistment': 'left-reenlist-btn',
+            'muster_out': 'mustering-out-btn'
         };
         
         // First disable all service buttons
@@ -456,7 +493,14 @@ function setupRollPanel(rollType, data) {
     
     rollTarget.textContent = data.target || '-';
     rollBonuses.textContent = data.total_modifier || '0';
-    rollOutcome.textContent = '-';
+    
+    // Clear previous outcome
+    if (rollOutcome) {
+        rollOutcome.textContent = '-';
+        console.log('Cleared roll outcome for', rollType);
+    } else {
+        console.error('rollOutcome element not found!');
+    }
     
     // Store roll type for when dice are rolled
     rollDiceBtn.dataset.rollType = rollType;
@@ -836,6 +880,58 @@ async function performReenlistRoll() {
         rollOutcome.textContent = 'Error performing roll';
     } finally {
         rollDiceBtn.disabled = false;
+    }
+}
+
+function showMusterOutPanel() {
+    if (!currentCharacter) return;
+    
+    // Hide other panels
+    hideAllPanels();
+    
+    // Show mustering out panel
+    const musterOutPanel = document.getElementById('mustering-out-panel');
+    if (musterOutPanel) {
+        musterOutPanel.style.display = 'block';
+    }
+}
+
+async function performMusterOut(cashRolls) {
+    try {
+        const response = await fetch('/api/muster_out', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                cash_rolls: cashRolls
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Muster out error:', data.error);
+            return;
+        }
+        
+        // Update current character
+        currentCharacter = data.character;
+        
+        // Hide muster out panel
+        hideAllPanels();
+        
+        // Update displays
+        updateCharacterDisplay(data);
+        updateButtonStates(data);
+        
+        // Show muster out results in activity log if available
+        if (data.event_log) {
+            displayEventLog(data.event_log);
+        }
+        
+    } catch (error) {
+        console.error('Error performing muster out:', error);
     }
 }
 

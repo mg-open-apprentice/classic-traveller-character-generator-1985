@@ -1,5 +1,5 @@
 {
-  "name": "Cora Quark",
+  "name": "Astra Zenith",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
@@ -10,11 +10,7 @@
     "education": 7,
     "social": 9
   },
-  "skills": {
-    "Brawling": 1,
-    "Gun Combat": 1,
-    "Blade Combat": 1
-  },
+  "skills": {},
   "career_history": [
     {
       "event_type": "enlistment_attempt",
@@ -45,91 +41,20 @@
       "outcome": "survived"
     },
     {
-      "event_type": "commission_check",
+      "event_type": "survival_check",
       "career": "Army",
-      "applicable": true,
+      "roll": 5,
+      "modifier": 2,
+      "modifier_details": [
+        "Education 7\u22656 (+2)"
+      ],
       "target": 5,
-      "modifier": 1,
-      "modifier_details": [
-        "Endurance 11\u22657 (+1)"
-      ],
-      "roll": 5,
-      "total": 6,
+      "total": 7,
       "success": true,
-      "rank": 1,
-      "outcome": "commissioned as officer",
-      "skill_eligibilities_granted": 1
-    },
-    {
-      "event_type": "promotion_check",
-      "career": "Army",
-      "current_rank": 1,
-      "applicable": true,
-      "target": 6,
-      "modifier": 1,
-      "modifier_details": [
-        "Education 7\u22657 (+1)"
-      ],
-      "roll": 5,
-      "total": 6,
-      "success": true,
-      "rank": 2,
-      "outcome": "promoted to rank 2",
-      "skill_eligibilities_granted": 1
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "personal",
-      "roll": 6,
-      "skill_gained": "Brawling",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 3
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 6,
-      "skill_gained": "Gun Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 2
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 5,
-      "skill_gained": "Blade Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 1
+      "outcome": "survived"
     }
   ],
-  "skill_roll_eligibility": 1,
+  "skill_roll_eligibility": 4,
   "survival_outcome": "survived",
   "seed": 100002,
   "random_state": [
@@ -759,17 +684,15 @@
       1564453229,
       3564718213,
       3884714904,
-      15
+      9
     ],
     null
   ],
   "rdy_for_survival_check": false,
-  "rdy_for_commission_check": false,
+  "rdy_for_commission_check": true,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,
   "upp": "6CB679",
-  "career": "Army",
-  "commissioned": true,
-  "rank": 2
+  "career": "Army"
 }

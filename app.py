@@ -348,6 +348,55 @@ def api_muster_out():
         "mustering_out": current_character.get("mustering_out_benefits", {})
     })
 
+@app.route('/api/get_available_actions', methods=['GET'])
+def api_get_available_actions():
+    """
+    Backend-driven UI: Returns list of actions available to the current character.
+    Frontend displays buttons based solely on this response.
+    """
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    available_actions = []
+    
+    # Check characteristics generation phase
+    if current_character.get('upp') == '______':
+        available_actions = ['generate_characteristics']
+    
+    # Check enlistment phase
+    elif not current_character.get('career'):
+        available_actions = ['enlist']
+    
+    # Check service phase actions based on readiness flags
+    else:
+        if current_character.get('rdy_for_survival_check', False):
+            available_actions.append('survival')
+        
+        if current_character.get('rdy_for_commission_check', False):
+            available_actions.append('commission')
+        
+        if current_character.get('rdy_for_promotion_check', False):
+            available_actions.append('promotion')
+        
+        if current_character.get('skill_roll_eligibility', 0) > 0:
+            available_actions.append('skills')
+        
+        if current_character.get('rdy_for_ageing_check', False):
+            available_actions.append('ageing')
+        
+        if current_character.get('rdy_for_reenlistment', False):
+            available_actions.append('reenlistment')
+        
+        if current_character.get('rdy_for_muster_out', False):
+            available_actions.append('muster_out')
+    
+    return jsonify({
+        "success": True,
+        "available_actions": available_actions,
+        "character": current_character
+    })
+
 @app.route('/api/get_rank_title', methods=['POST'])
 def api_get_rank_title():
     global current_character

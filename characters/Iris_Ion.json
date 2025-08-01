@@ -1,5 +1,5 @@
 {
-  "name": "Cora Quark",
+  "name": "Iris Ion",
   "age": 18,
   "terms_served": 0,
   "characteristics": {
@@ -10,11 +10,7 @@
     "education": 7,
     "social": 9
   },
-  "skills": {
-    "Brawling": 1,
-    "Gun Combat": 1,
-    "Blade Combat": 1
-  },
+  "skills": {},
   "career_history": [
     {
       "event_type": "enlistment_attempt",
@@ -76,60 +72,9 @@
       "rank": 2,
       "outcome": "promoted to rank 2",
       "skill_eligibilities_granted": 1
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "personal",
-      "roll": 6,
-      "skill_gained": "Brawling",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 3
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 6,
-      "skill_gained": "Gun Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 2
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 5,
-      "skill_gained": "Blade Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 1
     }
   ],
-  "skill_roll_eligibility": 1,
+  "skill_roll_eligibility": 4,
   "survival_outcome": "survived",
   "seed": 100002,
   "random_state": [
@@ -759,7 +704,7 @@
       1564453229,
       3564718213,
       3884714904,
-      15
+      11
     ],
     null
   ],

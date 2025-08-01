@@ -919,6 +919,15 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         
         # Add indication that a new term has started
         reenlistment_result["new_term_started"] = True
+    else:
+        # Character is discharged - set ready for muster out
+        character_record["rdy_for_muster_out"] = True
+        # Clear all other readiness flags
+        character_record["rdy_for_survival_check"] = False
+        character_record["rdy_for_commission_check"] = False
+        character_record["rdy_for_promotion_check"] = False
+        character_record["rdy_for_ageing_check"] = False
+        character_record["skill_roll_eligibility"] = 0
 
     return character_record
 
@@ -1505,6 +1514,9 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
         'benefit_rank_bonus': benefit_rank_bonus,
         'gambling_skill': gambling_skill
     })
+    
+    # Clear muster out readiness flag - character has completed mustering out
+    character_record["rdy_for_muster_out"] = False
     
     return character_record
 
