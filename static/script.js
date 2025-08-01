@@ -174,6 +174,25 @@ function updateCharacterDisplay() {
         charTerms.textContent = `Terms ${terms} Rank ${rank}`;
     }
     
+    // Update skills eligibility counter
+    const skillEligibility = document.getElementById('top-skill-eligibility');
+    if (skillEligibility) {
+        const eligibleSkills = currentCharacter.skill_roll_eligibility || 0;
+        if (eligibleSkills > 0) {
+            skillEligibility.textContent = `Skills ${eligibleSkills}`;
+            skillEligibility.style.display = 'inline';
+        } else {
+            skillEligibility.style.display = 'none';
+        }
+    }
+    
+    // Update credits display
+    const creditsDisplay = document.getElementById('char-credits');
+    if (creditsDisplay) {
+        const credits = currentCharacter.credits || 0;
+        creditsDisplay.textContent = `CR ${credits.toLocaleString()}`;
+    }
+    
     // Update skills display
     updateSkillsDisplay();
 }
@@ -256,87 +275,56 @@ function updateUIState() {
     }
 }
 
-function updateButtonStates() {
+async function updateButtonStates() {
     if (!currentCharacter) {
-        // No character loaded - enable all buttons
-        enableAllButtons();
+        // No character loaded - disable all service buttons
+        disableAllServiceButtons();
         return;
     }
     
-    const survivalBtn = document.getElementById('left-survival-btn');
-    const commissionBtn = document.getElementById('left-commission-btn');
-    const promotionBtn = document.getElementById('left-promotion-btn');
-    const skillsBtn = document.getElementById('left-skills-btn');
-    const ageingBtn = document.getElementById('left-ageing-btn');
-    const reenlistBtn = document.getElementById('left-reenlist-btn');
-    
-    if (currentCharacter.career) {
-        // Service has been assigned - apply simple rules
+    try {
+        // Get available actions from backend
+        const response = await fetch('/api/get_available_actions');
+        const data = await response.json();
         
-        // Survival button: disable if already completed this term
-        if (survivalBtn) {
-            if (hasCompletedActionThisTerm('survival_check')) {
-                disableButton(survivalBtn);
-            } else {
-                enableButton(survivalBtn);
-            }
+        if (!data.success) {
+            console.error('Error getting available actions:', data.error);
+            return;
         }
         
-        // Commission button: simple rules
-        if (commissionBtn) {
-            if (currentCharacter.career === 'Scouts' || currentCharacter.career === 'Others') {
-                disableButton(commissionBtn); // Scouts/Others never get commissions
-            } else if (currentCharacter.commissioned) {
-                disableButton(commissionBtn); // Already commissioned
-            } else if (hasCompletedActionThisTerm('commission_check')) {
-                disableButton(commissionBtn); // Already tried this term
-            } else {
-                enableButton(commissionBtn); // Available for Army/Navy/Marines/Merchants
-            }
-        }
+        const availableActions = data.available_actions || [];
         
-        // Promotion button: simple rules
-        if (promotionBtn) {
-            if (currentCharacter.career === 'Scouts' || currentCharacter.career === 'Others') {
-                disableButton(promotionBtn); // Scouts/Others never get promotions
-            } else if (!currentCharacter.commissioned) {
-                disableButton(promotionBtn); // Must be commissioned first
-            } else if (hasCompletedActionThisTerm('promotion_check')) {
-                disableButton(promotionBtn); // Already tried this term
-            } else {
-                enableButton(promotionBtn); // Available for commissioned officers
-            }
-        }
+        // Update button states based on backend response
+        const buttonMap = {
+            'survival': 'left-survival-btn',
+            'commission': 'left-commission-btn', 
+            'promotion': 'left-promotion-btn',
+            'skills': 'left-skills-btn',
+            'ageing': 'left-ageing-btn',
+            'reenlistment': 'left-reenlist-btn'
+        };
         
-        // Skills button: enable if skill rolls available
-        if (skillsBtn) {
-            if (currentCharacter.skill_roll_eligibility > 0) {
-                enableButton(skillsBtn);
-            } else {
-                disableButton(skillsBtn);
+        // First disable all service buttons
+        Object.values(buttonMap).forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                disableButton(button);
             }
-        }
+        });
         
-        // Other buttons: enable unless already completed
-        if (ageingBtn) {
-            if (hasCompletedActionThisTerm('ageing_check')) {
-                disableButton(ageingBtn);
-            } else {
-                enableButton(ageingBtn);
+        // Then enable only the available actions
+        availableActions.forEach(action => {
+            const buttonId = buttonMap[action];
+            if (buttonId) {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    enableButton(button);
+                }
             }
-        }
+        });
         
-        if (reenlistBtn) {
-            if (hasCompletedActionThisTerm('reenlistment_attempt')) {
-                disableButton(reenlistBtn);
-            } else {
-                enableButton(reenlistBtn);
-            }
-        }
-        
-    } else {
-        // Character exists but no service assigned yet - enable all buttons
-        enableAllButtons();
+    } catch (error) {
+        console.error('Error updating button states:', error);
     }
 }
 
@@ -691,8 +679,8 @@ async function performSurvivalRoll() {
             // Update character display
             updateCharacterDisplay();
             
-            // Keep roll outcome visible until user clicks another button
-            // No automatic UI state update
+            // Update button states (disable survival button after completion)
+            updateButtonStates();
         } else {
             rollOutcome.textContent = 'Error: ' + data.error;
         }
@@ -771,8 +759,8 @@ async function performPromotionRoll() {
             // Update character display
             updateCharacterDisplay();
             
-            // Keep roll outcome visible until user clicks another button
-            // No automatic UI state update
+            // Update button states (disable promotion button after completion)
+            updateButtonStates();
         } else {
             rollOutcome.textContent = 'Error: ' + data.error;
         }
@@ -838,8 +826,8 @@ async function performReenlistRoll() {
             // Update character display
             updateCharacterDisplay();
             
-            // Keep roll outcome visible until user clicks another button
-            // No automatic UI state update
+            // Update button states (handle new term transition)
+            updateButtonStates();
         } else {
             rollOutcome.textContent = 'Error: ' + data.error;
         }
