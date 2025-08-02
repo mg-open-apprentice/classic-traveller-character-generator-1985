@@ -112,6 +112,7 @@ def create_character_record() -> dict[str, Any]:
         "name": "",
         "age": 18,
         "terms_served": 0,  # 0 = in first term, 1 = in second term, etc.
+        "current_term": 1,  # Current term number (1-based) - always terms_served + 1
         "characteristics": {},
         "skills": {},
         "career_history": [],  # Track career progression and generation events
@@ -119,6 +120,9 @@ def create_character_record() -> dict[str, Any]:
         "survival_outcome": None,  # "survived" or "injured" (historical record, not "pending")  
         "seed": 77,
         "random_state": None,  # Store random generator state for consistent sequences
+        # Character arc progression tracking
+        "current_phase": "1.1",  # Text-based decimal notation for term.phase (e.g., "4.6")
+        "phase_history": [],  # Track completed phases with their IDs
         # New simplified readiness flags per state-control-rules.md
         "rdy_for_survival_check": False,
         "rdy_for_commission_check": False,
@@ -126,6 +130,19 @@ def create_character_record() -> dict[str, Any]:
         "rdy_for_ageing_check": False,
         "rdy_for_reenlistment": False
     }
+
+# =============================================================================
+# CHARACTER ARC PROGRESSION SYSTEM
+# =============================================================================
+
+PHASE_NAMES = {
+    1: "survival",
+    2: "commission", 
+    3: "promotion",
+    4: "skills",
+    5: "ageing",
+    6: "reenlistment"
+}
 
 def get_current_term_number(character_record: dict[str, Any]) -> int:
     """
@@ -138,6 +155,124 @@ def get_current_term_number(character_record: dict[str, Any]) -> int:
         Current term number (1 for first term, 2 for second, etc.)
     """
     return character_record.get("terms_served", 0) + 1
+
+def get_current_phase_info(character_record: dict[str, Any]) -> Tuple[int, int, str]:
+    """
+    Parse the current phase and return term, phase number, and phase name
+    
+    Args:
+        character_record: The character's record
+        
+    Returns:
+        Tuple of (term_number, phase_number, phase_name)
+    """
+    current_phase = character_record.get("current_phase", "1.1")
+    try:
+        term_str, phase_str = current_phase.split(".")
+        term_num = int(term_str)
+        phase_num = int(phase_str)
+        phase_name = PHASE_NAMES.get(phase_num, f"unknown_phase_{phase_num}")
+        return term_num, phase_num, phase_name
+    except (ValueError, AttributeError):
+        # Fallback to first phase of first term
+        return 1, 1, "survival"
+
+def advance_to_next_phase(character_record: dict[str, Any], completed_phase_data: dict = None) -> str:
+    """
+    Advance character to the next phase in the progression
+    
+    Args:
+        character_record: The character's record
+        completed_phase_data: Optional data about the completed phase
+        
+    Returns:
+        New phase ID as string (e.g., "2.4")
+    """
+    term_num, phase_num, phase_name = get_current_phase_info(character_record)
+    
+    # Record the completed phase
+    phase_entry = {
+        "phase_id": character_record.get("current_phase", "1.1"),
+        "term": term_num,
+        "phase_number": phase_num,
+        "phase_name": phase_name,
+        "completed": True
+    }
+    
+    # Add any additional data about this phase
+    if completed_phase_data:
+        phase_entry.update(completed_phase_data)
+    
+    character_record.setdefault("phase_history", []).append(phase_entry)
+    
+    # Determine next phase
+    if phase_num < 6:
+        # Move to next phase in same term
+        next_phase_num = phase_num + 1
+        next_term_num = term_num
+    else:
+        # Move to first phase of next term
+        next_phase_num = 1
+        next_term_num = term_num + 1
+    
+    # Update current phase
+    new_phase_id = f"{next_term_num}.{next_phase_num}"
+    character_record["current_phase"] = new_phase_id
+    
+    return new_phase_id
+
+def reset_to_phase(character_record: dict[str, Any], term: int, phase: int) -> str:
+    """
+    Reset character to a specific phase (useful for testing or corrections)
+    
+    Args:
+        character_record: The character's record
+        term: Term number (1-based)
+        phase: Phase number (1-6)
+        
+    Returns:
+        New phase ID as string
+    """
+    if not (1 <= phase <= 6):
+        raise ValueError(f"Invalid phase number: {phase}. Must be 1-6.")
+    
+    if term < 1:
+        raise ValueError(f"Invalid term number: {term}. Must be >= 1.")
+    
+    new_phase_id = f"{term}.{phase}"
+    character_record["current_phase"] = new_phase_id
+    
+    return new_phase_id
+
+def get_phase_sequence_for_service(service: str) -> List[dict]:
+    """
+    Get the complete phase sequence for a service, showing which phases apply
+    
+    Args:
+        service: The service name ('Navy', 'Marines', etc.)
+        
+    Returns:
+        List of phase information dictionaries
+    """
+    has_commission = service in tables.COMMISSION_TARGETS
+    
+    phases = []
+    for phase_num in range(1, 7):
+        phase_name = PHASE_NAMES[phase_num]
+        phase_info = {
+            "phase_number": phase_num,
+            "phase_name": phase_name,
+            "applies_to_service": True
+        }
+        
+        # Mark phases that don't apply to certain services
+        if phase_name in ["commission", "promotion"] and not has_commission:
+            phase_info["applies_to_service"] = False
+            phase_info["note"] = f"{service} does not have {phase_name} system"
+        
+        phases.append(phase_info)
+    
+    return phases
 
 
 def roll_2d6(random_generator: random.Random) -> int:
@@ -209,6 +344,57 @@ def get_enlistment_modifiers(characteristics: dict[str, int], service: str) -> T
             modifiers.append(f"{char.capitalize()} {characteristics.get(char, 0)}≥{req} (+{bonus})")
     
     return total_modifier, modifiers
+
+def get_enlistment_bonus_requirements() -> dict[str, list[dict[str, Any]]]:
+    """
+    Get all enlistment bonus requirements for UI highlighting purposes.
+    Returns ALL potential bonuses, not just those the character qualifies for.
+    
+    Returns:
+        Dictionary mapping service names to lists of bonus requirements
+        Each bonus requirement has: char, req, bonus
+    """
+    bonus_requirements = {}
+    
+    for service, bonuses in tables.ENLISTMENT_BONUSES.items():
+        bonus_requirements[service.lower()] = []
+        for char, req, bonus in bonuses:
+            bonus_requirements[service.lower()].append({
+                'char': char,
+                'req': req,
+                'bonus': bonus
+            })
+    
+    return bonus_requirements
+
+def get_reenlistment_options(character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Get available reenlistment options for a character
+    
+    Args:
+        character_record: The character's record
+        
+    Returns:
+        Dictionary with available options and UI text
+    """
+    current_term = get_current_term_number(character_record)
+    
+    # Determine available departure option
+    departure_option = "retire" if current_term >= 5 else "discharge"
+    departure_text = "Retire" if current_term >= 5 else "Leave"
+    
+    return {
+        "reenlist": {
+            "preference": "reenlist",
+            "text": "Reenlist",
+            "available": True
+        },
+        "departure": {
+            "preference": departure_option,
+            "text": departure_text,
+            "available": True
+        }
+    }
 
 def get_available_services() -> List[str]:
     """
@@ -300,6 +486,14 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     # Add the enlistment attempt to the character's history
     character_record["career_history"].append(enlistment_result)
     
+    # Phase progression: Enlistment leads directly to survival phase (1.1)
+    advance_to_next_phase(character_record, {
+        "action": "enlistment",
+        "service_attempted": service_choice,
+        "result": "enlisted" if success else "drafted",
+        "assigned_service": enlistment_result["assigned_service"]
+    })
+    
     return character_record
 
 
@@ -385,6 +579,14 @@ def check_survival(random_generator: random.Random, character_record: dict[str, 
     # Add the survival check to the character's career history
     character_record["career_history"].append(survival_result)
     
+    # Phase progression: Survival (1.1) leads to commission (1.2)
+    advance_to_next_phase(character_record, {
+        "action": "survival",
+        "result": "survived" if survived else "injured",
+        "roll": roll,
+        "target": target
+    })
+    
     return character_record
 
 def check_commission(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
@@ -418,6 +620,15 @@ def check_commission(random_generator: random.Random, character_record: dict[str
         
         # Add the commission check to the character's career history
         character_record["career_history"].append(commission_result)
+        
+        # Phase progression: Commission (1.2) leads to promotion (1.3)
+        advance_to_next_phase(character_record, {
+            "action": "commission",
+            "result": commission_result.get("outcome", "unknown"),
+            "applicable": commission_result.get("applicable", True),
+            "success": commission_result.get("success", False)
+        })
+        
         return character_record
     
     # Check if character is eligible for commission
@@ -430,6 +641,15 @@ def check_commission(random_generator: random.Random, character_record: dict[str
         
         # Add the commission check to the character's career history
         character_record["career_history"].append(commission_result)
+        
+        # Phase progression: Commission (1.2) leads to promotion (1.3)
+        advance_to_next_phase(character_record, {
+            "action": "commission",
+            "result": commission_result.get("outcome", "unknown"),
+            "applicable": commission_result.get("applicable", True),
+            "success": commission_result.get("success", False)
+        })
+        
         return character_record
     
     current_term_number = get_current_term_number(character_record)
@@ -442,6 +662,15 @@ def check_commission(random_generator: random.Random, character_record: dict[str
         
         # Add the commission check to the character's career history
         character_record["career_history"].append(commission_result)
+        
+        # Phase progression: Commission (1.2) leads to promotion (1.3)
+        advance_to_next_phase(character_record, {
+            "action": "commission",
+            "result": commission_result.get("outcome", "unknown"),
+            "applicable": commission_result.get("applicable", True),
+            "success": commission_result.get("success", False)
+        })
+        
         return character_record
     
     # Character is eligible for commission
@@ -503,6 +732,15 @@ def check_commission(random_generator: random.Random, character_record: dict[str
     
     # Add the commission check to the character's career history
     character_record["career_history"].append(commission_result)
+    
+    # Phase progression: Commission (1.2) leads to promotion (1.3)
+    advance_to_next_phase(character_record, {
+        "action": "commission",
+        "result": commission_result.get("outcome", "unknown"),
+        "applicable": commission_result.get("applicable", True),
+        "success": commission_result.get("success", False)
+    })
+    
     return character_record
 
 def check_promotion(random_generator: random.Random, character_record: dict[str, Any]) -> dict[str, Any]:
@@ -541,6 +779,15 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         
         # Add the promotion check to the character's career history
         character_record["career_history"].append(promotion_result)
+        
+        # Phase progression: Promotion (1.3) leads to skills (1.4)
+        advance_to_next_phase(character_record, {
+            "action": "promotion",
+            "result": promotion_result.get("outcome", "unknown"),
+            "applicable": promotion_result.get("applicable", True),
+            "success": promotion_result.get("success", False)
+        })
+        
         return character_record
     
     if career in ['Scouts', 'Others']:
@@ -552,6 +799,15 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         
         # Add the promotion check to the character's career history
         character_record["career_history"].append(promotion_result)
+        
+        # Phase progression: Promotion (1.3) leads to skills (1.4)
+        advance_to_next_phase(character_record, {
+            "action": "promotion",
+            "result": promotion_result.get("outcome", "unknown"),
+            "applicable": promotion_result.get("applicable", True),
+            "success": promotion_result.get("success", False)
+        })
+        
         return character_record
     
     # Check for maximum rank limits
@@ -566,6 +822,15 @@ def check_promotion(random_generator: random.Random, character_record: dict[str,
         
         # Add the promotion check to the character's career history
         character_record["career_history"].append(promotion_result)
+        
+        # Phase progression: Promotion (1.3) leads to skills (1.4)
+        advance_to_next_phase(character_record, {
+            "action": "promotion",
+            "result": promotion_result.get("outcome", "unknown"),
+            "applicable": promotion_result.get("applicable", True),
+            "success": promotion_result.get("success", False)
+        })
+        
         return character_record
     
     # Character is eligible for promotion (one promotion per term is handled by call sequencing)
@@ -903,6 +1168,24 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
         character_record["rdy_for_promotion_check"] = False
         character_record["rdy_for_ageing_check"] = False
         character_record["skill_roll_eligibility"] = 0
+    
+    # Phase progression: Reenlistment (1.6) either advances to next term (2.1) or ends career
+    if continue_career:
+        # Start new term, phase 2.1 (survival)
+        advance_to_next_phase(character_record, {
+            "action": "reenlistment",
+            "result": "continued career",
+            "outcome": outcome,
+            "terms_served": character_record.get("terms_served", 0)
+        })
+    else:
+        # Career ended, advance to mustering out phase (could be considered final phase)
+        advance_to_next_phase(character_record, {
+            "action": "reenlistment",
+            "result": "career ended",
+            "outcome": outcome,
+            "final_terms_served": character_record.get("terms_served", 0)
+        })
 
     return character_record
 
@@ -946,6 +1229,14 @@ def increment_character_age(character_record: dict[str, Any]) -> dict[str, Any]:
     
     # Add the ageing check to the character's career history
     character_record["career_history"].append(ageing_event)
+    
+    # Phase progression: Ageing (1.5) leads to reenlistment (1.6)
+    advance_to_next_phase(character_record, {
+        "action": "ageing",
+        "result": "ageing check complete",
+        "age": character_record.get("age", 18),
+        "checks_performed": len(ageing_event.get("checks_performed", []))
+    })
     
     return character_record
 
@@ -1295,6 +1586,14 @@ def resolve_skill(random_generator: random.Random, character_record: dict[str, A
     
     # Add the skill resolution event to the character's career history
     character_record["career_history"].append(skill_event)
+    
+    # Phase progression: Skills (1.4) leads to ageing (1.5) when all skills are resolved
+    if character_record["skill_roll_eligibility"] <= 0:
+        advance_to_next_phase(character_record, {
+            "action": "skills_complete",
+            "result": "all skills resolved",
+            "final_skill": skill_event.get("skill_gained", "unknown")
+        })
     
     return character_record
 

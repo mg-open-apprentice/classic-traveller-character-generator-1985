@@ -223,7 +223,7 @@ BENEFIT_TABLES = {
 RANK_TITLES = {
     "Navy":       ["", "Ensign", "Lieutenant", "Lt Cmdr", "Commander", "Captain", "Admiral"],
     "Army":       ["", "Lieutenant", "Captain", "Major", "Lt Colonel", "Colonel", "General"],
-    "Marines":    ["", "Lieutenant", "Captain", "Major", "Lt Colonel", "Colonel", "General"],
+    "Marines":    ["", "Lieutenant", "Captain", "Force Commander", "Lt Colonel", "Colonel", "Brigadier"],
     "Merchants":  ["", "4th Officer", "3rd Officer", "2nd Officer", "1st Officer", "Captain"],
     "Scouts":     ["", ""],  # Scouts have no rank structure
     "Others":     ["", ""]   # Others have no rank structure

@@ -1,6 +1,6 @@
 {
-  "name": "Nova Nebular",
-  "age": 20,
+  "name": "Cassius Starfire",
+  "age": 18,
   "terms_served": 0,
   "characteristics": {
     "strength": 3,
@@ -26,66 +26,10 @@
       "success": true,
       "outcome": "enlisted",
       "assigned_service": "Army"
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 4,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": 5,
-      "total": 4,
-      "success": false,
-      "outcome": "injured"
-    },
-    {
-      "event_type": "ageing_check",
-      "previous_age": 18,
-      "current_age": 20,
-      "age_increase": 2,
-      "checks_performed": [],
-      "ageing_effects": [],
-      "total_effects": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 20,
-      "preference": "medical",
-      "roll": null,
-      "target": null,
-      "outcome": "medical_discharge",
-      "status_text": "medical discharge",
-      "continue_career": false,
-      "skill_eligibilities_granted": 0,
-      "reason": "injured during survival check"
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "roll": null,
-      "target": null,
-      "outcome": "medical_discharge",
-      "status_text": "medical discharge",
-      "continue_career": false,
-      "skill_eligibilities_granted": 0,
-      "reason": "injured during survival check"
-    },
-    {
-      "event_type": "mustering_out_summary",
-      "career": "Army",
-      "total_rolls": 0,
-      "cash_rolls": 0,
-      "benefit_rolls": 0,
-      "total_cash": 0,
-      "items": [],
-      "characteristic_boosts": {},
-      "benefit_rank_bonus": 0,
-      "gambling_skill": 0
     }
   ],
   "skill_roll_eligibility": 0,
-  "survival_outcome": "injured",
+  "survival_outcome": null,
   "seed": 12345,
   "random_state": [
     3,
@@ -714,23 +658,15 @@
       3844873816,
       3281513078,
       229380103,
-      7
+      2
     ],
     null
   ],
-  "rdy_for_survival_check": false,
+  "rdy_for_survival_check": true,
   "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
   "rdy_for_reenlistment": false,
   "upp": "388943",
-  "career": "Army",
-  "rdy_for_muster_out": false,
-  "mustering_out_benefits": {
-    "cash": 0,
-    "items": [],
-    "characteristic_boosts": {},
-    "cash_roll_details": [],
-    "benefit_roll_details": []
-  }
+  "career": "Army"
 }

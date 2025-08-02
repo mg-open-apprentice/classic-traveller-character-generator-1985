@@ -417,6 +417,7 @@ function updateCharacterDisplay() {
     const charService = document.getElementById('char-service');
     const charAge = document.getElementById('char-age');
     const charTerms = document.getElementById('char-terms');
+    const termNumberTitle = document.getElementById('term-number-title');
     
     // Update character name with rank title if commissioned
     if (charName) {
@@ -452,6 +453,16 @@ function updateCharacterDisplay() {
     const uppString = document.getElementById('upp-string');
     if (uppString) {
         uppString.textContent = currentCharacter.upp || '______';
+    }
+    
+    // Update term number display
+    if (termNumberTitle) {
+        if (currentCharacter.career_status === "complete") {
+            termNumberTitle.textContent = `CAREER COMPLETE`;
+        } else {
+            const currentTerm = currentCharacter.current_term || 1;
+            termNumberTitle.textContent = `TERM ${currentTerm}`;
+        }
     }
     
     // Update skills eligibility counter
@@ -826,22 +837,11 @@ function setupRollPanel(rollType, data) {
         // Hide bonuses box (no bonuses for reenlistment)
         if (bonusesBox) bonusesBox.style.display = 'none';
         
-        // Show choice box with appropriate text
+        // Show choice box and get options from backend
         if (choiceBox) choiceBox.style.display = 'block';
-        if (choiceText && currentCharacter) {
-            const termsServed = currentCharacter.terms_served || 0;
-            choiceText.textContent = termsServed >= 4 ? 'Retire' : 'Leave';
-        }
         
-        // Set up choice button click handler
-        if (choiceBtn) {
-            choiceBtn.onclick = () => {
-                const buttonText = choiceText.textContent.toLowerCase();
-                // Map UI text to backend preference values
-                const preference = buttonText === 'leave' ? 'discharge' : buttonText;
-                attemptVoluntaryDeparture(preference);
-            };
-        }
+        // Get reenlistment options from backend instead of hardcoded logic
+        setupReenlistmentOptions(choiceText, choiceBtn);
         
         // Update main button text
         const rollBtnText = rollDiceBtn.querySelector('.roll-btn-text');
@@ -1425,6 +1425,12 @@ async function generateCharacteristic(charName) {
             updateCharacterDisplay();
             updateUPPDisplay();
             updateUIState();
+            
+            // Refresh enlistment hover effects if enlistment panel is visible
+            const enlistmentPanel = document.getElementById('enlistment-panel');
+            if (enlistmentPanel && enlistmentPanel.style.display === 'block') {
+                setupEnlistmentHoverEffects();
+            }
         }
     } catch (error) {
         console.error('Error generating characteristic:', error);
@@ -1467,10 +1473,10 @@ function applyCharacteristicColor(element, value) {
 }
 
 // Enlistment Functions
-function showEnlistmentPanel() {
+async function showEnlistmentPanel() {
     hideAllPanels();
     document.getElementById('enlistment-panel').style.display = 'block';
-    loadEnlistmentProbabilities();
+    await loadEnlistmentProbabilities();
     setupEnlistmentHoverEffects();
 }
 
@@ -1662,6 +1668,58 @@ async function attemptEnlistment(service) {
         }
     } catch (error) {
         console.error('Error attempting enlistment:', error);
+    }
+}
+
+async function setupReenlistmentOptions(choiceText, choiceBtn) {
+    try {
+        // Get reenlistment options from backend
+        const response = await fetch('/api/reenlistment_options');
+        const data = await response.json();
+        
+        if (data.success) {
+            const departureOption = data.options.departure;
+            
+            // Set button text from backend
+            if (choiceText) {
+                choiceText.textContent = departureOption.text;
+            }
+            
+            // Set up click handler with correct preference value
+            if (choiceBtn) {
+                choiceBtn.onclick = () => {
+                    attemptVoluntaryDeparture(departureOption.preference);
+                };
+            }
+        } else {
+            console.error('Failed to get reenlistment options:', data.error);
+            // Fallback to old logic
+            if (choiceText && currentCharacter) {
+                const termsServed = currentCharacter.terms_served || 0;
+                choiceText.textContent = termsServed >= 4 ? 'Retire' : 'Leave';
+            }
+            if (choiceBtn) {
+                choiceBtn.onclick = () => {
+                    const buttonText = choiceText.textContent.toLowerCase();
+                    const preference = buttonText === 'leave' ? 'discharge' : buttonText;
+                    attemptVoluntaryDeparture(preference);
+                };
+            }
+        }
+    } catch (error) {
+        console.error('Error getting reenlistment options:', error);
+        // Fallback to old logic
+        if (choiceText && currentCharacter) {
+            const termsServed = currentCharacter.terms_served || 0;
+            choiceText.textContent = termsServed >= 4 ? 'Retire' : 'Leave';
+        }
+        if (choiceBtn) {
+            choiceBtn.onclick = () => {
+                const buttonText = choiceText.textContent.toLowerCase();
+                const preference = buttonText === 'leave' ? 'discharge' : buttonText;
+                attemptVoluntaryDeparture(preference);
+            };
+        }
     }
 }
 

@@ -24,6 +24,25 @@ def get_character_json_path(name):
     safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
     return f'characters/{safe_name}.json'
 
+def add_calculated_fields(character_record):
+    """Add calculated fields to character record for API responses"""
+    if character_record:
+        # Check if career is complete (has mustered out)
+        has_mustered_out = bool(character_record.get("mustering_out_benefits"))
+        print(f"DEBUG: Character has mustered out: {has_mustered_out}")  # Debug line
+        
+        if has_mustered_out:
+            # Career is complete - no current term
+            character_record["current_term"] = None
+            character_record["career_status"] = "complete"
+            print(f"DEBUG: Set career status to complete")  # Debug line
+        else:
+            # Career is ongoing - calculate current term
+            character_record["current_term"] = chargen.get_current_term_number(character_record)
+            character_record["career_status"] = "active"
+            print(f"DEBUG: Set career status to active, term {character_record['current_term']}")  # Debug line
+    return character_record
+
 def save_character_to_file():
     global current_character
     if current_character is not None and "name" in current_character:
@@ -153,7 +172,7 @@ def api_enlist():
             "modifier": enlistment_result["modifier"],
             "modifier_details": enlistment_result["modifier_details"]
         },
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     }
     return jsonify(response_data)
 
@@ -188,7 +207,7 @@ def api_survival():
             "modifier": survival_result["modifier"],
             "modifier_details": survival_result["modifier_details"]
         },
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     }
     return jsonify(response_data)
 
@@ -214,7 +233,7 @@ def api_commission():
             "rank": commission_result.get("rank"),
             "career": commission_result.get("career")
         },
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     }
     return jsonify(response_data)
 
@@ -240,7 +259,7 @@ def api_promotion():
             "rank": promotion_result.get("rank"),
             "career": promotion_result.get("career")
         },
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     }
     return jsonify(response_data)
 
@@ -269,7 +288,7 @@ def api_resolve_skill():
     return jsonify({
         "success": True,
         "skill_event": skill_event,
-        "character": current_character,
+        "character": add_calculated_fields(current_character.copy()),
         "available_options": available_options
     })
 
@@ -298,7 +317,7 @@ def api_ageing():
         "success": True,
         "age": current_character.get("age"),
         "ageing_report": latest_ageing,
-        "character": current_character,
+        "character": add_calculated_fields(current_character.copy()),
         "available_options": available_options
     })
 
@@ -332,11 +351,40 @@ def api_reenlist():
     return jsonify({
         "success": True,
         "reenlistment_result": reenlistment_result,
-        "character": current_character,
+        "character": add_calculated_fields(current_character.copy()),
         "available_options": available_options,
         "new_term": reenlistment_result and reenlistment_result.get("continue_career", False),
         "term_number": current_character.get("terms_served", 0) + 1,  # Current term being played
         "route": route
+    })
+
+@app.route('/api/muster_out_info', methods=['GET'])
+def api_muster_out_info():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    # Calculate total rolls available
+    terms_served = current_character.get('terms_served', 0)
+    rank = current_character.get('rank', 0)
+    
+    total_rolls = int(terms_served)
+    if 1 <= rank <= 2:
+        total_rolls += 1
+    elif 3 <= rank <= 4:
+        total_rolls += 2
+    elif 5 <= rank <= 6:
+        total_rolls += 3
+    
+    # Maximum cash rolls is the minimum of 3 and total_rolls
+    max_cash_rolls = min(3, total_rolls)
+    
+    return jsonify({
+        "success": True,
+        "total_rolls": total_rolls,
+        "max_cash_rolls": max_cash_rolls,
+        "terms_served": terms_served,
+        "rank": rank
     })
 
 @app.route('/api/muster_out', methods=['POST'])
@@ -355,7 +403,7 @@ def api_muster_out():
         return jsonify({"success": False, "error": str(e)}), 400
     return jsonify({
         "success": True,
-        "character": current_character,
+        "character": add_calculated_fields(current_character.copy()),
         "mustering_out": current_character.get("mustering_out_benefits", {}),
         "career_complete": True  # Signal to frontend that career is finished (but not auto-archived)
     })
@@ -431,7 +479,7 @@ def api_get_available_actions():
     return jsonify({
         "success": True,
         "available_actions": available_actions,
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     })
 
 @app.route('/api/get_rank_title', methods=['POST'])
@@ -500,48 +548,204 @@ def api_career_survival():
     except (ValueError, TypeError):
         return jsonify({"success": False, "error": "Invalid parameters"}), 400
 
-@app.route('/api/enlistment_probabilities', methods=['POST'])
-def api_enlistment_probabilities():
+@app.route('/api/reenlistment_options', methods=['GET'])
+def api_reenlistment_options():
+    """
+    Get available reenlistment options for the current character
+    """
     global current_character
     if not current_character:
         return jsonify({"success": False, "error": "No character created yet"}), 400
     
-    if not current_character.get("characteristics"):
-        return jsonify({"success": False, "error": "Character characteristics not generated yet"}), 400
+    try:
+        options = chargen.get_reenlistment_options(current_character)
+        return jsonify({
+            "success": True,
+            "options": options
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/enlistment_bonus_requirements', methods=['GET'])
+def api_enlistment_bonus_requirements():
+    """
+    Get all enlistment bonus requirements for UI highlighting purposes.
+    Returns ALL potential bonuses, not just those the character qualifies for.
+    """
+    try:
+        bonus_requirements = chargen.get_enlistment_bonus_requirements()
+        return jsonify({
+            "success": True,
+            "bonus_requirements": bonus_requirements
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/career_probabilities', methods=['GET'])
+def api_career_probabilities():
+    """
+    Unified API for all career action probabilities
+    Returns pre-calculated, pre-sorted, pre-formatted probabilities for all applicable career actions
+    """
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
     
-    # Get enlistment probabilities for all services
-    services = ['Navy', 'Marines', 'Army', 'Scouts', 'Merchants', 'Others']
-    probabilities = {}
+    try:
+        result = {
+            "success": True,
+            "enlistment": [],
+            "survival": None,
+            "commission": None,
+            "promotion": None,
+            "reenlistment": None
+        }
+        
+        # 1. ENLISTMENT PROBABILITIES (only if no career yet)
+        if not current_character.get("career") and current_character.get("characteristics"):
+            services = ['Navy', 'Marines', 'Army', 'Scouts', 'Merchants', 'Others']
+            enlistment_data = []
+            
+            for service in services:
+                try:
+                    target, modifiers, modifier_details = chargen.get_enlistment_requirements(service, current_character)
+                    prob_data = chargen.calculate_success_probability(target, modifiers)
+                    
+                    enlistment_data.append({
+                        "service": service,
+                        "percentage": f"{prob_data['percentage']:.0f}%",
+                        "raw_percentage": prob_data["percentage"],
+                        "target": target,
+                        "modifiers": modifiers,
+                        "description": prob_data["description"]
+                    })
+                except Exception as e:
+                    enlistment_data.append({
+                        "service": service,
+                        "percentage": "0%",
+                        "raw_percentage": 0,
+                        "error": str(e)
+                    })
+            
+            # Sort by probability (highest first) - backend does the sorting
+            result["enlistment"] = sorted(enlistment_data, key=lambda x: x["raw_percentage"], reverse=True)
+        
+        # 2. SURVIVAL PROBABILITY (if character has career)
+        if current_character.get("career") and current_character.get("rdy_for_survival_check"):
+            try:
+                target, modifiers, modifier_details = chargen.get_survival_requirements(current_character)
+                prob_data = chargen.calculate_success_probability(target, modifiers)
+                
+                result["survival"] = {
+                    "service": current_character["career"],
+                    "percentage": f"{prob_data['percentage']:.0f}%",
+                    "raw_percentage": prob_data["percentage"],
+                    "target": target,
+                    "modifiers": modifiers,
+                    "description": prob_data["description"],
+                    "applicable": True
+                }
+            except Exception as e:
+                result["survival"] = {"applicable": False, "error": str(e)}
+        
+        # 3. COMMISSION PROBABILITY (if eligible)
+        if current_character.get("career") and current_character.get("rdy_for_commission_check"):
+            try:
+                target, modifiers, modifier_details = chargen.get_commission_requirements(current_character)
+                if target is not None:  # Commission is possible
+                    prob_data = chargen.calculate_success_probability(target, modifiers)
+                    
+                    result["commission"] = {
+                        "service": current_character["career"],
+                        "percentage": f"{prob_data['percentage']:.0f}%",
+                        "raw_percentage": prob_data["percentage"],
+                        "target": target,
+                        "modifiers": modifiers,
+                        "description": prob_data["description"],
+                        "applicable": True
+                    }
+                else:
+                    result["commission"] = {
+                        "applicable": False,
+                        "reason": modifier_details[0] if modifier_details else "Not eligible"
+                    }
+            except Exception as e:
+                result["commission"] = {"applicable": False, "error": str(e)}
+        
+        # 4. PROMOTION PROBABILITY (if eligible)
+        if current_character.get("career") and current_character.get("rdy_for_promotion_check"):
+            try:
+                target, modifiers, modifier_details = chargen.get_promotion_requirements(current_character)
+                if target is not None:  # Promotion is possible
+                    prob_data = chargen.calculate_success_probability(target, modifiers)
+                    
+                    result["promotion"] = {
+                        "service": current_character["career"],
+                        "percentage": f"{prob_data['percentage']:.0f}%",
+                        "raw_percentage": prob_data["percentage"],
+                        "target": target,
+                        "modifiers": modifiers,
+                        "description": prob_data["description"],
+                        "applicable": True
+                    }
+                else:
+                    result["promotion"] = {
+                        "applicable": False,
+                        "reason": modifier_details[0] if modifier_details else "Not eligible"
+                    }
+            except Exception as e:
+                result["promotion"] = {"applicable": False, "error": str(e)}
+        
+        # 5. REENLISTMENT PROBABILITY (if eligible)
+        if current_character.get("career") and current_character.get("rdy_for_reenlistment"):
+            try:
+                career = current_character.get("career")
+                target = chargen.tables.REENLISTMENT_TARGETS[career]
+                modifiers = 0  # Classic Traveller has no reenlistment modifiers
+                prob_data = chargen.calculate_success_probability(target, modifiers)
+                
+                result["reenlistment"] = {
+                    "service": career,
+                    "percentage": f"{prob_data['percentage']:.0f}%",
+                    "raw_percentage": prob_data["percentage"],
+                    "target": target,
+                    "modifiers": modifiers,
+                    "description": prob_data["description"],
+                    "applicable": True
+                }
+            except Exception as e:
+                result["reenlistment"] = {"applicable": False, "error": str(e)}
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Career probabilities calculation failed: {str(e)}"}), 500
+
+# Keep the old endpoint for backward compatibility
+@app.route('/api/enlistment_probabilities', methods=['POST'])
+def api_enlistment_probabilities():
+    """Legacy endpoint - redirects to new unified API"""
+    response = api_career_probabilities()
+    data = response.get_json()
     
-    for service in services:
-        try:
-            # Create a temporary RNG for calculation (we don't actually roll)
-            rng = chargen.get_random_generator(current_character)
-            
-            # Get enlistment requirements for this service
-            target, modifiers, modifier_details = chargen.get_enlistment_requirements(service, current_character)
-            
-            # Calculate probability
-            prob_data = chargen.calculate_success_probability(target, modifiers)
-            
-            probabilities[service.lower()] = {
-                "target": target,
-                "modifiers": modifiers,
-                "modifier_details": modifier_details,
-                "percentage": prob_data["percentage"],
-                "description": prob_data["description"]
+    if data and data.get("success"):
+        # Convert new format to old format for compatibility
+        old_format = {}
+        for item in data.get("enlistment", []):
+            service_key = item["service"].lower()
+            old_format[service_key] = {
+                "percentage": item["raw_percentage"],
+                "target": item.get("target", 0),
+                "modifiers": item.get("modifiers", 0),
+                "description": item.get("description", "")
             }
-            
-        except Exception as e:
-            probabilities[service.lower()] = {
-                "error": str(e),
-                "percentage": 0
-            }
+        
+        return jsonify({
+            "success": True,
+            "probabilities": old_format
+        })
     
-    return jsonify({
-        "success": True,
-        "probabilities": probabilities
-    })
+    return response
 
 @app.route('/api/dice_roll_report', methods=['POST'])
 def api_dice_roll_report():
@@ -587,8 +791,39 @@ def api_current_character():
     
     return jsonify({
         "success": True,
-        "character": current_character
+        "character": add_calculated_fields(current_character.copy())
     })
+
+@app.route('/api/phase_info', methods=['GET'])
+def api_phase_info():
+    """
+    Get current phase information for the character
+    """
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character created yet"}), 400
+    
+    try:
+        term_num, phase_num, phase_name = chargen.get_current_phase_info(current_character)
+        current_phase = current_character.get("current_phase", "1.1")
+        phase_history = current_character.get("phase_history", [])
+        
+        # Get service-specific phase information
+        service = current_character.get("career", "Unknown")
+        phase_sequence = chargen.get_phase_sequence_for_service(service) if service != "Unknown" else []
+        
+        return jsonify({
+            "success": True,
+            "current_phase": current_phase,
+            "term_number": term_num,
+            "phase_number": phase_num,
+            "phase_name": phase_name,
+            "phase_history": phase_history,
+            "phase_sequence": phase_sequence,
+            "service": service
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/action_probability', methods=['POST'])
 def api_action_probability():

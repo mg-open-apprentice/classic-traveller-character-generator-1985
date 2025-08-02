@@ -1,98 +1,48 @@
 {
-  "name": "Orion Galaxy",
-  "age": 30,
-  "terms_served": 3,
+  "name": "Dex Flux",
+  "age": 22,
+  "terms_served": 0,
   "characteristics": {
-    "strength": 10,
+    "strength": 9,
     "dexterity": 5,
     "endurance": 5,
-    "intelligence": 4,
-    "education": 5,
+    "intelligence": 2,
+    "education": 3,
     "social": 4
   },
   "skills": {
-    "Electronic": 1,
-    "Blade Combat": 1,
-    "Tactics": 1,
-    "Gun Combat": 1,
-    "Vehicle": 1,
+    "Jack-of-all-Trades": 1,
     "Mechanical": 1
   },
   "career_history": [
     {
       "event_type": "enlistment_attempt",
-      "service": "Army",
+      "service": "Scouts",
       "roll": 10,
       "modifier": 2,
       "modifier_details": [
-        "Endurance 5\u22655 (+2)"
+        "Strength 9\u22658 (+2)"
       ],
-      "target": 5,
+      "target": 7,
       "total": 12,
       "success": true,
       "outcome": "enlisted",
-      "assigned_service": "Army"
+      "assigned_service": "Scouts"
     },
     {
       "event_type": "survival_check",
-      "career": "Army",
+      "career": "Scouts",
       "roll": 12,
       "modifier": 0,
       "modifier_details": [],
-      "target": 5,
+      "target": 7,
       "total": 12,
       "success": true,
       "outcome": "survived"
     },
     {
-      "event_type": "commission_check",
-      "career": "Army",
-      "applicable": true,
-      "target": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 8,
-      "total": 8,
-      "success": true,
-      "rank": 1,
-      "outcome": "commissioned as officer",
-      "skill_eligibilities_granted": 1
-    },
-    {
-      "event_type": "promotion_check",
-      "career": "Army",
-      "current_rank": 1,
-      "applicable": true,
-      "target": 6,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 6,
-      "total": 6,
-      "success": true,
-      "rank": 2,
-      "outcome": "promoted to rank 2",
-      "skill_eligibilities_granted": 1
-    },
-    {
       "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 3,
-      "skill_gained": "Electronic",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 3
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Scouts",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -101,180 +51,15 @@
       },
       "table_choice_method": "player",
       "table_choice": "service",
-      "roll": 5,
-      "skill_gained": "Blade Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 2
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "personal",
-      "roll": 1,
-      "skill_gained": "+1 STR",
-      "result_type": "characteristic_increase",
-      "characteristic": "strength",
-      "old_value": 9,
-      "new_value": 10,
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 1
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
-      "roll": 4,
-      "skill_gained": "Tactics",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check",
-      "previous_age": 18,
-      "current_age": 22,
-      "age_increase": 4,
-      "checks_performed": [],
-      "ageing_effects": [],
-      "total_effects": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 22,
-      "preference": "reenlist",
-      "roll": 9,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 5,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": 5,
-      "total": 5,
-      "success": true,
-      "outcome": "survived"
-    },
-    {
-      "event_type": "promotion_check",
-      "career": "Army",
-      "current_rank": 2,
-      "applicable": true,
-      "target": 6,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 5,
-      "total": 5,
-      "success": false,
-      "rank": 2,
-      "outcome": "not promoted",
-      "skill_eligibilities_granted": 0
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "advanced",
       "roll": 6,
-      "skill_gained": "Gun Combat",
-      "result_type": "skill_gain",
-      "skill_eligibilities_consumed": 1,
-      "skill_eligibilities_remaining": 0
-    },
-    {
-      "event_type": "ageing_check",
-      "previous_age": 22,
-      "current_age": 26,
-      "age_increase": 4,
-      "checks_performed": [],
-      "ageing_effects": [],
-      "total_effects": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 26,
-      "preference": "reenlist",
-      "roll": 9,
-      "target": 7,
-      "outcome": "reenlisted",
-      "status_text": "reenlisted",
-      "continue_career": true,
-      "new_term_started": true
-    },
-    {
-      "event_type": "survival_check",
-      "career": "Army",
-      "roll": 7,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": 5,
-      "total": 7,
-      "success": true,
-      "outcome": "survived"
-    },
-    {
-      "event_type": "promotion_check",
-      "career": "Army",
-      "current_rank": 2,
-      "applicable": true,
-      "target": 6,
-      "modifier": 0,
-      "modifier_details": [],
-      "roll": 8,
-      "total": 8,
-      "success": true,
-      "rank": 3,
-      "outcome": "promoted to rank 3",
-      "skill_eligibilities_granted": 1
-    },
-    {
-      "event_type": "skill_resolution",
-      "career": "Army",
-      "available_tables": {
-        "personal": true,
-        "service": true,
-        "advanced": true,
-        "education": false
-      },
-      "table_choice_method": "player",
-      "table_choice": "service",
-      "roll": 1,
-      "skill_gained": "Vehicle",
+      "skill_gained": "Jack-of-all-Trades",
       "result_type": "skill_gain",
       "skill_eligibilities_consumed": 1,
       "skill_eligibilities_remaining": 1
     },
     {
       "event_type": "skill_resolution",
-      "career": "Army",
+      "career": "Scouts",
       "available_tables": {
         "personal": true,
         "service": true,
@@ -291,119 +76,12 @@
     },
     {
       "event_type": "ageing_check",
-      "previous_age": 26,
-      "current_age": 30,
+      "previous_age": 18,
+      "current_age": 22,
       "age_increase": 4,
       "checks_performed": [],
       "ageing_effects": [],
       "total_effects": 0
-    },
-    {
-      "event_type": "reenlistment_attempt",
-      "career": "Army",
-      "age": 30,
-      "preference": "reenlist",
-      "roll": 5,
-      "target": 7,
-      "outcome": "discharged",
-      "status_text": "military discharge",
-      "continue_career": false
-    },
-    {
-      "event_type": "mustering_out_cash_roll",
-      "roll": 2,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": null,
-      "result": "Cr5,000",
-      "total_roll": 2,
-      "amount": 5000,
-      "career": "Army"
-    },
-    {
-      "event_type": "mustering_out_benefit_roll",
-      "roll": 6,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": null,
-      "result": "Mid Psg",
-      "total_roll": 6,
-      "benefit": "Mid Psg",
-      "career": "Army"
-    },
-    {
-      "event_type": "mustering_out_characteristic_boost",
-      "characteristic": "intelligence",
-      "boost": 1,
-      "old_value": 2,
-      "new_value": 3,
-      "source": "mustering_out_benefit"
-    },
-    {
-      "event_type": "mustering_out_benefit_roll",
-      "roll": 2,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": null,
-      "result": "INT +1",
-      "total_roll": 2,
-      "benefit": "INT +1",
-      "career": "Army"
-    },
-    {
-      "event_type": "mustering_out_characteristic_boost",
-      "characteristic": "intelligence",
-      "boost": 1,
-      "old_value": 3,
-      "new_value": 4,
-      "source": "mustering_out_benefit"
-    },
-    {
-      "event_type": "mustering_out_benefit_roll",
-      "roll": 2,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": null,
-      "result": "INT +1",
-      "total_roll": 2,
-      "benefit": "INT +1",
-      "career": "Army"
-    },
-    {
-      "event_type": "mustering_out_characteristic_boost",
-      "characteristic": "education",
-      "boost": 2,
-      "old_value": 3,
-      "new_value": 5,
-      "source": "mustering_out_benefit"
-    },
-    {
-      "event_type": "mustering_out_benefit_roll",
-      "roll": 3,
-      "modifier": 0,
-      "modifier_details": [],
-      "target": null,
-      "result": "EDU +2",
-      "total_roll": 3,
-      "benefit": "EDU +2",
-      "career": "Army"
-    },
-    {
-      "event_type": "mustering_out_summary",
-      "career": "Army",
-      "total_rolls": 5,
-      "cash_rolls": 1,
-      "benefit_rolls": 4,
-      "total_cash": 5000,
-      "items": [
-        "Mid Psg"
-      ],
-      "characteristic_boosts": {
-        "intelligence": 2,
-        "education": 2
-      },
-      "benefit_rank_bonus": 0,
-      "gambling_skill": 0
     }
   ],
   "skill_roll_eligibility": 0,
@@ -1036,7 +714,7 @@
       3054108005,
       617599086,
       2867461591,
-      42
+      9
     ],
     null
   ],
@@ -1044,60 +722,7 @@
   "rdy_for_commission_check": false,
   "rdy_for_promotion_check": false,
   "rdy_for_ageing_check": false,
-  "rdy_for_reenlistment": false,
+  "rdy_for_reenlistment": true,
   "upp": "955234",
-  "career": "Army",
-  "commissioned": true,
-  "rank": 3,
-  "rdy_for_muster_out": false,
-  "mustering_out_benefits": {
-    "cash": 5000,
-    "items": [
-      "Mid Psg"
-    ],
-    "characteristic_boosts": {
-      "intelligence": 2,
-      "education": 2
-    },
-    "cash_roll_details": [
-      {
-        "roll_number": 1,
-        "base_roll": 2,
-        "rank_bonus": 0,
-        "gambling_bonus": 0,
-        "total_roll": 2,
-        "amount": 5000
-      }
-    ],
-    "benefit_roll_details": [
-      {
-        "roll_number": 1,
-        "base_roll": 6,
-        "rank_bonus": 0,
-        "total_roll": 6,
-        "benefit": "Mid Psg"
-      },
-      {
-        "roll_number": 2,
-        "base_roll": 2,
-        "rank_bonus": 0,
-        "total_roll": 2,
-        "benefit": "INT +1"
-      },
-      {
-        "roll_number": 3,
-        "base_roll": 2,
-        "rank_bonus": 0,
-        "total_roll": 2,
-        "benefit": "INT +1"
-      },
-      {
-        "roll_number": 4,
-        "base_roll": 3,
-        "rank_bonus": 0,
-        "total_roll": 3,
-        "benefit": "EDU +2"
-      }
-    ]
-  }
+  "career": "Scouts"
 }
