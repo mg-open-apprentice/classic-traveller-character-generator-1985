@@ -242,10 +242,17 @@ function clearUIState() {
     // Clear all characteristic values
     const characteristics = ['strength', 'dexterity', 'endurance', 'intelligence', 'education', 'social'];
     characteristics.forEach(char => {
+        // Clear bottom panel display
         const element = document.getElementById(`bottom-${char}-value`);
         if (element) {
             element.textContent = '-';
-            element.classList.remove('char-excellent', 'char-good', 'char-average', 'char-poor');
+            element.classList.remove('char-bad', 'char-poor', 'char-average', 'char-good', 'char-excellent');
+        }
+        
+        // Reset main characteristic panel buttons to "?" state
+        const mainElement = document.getElementById(`${char}-value`);
+        if (mainElement) {
+            mainElement.textContent = '?';
         }
     });
     
@@ -288,6 +295,7 @@ function clearUIState() {
 }
 
 async function archiveCharacter() {
+    console.log('Archive function called. Current character:', currentCharacter ? currentCharacter.name : 'null');
     if (!currentCharacter || !currentCharacter.name) {
         console.error('No character to archive');
         return;
@@ -323,6 +331,14 @@ async function archiveCharacter() {
             const charName = document.getElementById('char-name');
             if (charName) {
                 charName.textContent = 'Ready for New Character';
+            }
+            
+            // Re-enable and hide archive button since no character exists now
+            if (archiveBtn) {
+                archiveBtn.disabled = false;
+                archiveBtn.textContent = 'Archive Character';
+                archiveBtn.style.backgroundColor = '';
+                archiveBtn.style.display = 'none'; // Hide it since no character to archive
             }
             
             console.log('Ready for new character creation');
@@ -1396,6 +1412,7 @@ function showEnlistmentPanel() {
     hideAllPanels();
     document.getElementById('enlistment-panel').style.display = 'block';
     loadEnlistmentProbabilities();
+    setupEnlistmentHoverEffects();
 }
 
 async function loadEnlistmentProbabilities() {
@@ -1409,17 +1426,169 @@ async function loadEnlistmentProbabilities() {
         const data = await response.json();
         
         if (data.success) {
-            // Update service probabilities
-            Object.entries(data.probabilities).forEach(([service, prob]) => {
+            // Convert probabilities to array and sort by percentage (highest first)
+            const serviceProbs = Object.entries(data.probabilities).map(([service, prob]) => ({
+                service,
+                percentage: prob.percentage || 0,
+                data: prob
+            })).sort((a, b) => b.percentage - a.percentage);
+            
+            // Update service probabilities with better formatting
+            serviceProbs.forEach(({ service, percentage, data }) => {
                 const probElement = document.getElementById(`${service.toLowerCase()}-prob`);
                 if (probElement) {
-                    probElement.textContent = `${prob}%`;
+                    probElement.textContent = `${Math.round(percentage)}%`;
+                }
+                
+                // Update button text to include percentage in service name
+                const serviceBtn = document.getElementById(`${service.toLowerCase()}-btn`);
+                if (serviceBtn) {
+                    const serviceNameElement = serviceBtn.querySelector('.service-name');
+                    if (serviceNameElement) {
+                        const serviceName = service.charAt(0).toUpperCase() + service.slice(1);
+                        serviceNameElement.textContent = `${serviceName} (${Math.round(percentage)}%)`;
+                    }
                 }
             });
+            
+            // Reorder buttons by success probability
+            reorderEnlistmentButtons(serviceProbs);
         }
     } catch (error) {
         console.error('Error loading enlistment probabilities:', error);
     }
+}
+
+function reorderEnlistmentButtons(serviceProbs) {
+    const enlistmentGrid = document.querySelector('.enlistment-grid');
+    if (!enlistmentGrid) return;
+    
+    // Create a fragment to hold the reordered buttons
+    const fragment = document.createDocumentFragment();
+    
+    // Add buttons in order of success probability (highest first)
+    serviceProbs.forEach(({ service, percentage }) => {
+        const serviceBtn = document.getElementById(`${service.toLowerCase()}-btn`);
+        if (serviceBtn) {
+            // Remove from current position and add to fragment
+            serviceBtn.remove();
+            fragment.appendChild(serviceBtn);
+        }
+    });
+    
+    // Add all reordered buttons back to the grid
+    enlistmentGrid.appendChild(fragment);
+}
+
+function setupEnlistmentHoverEffects() {
+    console.log('Setting up enlistment hover effects...');
+    if (!currentCharacter || !currentCharacter.characteristics) {
+        console.log('No character or characteristics available');
+        return;
+    }
+    console.log('Character characteristics:', currentCharacter.characteristics);
+    
+    const enlistmentBonuses = {
+        'navy': [
+            { char: 'intelligence', req: 8, bonus: 1 },
+            { char: 'education', req: 9, bonus: 2 }
+        ],
+        'marines': [
+            { char: 'intelligence', req: 8, bonus: 1 },
+            { char: 'strength', req: 8, bonus: 2 }
+        ],
+        'army': [
+            { char: 'dexterity', req: 6, bonus: 1 },
+            { char: 'endurance', req: 5, bonus: 2 }
+        ],
+        'scouts': [
+            { char: 'intelligence', req: 6, bonus: 1 },
+            { char: 'strength', req: 8, bonus: 2 }
+        ],
+        'merchants': [
+            { char: 'strength', req: 7, bonus: 1 },
+            { char: 'intelligence', req: 6, bonus: 2 }
+        ],
+        'others': []
+    };
+    
+    const services = ['navy', 'marines', 'army', 'scouts', 'merchants', 'others'];
+    
+    services.forEach(service => {
+        const serviceBtn = document.getElementById(`${service}-btn`);
+        if (!serviceBtn) return;
+        
+        serviceBtn.addEventListener('mouseenter', () => {
+            console.log(`Hovering over ${service}`);
+            highlightCharacteristicsForService(service, enlistmentBonuses[service]);
+        });
+        
+        serviceBtn.addEventListener('mouseleave', () => {
+            console.log(`Left ${service}`);
+            clearCharacteristicHighlights();
+        });
+    });
+}
+
+function highlightCharacteristicsForService(service, bonuses) {
+    console.log(`Highlighting for ${service} with bonuses:`, bonuses);
+    if (!currentCharacter || !currentCharacter.characteristics) return;
+    
+    const characteristics = currentCharacter.characteristics;
+    
+    // First, collect all qualifying characteristics for this service
+    const qualifyingChars = {};
+    bonuses.forEach(({ char, req, bonus }) => {
+        const charValue = characteristics[char] || 0;
+        console.log(`Checking ${char}: value=${charValue}, req=${req}, bonus=${bonus}`);
+        if (charValue >= req) {
+            if (!qualifyingChars[char]) {
+                qualifyingChars[char] = [];
+            }
+            qualifyingChars[char].push(bonus);
+        }
+    });
+    
+    // Check if character qualifies for bonuses from multiple characteristics
+    const hasMultipleCharacteristicBonuses = Object.keys(qualifyingChars).length > 1;
+    
+    // Now apply highlighting based on collected bonuses
+    Object.entries(qualifyingChars).forEach(([char, bonusArray]) => {
+        // Target the parent char-stat div (the entire box), not just the value span
+        const charBox = document.getElementById(`bottom-${char}-value`);
+        if (charBox) {
+            const charStatBox = charBox.closest('.char-stat');
+            console.log(`${char} qualifies! Char-stat box found:`, !!charStatBox);
+            if (charStatBox) {
+                // Determine highlight class based on bonuses
+                let highlightClass;
+                if (hasMultipleCharacteristicBonuses) {
+                    highlightClass = 'char-highlight-both'; // Gold for bonuses from multiple characteristics
+                } else if (bonusArray.includes(2)) {
+                    highlightClass = 'char-highlight-2'; // Cyan for +2
+                } else if (bonusArray.includes(1)) {
+                    highlightClass = 'char-highlight-1'; // Green for +1
+                }
+                
+                charStatBox.classList.add(highlightClass);
+            }
+        }
+    });
+}
+
+function clearCharacteristicHighlights() {
+    const characteristics = ['strength', 'dexterity', 'endurance', 'intelligence', 'education', 'social'];
+    
+    characteristics.forEach(char => {
+        // Target the entire char-stat boxes (parent divs)
+        const charBox = document.getElementById(`bottom-${char}-value`);
+        if (charBox) {
+            const charStatBox = charBox.closest('.char-stat');
+            if (charStatBox) {
+                charStatBox.classList.remove('char-highlight-1', 'char-highlight-2', 'char-highlight-both');
+            }
+        }
+    });
 }
 
 async function attemptEnlistment(service) {

@@ -523,12 +523,12 @@ body {
     cursor: pointer;
     font-family: var(--font-mono);
     transition: var(--transition);
-    padding: var(--space-md);
+    padding: var(--space-sm);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 80px;
+    min-height: 60px;
     position: relative;
     overflow: hidden;
 }
@@ -568,7 +568,7 @@ body {
 }
 
 .char-value {
-    font-size: clamp(24px, 5vw, 32px);
+    font-size: clamp(20px, 4vw, 26px);
     font-weight: bold;
     color: inherit;
 }
@@ -582,8 +582,8 @@ body {
     }
     
     .characteristic-btn {
-        min-height: 70px;
-        padding: var(--space-sm);
+        min-height: 50px;
+        padding: var(--space-xs);
     }
 }
 
@@ -686,7 +686,7 @@ body {
 
 @media (max-width: 480px) {
     .characteristic-btn {
-        min-height: 60px;
+        min-height: 45px;
     }
     
     .char-name {
@@ -1383,6 +1383,22 @@ body {
 .character-name-line {
     font-size: 18px;
     font-weight: bold;
+}
+
+/* Characteristic hover highlighting for enlistment bonuses */
+.char-highlight-1 {
+    border: 2px solid #16A34A !important; /* Bright Green for +1 bonus */
+    box-shadow: 0 0 8px #16A34A !important;
+}
+
+.char-highlight-2 {
+    border: 2px solid #00FFFF !important; /* Bright Cyan for +2 bonus */
+    box-shadow: 0 0 8px #00FFFF !important;
+}
+
+.char-highlight-both {
+    border: 2px solid #FFD700 !important; /* Bright Gold for both bonuses */
+    box-shadow: 0 0 8px #FFD700 !important;
 }
 
 /* Outcome Display Styles */
