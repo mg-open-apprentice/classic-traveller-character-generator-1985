@@ -616,8 +616,8 @@ function updateUIState() {
     updateButtonStates();
     
     // Check what phase we're in
-    if (currentCharacter.upp === '______') {
-        // Need to generate characteristics
+    if (currentCharacter.upp === '______' || (currentCharacter.upp && currentCharacter.upp.includes('_'))) {
+        // Need to generate characteristics (either all blank or partially complete)
         showCharacteristicsPanel();
     } else if (!currentCharacter.career) {
         // Need to enlist
@@ -836,7 +836,9 @@ function setupRollPanel(rollType, data) {
         // Set up choice button click handler
         if (choiceBtn) {
             choiceBtn.onclick = () => {
-                const preference = choiceText.textContent.toLowerCase();
+                const buttonText = choiceText.textContent.toLowerCase();
+                // Map UI text to backend preference values
+                const preference = buttonText === 'leave' ? 'discharge' : buttonText;
                 attemptVoluntaryDeparture(preference);
             };
         }
@@ -915,23 +917,44 @@ async function showSkillsPanel() {
         skillsPanel.style.display = 'block';
     }
     
-    // Show appropriate skill table buttons based on education
-    const educationLevel = currentCharacter.characteristics?.education || 0;
-    const showEducationTable = educationLevel >= 8;
-    
-    // Always show these three tables
-    const personalBtn = document.getElementById('personal-skill-btn');
-    const serviceBtn = document.getElementById('service-skill-btn');
-    const advancedBtn = document.getElementById('advanced-skill-btn');
-    const educationBtn = document.getElementById('education-skill-btn');
-    
-    if (personalBtn) personalBtn.style.display = 'block';
-    if (serviceBtn) serviceBtn.style.display = 'block';
-    if (advancedBtn) advancedBtn.style.display = 'block';
-    
-    // Show education table only if education 8+
-    if (educationBtn) {
-        educationBtn.style.display = showEducationTable ? 'block' : 'none';
+    try {
+        // Get available skill tables from backend
+        const response = await fetch('/api/available_skill_tables');
+        const data = await response.json();
+        
+        if (data.success) {
+            const availableTables = data.available_tables;
+            
+            // Update button visibility based on backend rules
+            const tableButtons = {
+                'personal': document.getElementById('personal-skill-btn'),
+                'service': document.getElementById('service-skill-btn'),
+                'advanced': document.getElementById('advanced-skill-btn'),
+                'education': document.getElementById('education-skill-btn')
+            };
+            
+            Object.entries(tableButtons).forEach(([tableName, button]) => {
+                if (button) {
+                    button.style.display = availableTables[tableName] ? 'block' : 'none';
+                }
+            });
+        } else {
+            console.error('Failed to get available skill tables:', data.error);
+            // Fallback to showing all tables
+            const allButtons = ['personal-skill-btn', 'service-skill-btn', 'advanced-skill-btn', 'education-skill-btn'];
+            allButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) btn.style.display = 'block';
+            });
+        }
+    } catch (error) {
+        console.error('Error getting available skill tables:', error);
+        // Fallback to showing all tables
+        const allButtons = ['personal-skill-btn', 'service-skill-btn', 'advanced-skill-btn', 'education-skill-btn'];
+        allButtons.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) btn.style.display = 'block';
+        });
     }
     
     // Add event listeners for skill table buttons
@@ -1266,16 +1289,51 @@ async function performReenlistRoll() {
     }
 }
 
-function showMusterOutPanel() {
+async function showMusterOutPanel() {
     if (!currentCharacter) return;
     
     // Hide other panels
     hideAllPanels();
     
-    // Show mustering out panel
-    const musterOutPanel = document.getElementById('mustering-out-panel');
-    if (musterOutPanel) {
-        musterOutPanel.style.display = 'block';
+    try {
+        // Get muster out info from backend
+        const response = await fetch('/api/muster_out_info');
+        const data = await response.json();
+        
+        if (data.success) {
+            const maxCashRolls = data.max_cash_rolls;
+            
+            // Update button states based on max cash rolls
+            const cashButtons = ['cash-0-btn', 'cash-1-btn', 'cash-2-btn', 'cash-3-btn'];
+            cashButtons.forEach((btnId, index) => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (index <= maxCashRolls) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    } else {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.3';
+                        btn.style.cursor = 'not-allowed';
+                    }
+                }
+            });
+            
+            // Show mustering out panel
+            const musterOutPanel = document.getElementById('mustering-out-panel');
+            if (musterOutPanel) {
+                musterOutPanel.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Error getting muster out info:', error);
+        
+        // Fallback: show panel with all buttons enabled
+        const musterOutPanel = document.getElementById('mustering-out-panel');
+        if (musterOutPanel) {
+            musterOutPanel.style.display = 'block';
+        }
     }
 }
 
@@ -1365,6 +1423,7 @@ async function generateCharacteristic(charName) {
             // Update current character
             currentCharacter = data.character;
             updateCharacterDisplay();
+            updateUPPDisplay();
             updateUIState();
         }
     } catch (error) {
@@ -1480,7 +1539,7 @@ function reorderEnlistmentButtons(serviceProbs) {
     enlistmentGrid.appendChild(fragment);
 }
 
-function setupEnlistmentHoverEffects() {
+async function setupEnlistmentHoverEffects() {
     console.log('Setting up enlistment hover effects...');
     if (!currentCharacter || !currentCharacter.characteristics) {
         console.log('No character or characteristics available');
@@ -1488,46 +1547,38 @@ function setupEnlistmentHoverEffects() {
     }
     console.log('Character characteristics:', currentCharacter.characteristics);
     
-    const enlistmentBonuses = {
-        'navy': [
-            { char: 'intelligence', req: 8, bonus: 1 },
-            { char: 'education', req: 9, bonus: 2 }
-        ],
-        'marines': [
-            { char: 'intelligence', req: 8, bonus: 1 },
-            { char: 'strength', req: 8, bonus: 2 }
-        ],
-        'army': [
-            { char: 'dexterity', req: 6, bonus: 1 },
-            { char: 'endurance', req: 5, bonus: 2 }
-        ],
-        'scouts': [
-            { char: 'intelligence', req: 6, bonus: 1 },
-            { char: 'strength', req: 8, bonus: 2 }
-        ],
-        'merchants': [
-            { char: 'strength', req: 7, bonus: 1 },
-            { char: 'intelligence', req: 6, bonus: 2 }
-        ],
-        'others': []
-    };
-    
-    const services = ['navy', 'marines', 'army', 'scouts', 'merchants', 'others'];
-    
-    services.forEach(service => {
-        const serviceBtn = document.getElementById(`${service}-btn`);
-        if (!serviceBtn) return;
+    try {
+        // Get enlistment bonus requirements from backend
+        const response = await fetch('/api/enlistment_bonus_requirements');
         
-        serviceBtn.addEventListener('mouseenter', () => {
-            console.log(`Hovering over ${service}`);
-            highlightCharacteristicsForService(service, enlistmentBonuses[service]);
-        });
+        const data = await response.json();
+        if (!data.success) {
+            console.error('Failed to get enlistment bonus requirements:', data.error);
+            return;
+        }
         
-        serviceBtn.addEventListener('mouseleave', () => {
-            console.log(`Left ${service}`);
-            clearCharacteristicHighlights();
+        // Use the clean bonus requirements data from backend
+        const enlistmentBonuses = data.bonus_requirements;
+        
+        const services = ['navy', 'marines', 'army', 'scouts', 'merchants', 'others'];
+        
+        services.forEach(service => {
+            const serviceBtn = document.getElementById(`${service}-btn`);
+            if (!serviceBtn) return;
+            
+            serviceBtn.addEventListener('mouseenter', () => {
+                console.log(`Hovering over ${service}`);
+                highlightCharacteristicsForService(service, enlistmentBonuses[service] || []);
+            });
+            
+            serviceBtn.addEventListener('mouseleave', () => {
+                console.log(`Left ${service}`);
+                clearCharacteristicHighlights();
+            });
         });
-    });
+    } catch (error) {
+        console.error('Error setting up enlistment hover effects:', error);
+    }
 }
 
 function highlightCharacteristicsForService(service, bonuses) {
