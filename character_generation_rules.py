@@ -355,8 +355,10 @@ def check_survival(random_generator: random.Random, character_record: dict[str, 
             # Skip commission/promotion for Scouts/Others - proceed to skills phase
             pass  # skill_roll_eligibility will be consumed in skills phase
         elif not character_record.get("commissioned", False):
-            # Eligible for commission (other rules checked elsewhere)
-            character_record["rdy_for_commission_check"] = True
+            # Check actual commission eligibility before enabling button
+            target, modifiers, modifier_details = get_commission_requirements(character_record)
+            if target is not None:
+                character_record["rdy_for_commission_check"] = True
         elif character_record.get("commissioned", False):
             # Already commissioned, check promotion eligibility
             character_record["rdy_for_promotion_check"] = True
@@ -783,34 +785,7 @@ def attempt_reenlistment(random_generator: random.Random, character_record: dict
     if preference == "retire" and current_term_number < 5:
         raise ValueError(f"Character cannot retire before 5th term. Currently in term {current_term_number}.")
     
-    # Check if character was injured in current term - if so, automatic medical discharge
-    last_survival_outcome = None
-    for event in reversed(character_record.get('career_history', [])):
-        if event.get('event_type') == 'survival_check':
-            last_survival_outcome = event.get('outcome')
-            break
-    
-    if last_survival_outcome == 'injured':
-        # Automatic medical discharge - no dice roll needed
-        reenlistment_result = {
-            "event_type": "reenlistment_attempt",
-            "career": career,
-            "age": character_record["age"],
-            "preference": preference,
-            "roll": None,  # No roll needed for medical discharge
-            "target": None,  # No target needed for medical discharge
-            "outcome": "medical_discharge",
-            "status_text": "medical discharge",
-            "continue_career": False,
-            "skill_eligibilities_granted": 0,
-            "reason": "injured during survival check"
-        }
-        
-        # Add the reenlistment attempt to the character's career history
-        character_record["career_history"].append(reenlistment_result)
-        
-        # Do NOT increment terms_served for medical discharge due to injury
-        return character_record
+    # Note: Injured characters now bypass reenlistment entirely and go straight to muster out after aging
     
     # Get reenlistment target from tables
     target = tables.REENLISTMENT_TARGETS[career]
@@ -1033,7 +1008,28 @@ def check_ageing_characteristics(random_generator: random.Random, character_reco
     
     # Per state-control-rules.md: After Ageing
     character_record["rdy_for_ageing_check"] = False
-    character_record["rdy_for_reenlistment"] = True
+    
+    # Check if character was injured - if so, skip reenlistment and go to muster out
+    if character_record.get("survival_outcome") == "injured":
+        character_record["rdy_for_muster_out"] = True
+        # Also add the automatic medical discharge to career history
+        career = character_record.get("career", "")
+        medical_discharge_event = {
+            "event_type": "reenlistment_attempt",
+            "career": career,
+            "age": character_record["age"],
+            "preference": "medical",
+            "roll": None,
+            "target": None,
+            "outcome": "medical_discharge",
+            "status_text": "medical discharge",
+            "continue_career": False,
+            "skill_eligibilities_granted": 0,
+            "reason": "injured during survival check"
+        }
+        character_record["career_history"].append(medical_discharge_event)
+    else:
+        character_record["rdy_for_reenlistment"] = True
     
     return character_record
 
@@ -1552,15 +1548,13 @@ def get_available_reenlistment_options(character_record):
     if not character_record.get('rdy_for_reenlistment', False):
         return options  # Empty list - character not ready for reenlistment
     
-    if character_record.get('survival_outcome') == 'injured':
-        options = ['medical']
+    # Note: Injured characters no longer reach reenlistment phase - they go directly to muster out after aging
+    terms_served = character_record.get('terms_served', 0)
+    if terms_served >= 4:
+        options.append('retire')  # 5th term or later
     else:
-        terms_served = character_record.get('terms_served', 0)
-        if terms_served >= 4:
-            options.append('retire')  # 5th term or later
-        else:
-            options.append('leave')   # Before 5th term
-        options.append('reenlist')    # Always allow reenlist
+        options.append('leave')   # Before 5th term
+    options.append('reenlist')    # Always allow reenlist
     return options
 
 # SERVICE_RANK_TITLES moved to centralized table module
@@ -1598,8 +1592,30 @@ def check_ageing(random_generator: random.Random, character_record: dict[str, An
     # Step 2: Check for characteristic effects
     character_record = check_ageing_characteristics(random_generator, character_record)
     
-    # Per state-control-rules.md: After Ageing
-    character_record["rdy_for_reenlistment"] = True
+    # Step 3: Clear ageing readiness flag
+    character_record["rdy_for_ageing_check"] = False
+    
+    # Step 4: Check if character was injured - if so, skip reenlistment and go to muster out
+    if character_record.get("survival_outcome") == "injured":
+        character_record["rdy_for_muster_out"] = True
+        character_record["rdy_for_reenlistment"] = False
+        
+        # Add medical discharge event to career history
+        medical_discharge_event = {
+            "event_type": "reenlistment_attempt",
+            "career": character_record.get("career"),
+            "roll": None,
+            "target": None,
+            "outcome": "medical_discharge",
+            "status_text": "medical discharge",
+            "continue_career": False,
+            "skill_eligibilities_granted": 0,
+            "reason": "injured during survival check"
+        }
+        character_record["career_history"].append(medical_discharge_event)
+    else:
+        # Per state-control-rules.md: After Ageing
+        character_record["rdy_for_reenlistment"] = True
     
     return character_record
 

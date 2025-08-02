@@ -56,24 +56,35 @@ def index():
 @app.route('/api/create_character', methods=['POST'])
 def api_create_character():
     global current_character
-    # Completely wipe any existing character
-    current_character = None
     
-    # Create completely fresh character with time-based RNG for unique names
+    # Only create new character if no current character exists
+    if current_character is not None:
+        return jsonify({
+            "success": False, 
+            "error": "Character already exists. Archive current character first.",
+            "current_character_name": current_character.get("name", "Unknown")
+        }), 400
+    
+    # Create completely fresh character with unique seed for each character
     import time
     import random
-    temp_rng = random.Random(GLOBAL_SEED + int(time.time()) % 1000)
+    
+    # Generate a unique seed for this character based on time
+    unique_seed = GLOBAL_SEED + int(time.time() * 1000) % 1000000
+    
+    # Use unique seed for both name generation and character generation
+    temp_rng = random.Random(unique_seed)
     
     current_character = chargen.create_character_record()
     current_character["name"] = chargen.generate_character_name(temp_rng)
     current_character["upp"] = "______"  # Reset UPP for new character
-    current_character["seed"] = GLOBAL_SEED  # Store the seed used for this character
+    current_character["seed"] = unique_seed  # Store the unique seed used for this character
     
-    # Now set up proper RNG for character generation
-    rng = get_rng()
-    chargen.save_random_state(current_character, rng)  # Initialize RNG state
+    # Set up RNG with unique seed for character generation
+    rng = chargen.set_seed(unique_seed)
+    chargen.save_random_state(current_character, rng)  # Initialize RNG state with unique seed
     save_character_to_file()
-    print(f"DEBUG: Created new character: {current_character['name']}")
+    print(f"DEBUG: Created new character: {current_character['name']} with seed: {unique_seed}")
     return jsonify({
         "success": True,
         "name": current_character["name"],
@@ -345,8 +356,34 @@ def api_muster_out():
     return jsonify({
         "success": True,
         "character": current_character,
-        "mustering_out": current_character.get("mustering_out_benefits", {})
+        "mustering_out": current_character.get("mustering_out_benefits", {}),
+        "career_complete": True  # Signal to frontend that career is finished (but not auto-archived)
     })
+
+@app.route('/api/archive_character', methods=['POST'])
+def api_archive_character():
+    global current_character
+    if not current_character:
+        return jsonify({"success": False, "error": "No character to archive"}), 400
+    
+    if not current_character.get("name"):
+        return jsonify({"success": False, "error": "Character has no name to archive"}), 400
+    
+    try:
+        character_name = current_character.get("name")
+        save_character_to_file()  # Save current character to archive
+        print(f"DEBUG: Manually archived character: {character_name}")
+        
+        # Clear current character state after successful archive (Option B behavior)
+        current_character = None
+        
+        return jsonify({
+            "success": True,
+            "message": f"Character '{character_name}' archived successfully",
+            "character_name": character_name
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Archive failed: {str(e)}"}), 500
 
 @app.route('/api/get_available_actions', methods=['GET'])
 def api_get_available_actions():

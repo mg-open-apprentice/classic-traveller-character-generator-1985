@@ -8,11 +8,12 @@
     --color-danger: #f44;
     --color-success: #4f8;
     
-    /* Characteristic bonus colors */
-    --char-excellent: #00ff00; /* +3 bonus - bright green */
-    --char-good: #80ff80;      /* +2 bonus - light green */
-    --char-average: #ffff00;   /* +1 bonus - yellow */
-    --char-poor: #ff4444;      /* negative bonus - red */
+    /* Characteristic quality colors - Bad to Good progression */
+    --char-bad: #DC2626;       /* 0-2: Red */
+    --char-poor: #EA580C;      /* 3-5: Orange */
+    --char-average: #16A34A;   /* 6-8: Green */
+    --char-good: #00FFFF;      /* 9-10: Bright Cyan */
+    --char-excellent: #FFD700; /* 11+: Bright Gold */
     
     /* Spacing System */
     --space-xs: 2px;
@@ -1336,6 +1337,52 @@ body {
     font-size: clamp(16px, 3vw, 20px);
     font-weight: bold;
     color: var(--color-primary);
+}
+
+/* Characteristic quality color classes */
+.char-bad {
+    color: var(--char-bad) !important;
+}
+
+.char-poor {
+    color: var(--char-poor) !important;
+}
+
+.char-average {
+    color: var(--char-average) !important;
+}
+
+.char-good {
+    color: var(--char-good) !important;
+}
+
+.char-excellent {
+    color: var(--char-excellent) !important;
+}
+
+/* Skills and Benefits display styling */
+#skills-display {
+    font-size: 18px;
+    font-weight: bold;
+    padding: var(--space-sm);
+}
+
+#benefits-display {
+    font-size: 18px;
+    font-weight: bold;
+    padding: var(--space-sm);
+}
+
+#skills-display .section-label,
+#benefits-display .section-label {
+    color: var(--color-accent);
+    font-weight: bold;
+}
+
+/* Character name line styling - match skills/benefits */
+.character-name-line {
+    font-size: 18px;
+    font-weight: bold;
 }
 
 /* Outcome Display Styles */
