@@ -432,6 +432,14 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     Returns:
         Updated character record with enlistment results
     """
+    # Check if character has already completed their career
+    if character_record.get("mustering_out_benefits"):
+        raise ValueError("Character has already completed their career and cannot enlist in a new service")
+    
+    # Check if character already has a career
+    if character_record.get("career"):
+        raise ValueError("Character already has a career and cannot enlist in a different service")
+    
     # Get target number for chosen service
     target = get_enlistment_target(service_choice)
     
@@ -1663,6 +1671,7 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
     # Track results
     cash_total = 0
     items = []
+    benefit_counts = {}  # Track counts of each benefit
     characteristic_boosts = {}
     cash_roll_details = []
     benefit_roll_details = []
@@ -1772,7 +1781,8 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
             })
             
         elif benefit != '-':
-            items.append(benefit)
+            # Track benefit counts for aggregation
+            benefit_counts[benefit] = benefit_counts.get(benefit, 0) + 1
             
         # Add to career history
         character_record['career_history'].append({
@@ -1786,6 +1796,13 @@ def perform_mustering_out(random_generator: random.Random, character_record: dic
             'benefit': benefit,
             'career': current_career
         })
+    
+    # Convert benefit counts to items list with count notation
+    for benefit, count in benefit_counts.items():
+        if count > 1:
+            items.append(f"{benefit} x {count}")
+        else:
+            items.append(benefit)
     
     # Store mustering out results
     character_record['mustering_out_benefits'] = {

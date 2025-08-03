@@ -186,6 +186,7 @@ async function createCharacter() {
             // Clear UI state first, then set new character
             clearUIState();
             currentCharacter = data;
+            updateRecentRollDisplay('Character Created', currentCharacter.name, 'Ready for enlistment');
             updateCharacterDisplay();
             updateUIState();
         } else {
@@ -253,6 +254,10 @@ function clearUIState() {
     // Clear skill eligibility display
     const skillEligibility = document.getElementById('top-skill-eligibility');
     if (skillEligibility) skillEligibility.textContent = '';
+    
+    // Clear benefit eligibility display
+    const benefitEligibility = document.getElementById('top-benefit-eligibility');
+    if (benefitEligibility) benefitEligibility.textContent = '';
     
     // Clear credits display
     const charCredits = document.getElementById('char-credits');
@@ -436,6 +441,45 @@ async function updateCharacterNameWithRank() {
     }
 }
 
+function updateRecentRollDisplay(rollType, result, details = '') {
+    const recentRollText = document.getElementById('recent-roll-text');
+    if (recentRollText) {
+        const rollDescription = `${rollType}: ${result}${details ? ' - ' + details : ''}`;
+        recentRollText.textContent = rollDescription;
+    }
+}
+
+function setupRollDisplay(rollType, options = {}) {
+    if (!rollTitle || !rollDescription) return;
+    
+    switch (rollType) {
+        case 'survival':
+            rollTitle.textContent = 'PHASE: SURVIVAL - Survival Check';
+            rollDescription.textContent = 'Roll 2d6 to survive this term';
+            break;
+        case 'commission':
+            rollTitle.textContent = 'PHASE: COMMISSION - Commission Check';
+            rollDescription.textContent = 'Roll 2d6 to gain officer rank';
+            break;
+        case 'promotion':
+            rollTitle.textContent = 'PHASE: PROMOTION - Promotion Check';
+            rollDescription.textContent = 'Roll 2d6 for promotion';
+            break;
+        case 'reenlistment':
+            rollTitle.textContent = 'PHASE: REENLISTMENT - Reenlistment Check';
+            rollDescription.textContent = 'Roll 2d6 to continue career';
+            break;
+        case 'departure':
+            rollTitle.textContent = 'PHASE: VOLUNTARY DEPARTURE - Leaving Service';
+            rollDescription.textContent = 'Character is voluntarily leaving service';
+            break;
+        default:
+            rollTitle.textContent = 'Roll Check';
+            rollDescription.textContent = 'Roll 2d6';
+            break;
+    }
+}
+
 function updateCharacterDisplay() {
     if (!currentCharacter) return;
     
@@ -504,6 +548,55 @@ function updateCharacterDisplay() {
         }
     }
     
+    // Update benefit rolls eligibility counter
+    const benefitEligibility = document.getElementById('top-benefit-eligibility');
+    if (benefitEligibility) {
+        console.log(`DEBUG: Updating benefits counter, character terms: ${currentCharacter.terms_served}, mustered: ${!!currentCharacter.mustering_out_benefits}`);
+        let benefitRolls = 0;
+        let isEstimated = false;
+        
+        // Check if character has mustered out and get actual benefit rolls count
+        if (currentCharacter.mustering_out_benefits) {
+            // Find the mustering out summary event to get benefit_rolls count
+            const careerHistory = currentCharacter.career_history || [];
+            const musteringSummary = careerHistory.find(event => event.event_type === 'mustering_out_summary');
+            if (musteringSummary && musteringSummary.benefit_rolls) {
+                benefitRolls = musteringSummary.benefit_rolls;
+            }
+        } else if (currentCharacter.terms_served > 0) {
+            // Character is still active - calculate estimated benefits if they mustered out now
+            const termsServed = currentCharacter.terms_served || 0;
+            const rank = currentCharacter.rank || 0;
+            
+            console.log(`DEBUG: Benefits calculation - terms: ${termsServed}, rank: ${rank}`);
+            
+            // Calculate total rolls (same logic as backend)
+            let totalRolls = termsServed;
+            if (rank >= 1 && rank <= 2) {
+                totalRolls += 1;
+            } else if (rank >= 3 && rank <= 4) {
+                totalRolls += 2;
+            } else if (rank >= 5 && rank <= 6) {
+                totalRolls += 3;
+            }
+            
+            // Assume maximum of 3 cash rolls, remainder would be benefits
+            const maxCashRolls = Math.min(3, totalRolls);
+            benefitRolls = totalRolls - maxCashRolls;
+            isEstimated = true;
+            
+            console.log(`DEBUG: totalRolls: ${totalRolls}, maxCashRolls: ${maxCashRolls}, benefitRolls: ${benefitRolls}`);
+        }
+        
+        if (benefitRolls > 0) {
+            const displayText = isEstimated ? `~Benefits ${benefitRolls}` : `Benefits ${benefitRolls}`;
+            benefitEligibility.textContent = displayText;
+            benefitEligibility.style.display = 'inline';
+        } else {
+            benefitEligibility.style.display = 'none';
+        }
+    }
+    
     // Update credits display
     const creditsDisplay = document.getElementById('char-credits');
     if (creditsDisplay) {
@@ -537,7 +630,35 @@ function updateBenefitsDisplay() {
     if (musteringOutBenefits && musteringOutBenefits.items && musteringOutBenefits.items.length > 0) {
         // Character has mustered out and received benefits
         const items = musteringOutBenefits.items;
-        benefitsDisplay.innerHTML = `<span class="section-label">Benefits </span>${items.join(', ')}`;
+        
+        // Aggregate duplicate benefits into counts
+        const benefitCounts = {};
+        items.forEach(item => {
+            // Skip items that already have count notation (from new backend logic)
+            if (item.includes(' x ')) {
+                return; // Already formatted, use as-is
+            }
+            benefitCounts[item] = (benefitCounts[item] || 0) + 1;
+        });
+        
+        // Convert counts to display format
+        const displayItems = [];
+        
+        // Add pre-formatted items (from new backend logic)
+        items.filter(item => item.includes(' x ')).forEach(item => {
+            displayItems.push(item);
+        });
+        
+        // Add aggregated items
+        Object.entries(benefitCounts).forEach(([benefit, count]) => {
+            if (count > 1) {
+                displayItems.push(`${benefit} x ${count}`);
+            } else {
+                displayItems.push(benefit);
+            }
+        });
+        
+        benefitsDisplay.innerHTML = `<span class="section-label">Benefits </span>${displayItems.join(', ')}`;
     } else {
         // No benefits yet
         benefitsDisplay.innerHTML = '<span class="section-label">Benefits </span>None';
@@ -1069,6 +1190,9 @@ async function rollOnSkillTable(tableName) {
             const skillEvent = data.skill_event;
             if (skillEvent) {
                 console.log(`Skill gained: ${skillEvent.skill_gained || 'Unknown skill'}`);
+                // Update recent roll display
+                const rollDetails = `${skillEvent.roll} on ${tableName} table`;
+                updateRecentRollDisplay('Skill Gained', skillEvent.skill_gained, rollDetails);
             }
             
             // Update character display
@@ -1101,12 +1225,20 @@ function showAgeingPanel() {
         ageingPanel.style.display = 'block';
     }
     
-    // Set up the +4 years button
+    // Set up the years button - check if character is injured
     const addYearsBtn = document.getElementById('add-years-btn');
     if (addYearsBtn) {
+        // Check if character was injured during survival
+        const isInjured = currentCharacter.survival_outcome === 'injured';
+        const yearsToAdd = isInjured ? 2 : 4;
+        
+        // Update button text based on injury status
+        addYearsBtn.textContent = `+${yearsToAdd} Years`;
+        
         // Remove existing listeners to avoid duplicates
         addYearsBtn.replaceWith(addYearsBtn.cloneNode(true));
         const newBtn = document.getElementById('add-years-btn');
+        newBtn.textContent = `+${yearsToAdd} Years`; // Ensure text is preserved after cloning
         newBtn.addEventListener('click', performAgeing);
     }
 }
@@ -1178,6 +1310,10 @@ async function performSurvivalRoll() {
             // Show the outcome
             rollOutcome.textContent = outcome;
             
+            // Update recent roll display
+            const rollDetails = `${result.roll}+${result.modifier} vs ${result.target}`;
+            updateRecentRollDisplay('Survival', outcome, rollDetails);
+            
             // Update character display
             updateCharacterDisplay();
             
@@ -1228,6 +1364,10 @@ async function performCommissionRoll() {
             
             // Show the outcome
             rollOutcome.textContent = outcome;
+            
+            // Update recent roll display
+            const rollDetails = `${result.roll}+${result.modifier} vs ${result.target}`;
+            updateRecentRollDisplay('Commission', outcome, rollDetails);
             
             // Update character display
             updateCharacterDisplay();

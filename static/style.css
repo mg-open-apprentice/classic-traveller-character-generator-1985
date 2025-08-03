@@ -1828,4 +1828,34 @@ body {
     .roll-box-value {
         font-size: clamp(18px, 6vw, 24px);
     }
+}
+
+/* Bottom Status Bar */
+.bottom-status-bar {
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-secondary);
+    padding: var(--space-sm) var(--space-md);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-secondary);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+.recent-roll-display {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.status-label {
+    color: var(--color-secondary);
+}
+
+#recent-roll-text {
+    color: var(--color-primary);
+    font-weight: bold;
 } 

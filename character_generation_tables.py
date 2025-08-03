@@ -159,37 +159,37 @@ SKILL_TABLES = {
     'Navy': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', '+1 INT', '+1 EDU', '+1 SOC'],
         'service': ['Ship\'s Boat', 'Vacc Suit', 'Forward Observer', 'Gunnery', 'Blade Combat', 'Gun Combat'],
-        'advanced': ['Vacc Suit', 'Mechanical', 'Electronic', 'Engineering', 'Gunnery', 'Jack-of-all-Trades'],
+        'advanced': ['Vacc Suit', 'Mechanical', 'Electronics', 'Engineering', 'Gunnery', 'Jack-of-all-Trades'],
         'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Admin']
     },
     'Marines': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', 'Gambling', 'Brawling', 'Blade Combat'],
         'service': ['Vehicle', 'Vacc Suit', 'Blade Combat', 'Gun Combat', 'Blade Combat', 'Gun Combat'],
-        'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Tactics', 'Blade Combat', 'Gun Combat'],
+        'advanced': ['Vehicle', 'Mechanical', 'Electronics', 'Tactics', 'Blade Combat', 'Gun Combat'],
         'education': ['Medical', 'Tactics', 'Tactics', 'Computer', 'Leader', 'Admin']
     },
     'Army': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', 'Gambling', '+1 EDU', 'Brawling'],
         'service': ['Vehicle', 'Air/Raft', 'Gun Combat', 'Forward Observer', 'Blade Combat', 'Gun Combat'],
-        'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Tactics', 'Blade Combat', 'Gun Combat'],
+        'advanced': ['Vehicle', 'Mechanical', 'Electronics', 'Tactics', 'Blade Combat', 'Gun Combat'],
         'education': ['Medical', 'Tactics', 'Tactics', 'Computer', 'Leader', 'Admin']
     },
     'Scouts': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', '+1 INT', '+1 EDU', 'Gun Combat'],
         'service': ['Vehicle', 'Vacc Suit', 'Mechanical', 'Navigation', 'Electronics', 'Jack-of-all-Trades'],
-        'advanced': ['Vehicle', 'Mechanical', 'Electronic', 'Jack-of-all-Trades', 'Gunnery', 'Medical'],
+        'advanced': ['Vehicle', 'Mechanical', 'Electronics', 'Jack-of-all-Trades', 'Gunnery', 'Medical'],
         'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Jack-of-all-Trades']
     },
     'Merchants': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', 'Blade Combat', 'Bribery', '+1 INT'],
         'service': ['Vehicle', 'Vacc Suit', 'Jack-of-all-Trades', 'Steward', 'Electronics', 'Gun Combat'],
-        'advanced': ['Streetwise', 'Mechanical', 'Electronic', 'Navigation', 'Engineering', 'Computer'],
+        'advanced': ['Streetwise', 'Mechanical', 'Electronics', 'Navigation', 'Engineering', 'Computer'],
         'education': ['Medical', 'Navigation', 'Engineering', 'Computer', 'Pilot', 'Admin']
     },
     'Others': {
         'personal': ['+1 STR', '+1 DEX', '+1 END', 'Blade Combat', 'Brawling', '+1 SOC'],
         'service': ['Vehicle', 'Gambling', 'Brawling', 'Bribery', 'Blade Combat', 'Gun Combat'],
-        'advanced': ['Streetwise', 'Mechanical', 'Electronic', 'Gambling', 'Brawling', 'Forgery'],
+        'advanced': ['Streetwise', 'Mechanical', 'Electronics', 'Gambling', 'Brawling', 'Forgery'],
         'education': ['Medical', 'Forgery', 'Electronics', 'Computer', 'Streetwise', 'Jack-of-all-Trades']
     }
 }
