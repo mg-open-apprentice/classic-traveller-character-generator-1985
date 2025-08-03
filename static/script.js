@@ -13,6 +13,31 @@ let rollBonuses = null;
 let rollDiceBtn = null;
 let rollOutcome = null;
 
+// Calculate success percentage for 2d6 rolls
+function calculateSuccessPercentage(target, modifier) {
+    const effectiveTarget = target - modifier; // Lower is better after applying positive modifiers
+    
+    // Success chances for 2d6 (need to roll >= effectiveTarget)
+    const successTable = {
+        2: 100.0,   // 36/36
+        3: 97.2,    // 35/36
+        4: 91.7,    // 33/36
+        5: 83.3,    // 30/36
+        6: 72.2,    // 26/36
+        7: 58.3,    // 21/36
+        8: 41.7,    // 15/36
+        9: 27.8,    // 10/36
+        10: 16.7,   // 6/36
+        11: 8.3,    // 3/36
+        12: 2.8,    // 1/36
+    };
+    
+    if (effectiveTarget <= 2) return 100.0;
+    if (effectiveTarget >= 12) return 2.8;
+    
+    return successTable[effectiveTarget] || 0.0;
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeDOMElements();
@@ -31,8 +56,10 @@ function initializeDOMElements() {
 }
 
 function setupEventListeners() {
-    // Roll dice button
-    rollDiceBtn.addEventListener('click', handleRollDice);
+    // Roll dice button (only add listener if it exists)
+    if (rollDiceBtn) {
+        rollDiceBtn.addEventListener('click', handleRollDice);
+    }
     
     // Create character button
     const createBtn = document.getElementById('create-character-btn');
@@ -536,6 +563,37 @@ function updateSkillsDisplay() {
     }
 }
 
+function updateUPPDisplay() {
+    if (!currentCharacter) return;
+    
+    // Update UPP string (6-character hex representation of characteristics)
+    const uppElement = document.getElementById('upp-string');
+    if (uppElement && currentCharacter.upp) {
+        uppElement.textContent = currentCharacter.upp;
+    }
+    
+    // Update age
+    const ageElement = document.getElementById('char-age');
+    if (ageElement && currentCharacter.age) {
+        ageElement.textContent = `Age ${currentCharacter.age}`;
+    }
+    
+    // Update terms served
+    const termsElement = document.getElementById('char-terms');
+    if (termsElement && currentCharacter.terms_served !== undefined) {
+        termsElement.textContent = `Terms ${currentCharacter.terms_served}`;
+    }
+    
+    // Update rank if character has one
+    const rankElement = document.getElementById('char-rank');
+    if (rankElement && currentCharacter.rank !== undefined && currentCharacter.rank > 0) {
+        rankElement.textContent = `Rank ${currentCharacter.rank}`;
+        rankElement.style.display = 'inline';
+    } else if (rankElement) {
+        rankElement.style.display = 'none';
+    }
+}
+
 function updateCharacteristicsDisplay() {
     if (!currentCharacter) return;
     
@@ -631,8 +689,9 @@ function updateUIState() {
         // Need to generate characteristics (either all blank or partially complete)
         showCharacteristicsPanel();
     } else if (!currentCharacter.career) {
-        // Need to enlist
-        showEnlistmentPanel();
+        // Need to enlist - just ensure characteristics display is updated
+        // Hover effects will be set up when user clicks "Enlist" button
+        updateCharacteristicsDisplay();
     } else if (currentCharacter.rdy_for_commission_check) {
         // Ready for commission roll
         showCommissionRoll();
@@ -806,8 +865,10 @@ async function showPromotionRoll() {
 
 function setupRollPanel(rollType, data) {
     // Hide/show appropriate UI elements
-    const bonusesBox = document.getElementById('roll-bonuses-box');
-    const choiceBox = document.getElementById('roll-choice-box');
+    const bonusesElement = document.getElementById('roll-bonuses');
+    const bonusesBox = bonusesElement ? bonusesElement.parentElement : null;
+    const choiceElement = document.getElementById('roll-choice-btn');
+    const choiceBox = choiceElement ? choiceElement.parentElement : null;
     const choiceBtn = document.getElementById('roll-choice-btn');
     const choiceText = document.getElementById('roll-choice-text');
     
@@ -815,20 +876,20 @@ function setupRollPanel(rollType, data) {
         // Configure panel for survival roll
         rollTitle.textContent = 'PHASE: SURVIVAL - Survival Check';
         rollDescription.textContent = 'Roll 2d6 to survive this term';
-        if (bonusesBox) bonusesBox.style.display = 'block';
-        if (choiceBox) choiceBox.style.display = 'none';
+        if (bonusesBox) bonusesBox.style.display = 'flex';
+        if (choiceBox) choiceBox.classList.add('choice-box-hidden');
     } else if (rollType === 'commission') {
         // Configure panel for commission roll
         rollTitle.textContent = 'PHASE: COMMISSION - Commission Check';
         rollDescription.textContent = 'Roll 2d6 to gain officer rank';
-        if (bonusesBox) bonusesBox.style.display = 'block';
-        if (choiceBox) choiceBox.style.display = 'none';
+        if (bonusesBox) bonusesBox.style.display = 'flex';
+        if (choiceBox) choiceBox.classList.add('choice-box-hidden');
     } else if (rollType === 'promotion') {
         // Configure panel for promotion roll
         rollTitle.textContent = 'PHASE: PROMOTION - Promotion Check';
         rollDescription.textContent = 'Roll 2d6 to advance in rank';
-        if (bonusesBox) bonusesBox.style.display = 'block';
-        if (choiceBox) choiceBox.style.display = 'none';
+        if (bonusesBox) bonusesBox.style.display = 'flex';
+        if (choiceBox) choiceBox.classList.add('choice-box-hidden');
     } else if (rollType === 'reenlistment') {
         // Configure panel for reenlistment choice
         rollTitle.textContent = 'PHASE: REENLISTMENT - Service Decision';
@@ -838,7 +899,7 @@ function setupRollPanel(rollType, data) {
         if (bonusesBox) bonusesBox.style.display = 'none';
         
         // Show choice box and get options from backend
-        if (choiceBox) choiceBox.style.display = 'block';
+        if (choiceBox) choiceBox.classList.remove('choice-box-hidden');
         
         // Get reenlistment options from backend instead of hardcoded logic
         setupReenlistmentOptions(choiceText, choiceBtn);
@@ -850,23 +911,28 @@ function setupRollPanel(rollType, data) {
         // Configure panel for ageing roll
         rollTitle.textContent = 'PHASE: AGEING - Ageing Check';
         rollDescription.textContent = 'Roll for age-related effects';
-        if (bonusesBox) bonusesBox.style.display = 'block';
-        if (choiceBox) choiceBox.style.display = 'none';
+        if (bonusesBox) bonusesBox.style.display = 'flex';
+        if (choiceBox) choiceBox.classList.add('choice-box-hidden');
     }
     
     // Reset main button text for non-reenlistment rolls
     if (rollType !== 'reenlistment') {
         const rollBtnText = rollDiceBtn.querySelector('.roll-btn-text');
-        if (rollBtnText) rollBtnText.textContent = 'Roll 2d6';
+        if (rollBtnText) rollBtnText.textContent = 'Roll';
     }
     
     rollTarget.textContent = data.target || '-';
     rollBonuses.textContent = data.total_modifier || '0';
     
-    // Clear previous outcome
+    // Calculate and display success percentage in outcome box
+    const target = parseInt(data.target) || 0;
+    const modifier = parseInt(data.total_modifier) || 0;
+    const successPercentage = calculateSuccessPercentage(target, modifier);
+    
+    // Show percentage in outcome box before rolling
     if (rollOutcome) {
-        rollOutcome.textContent = '-';
-        console.log('Cleared roll outcome for', rollType);
+        rollOutcome.textContent = Math.round(successPercentage) + '%';
+        console.log('Showing success percentage for', rollType);
     } else {
         console.error('rollOutcome element not found!');
     }
@@ -1108,7 +1174,9 @@ async function performSurvivalRoll() {
             // Show result
             const result = data.survival_result;
             const outcome = result.outcome === 'survived' ? 'SURVIVED' : 'INJURED';
-            rollOutcome.textContent = `${result.roll} + ${result.modifier} = ${result.total} - ${outcome}`;
+            
+            // Show the outcome
+            rollOutcome.textContent = outcome;
             
             // Update character display
             updateCharacterDisplay();
@@ -1157,7 +1225,9 @@ async function performCommissionRoll() {
             // Show result
             const result = data.commission_result;
             const outcome = result.success ? 'COMMISSIONED' : 'COMMISSION DENIED';
-            rollOutcome.textContent = `${result.roll} + ${result.modifier} = ${result.total} - ${outcome}`;
+            
+            // Show the outcome
+            rollOutcome.textContent = outcome;
             
             // Update character display
             updateCharacterDisplay();
@@ -1200,7 +1270,9 @@ async function performPromotionRoll() {
             // Show result
             const result = data.promotion_result;
             const outcome = result.success ? 'PROMOTED' : 'PROMOTION DENIED';
-            rollOutcome.textContent = `${result.roll} + ${result.modifier} = ${result.total} - ${outcome}`;
+            
+            // Show the outcome
+            rollOutcome.textContent = outcome;
             
             // Update character display
             updateCharacterDisplay();
@@ -1269,7 +1341,9 @@ async function performReenlistRoll() {
             // Show result
             const result = data.reenlistment_result;
             const outcome = result.continue_career ? 'REENLISTED' : result.outcome.toUpperCase();
-            rollOutcome.textContent = `${result.roll} + ${result.modifier} = ${result.total} - ${outcome}`;
+            
+            // Show the outcome
+            rollOutcome.textContent = outcome;
             
             // Update character display
             updateCharacterDisplay();
@@ -1426,11 +1500,7 @@ async function generateCharacteristic(charName) {
             updateUPPDisplay();
             updateUIState();
             
-            // Refresh enlistment hover effects if enlistment panel is visible
-            const enlistmentPanel = document.getElementById('enlistment-panel');
-            if (enlistmentPanel && enlistmentPanel.style.display === 'block') {
-                setupEnlistmentHoverEffects();
-            }
+            // Note: Hover effects will be set up when user clicks "Enlist" button
         }
     } catch (error) {
         console.error('Error generating characteristic:', error);
@@ -1474,10 +1544,30 @@ function applyCharacteristicColor(element, value) {
 
 // Enlistment Functions
 async function showEnlistmentPanel() {
+    // Check if character has already completed their career
+    if (currentCharacter && currentCharacter.mustering_out_benefits) {
+        console.log('Character has already completed their career and cannot start a new one');
+        return;
+    }
+    
+    // Check if character already has a career
+    if (currentCharacter && currentCharacter.career) {
+        console.log('Character already has a career and cannot enlist in a different service');
+        return;
+    }
+    
     hideAllPanels();
     document.getElementById('enlistment-panel').style.display = 'block';
+    
     await loadEnlistmentProbabilities();
-    setupEnlistmentHoverEffects();
+    
+    // Ensure we have current character data before setting up hover effects
+    await loadCurrentCharacter();
+    
+    // Set up hover effects after ensuring character data is loaded
+    setTimeout(() => {
+        setupEnlistmentHoverEffects();
+    }, 100);
 }
 
 async function loadEnlistmentProbabilities() {
@@ -1546,12 +1636,9 @@ function reorderEnlistmentButtons(serviceProbs) {
 }
 
 async function setupEnlistmentHoverEffects() {
-    console.log('Setting up enlistment hover effects...');
     if (!currentCharacter || !currentCharacter.characteristics) {
-        console.log('No character or characteristics available');
         return;
     }
-    console.log('Character characteristics:', currentCharacter.characteristics);
     
     try {
         // Get enlistment bonus requirements from backend
@@ -1572,15 +1659,21 @@ async function setupEnlistmentHoverEffects() {
             const serviceBtn = document.getElementById(`${service}-btn`);
             if (!serviceBtn) return;
             
-            serviceBtn.addEventListener('mouseenter', () => {
-                console.log(`Hovering over ${service}`);
+            // Remove existing listeners to prevent duplicates
+            const newServiceBtn = serviceBtn.cloneNode(true);
+            serviceBtn.parentNode.replaceChild(newServiceBtn, serviceBtn);
+            
+            // Add fresh event listeners
+            newServiceBtn.addEventListener('mouseenter', () => {
                 highlightCharacteristicsForService(service, enlistmentBonuses[service] || []);
             });
             
-            serviceBtn.addEventListener('mouseleave', () => {
-                console.log(`Left ${service}`);
+            newServiceBtn.addEventListener('mouseleave', () => {
                 clearCharacteristicHighlights();
             });
+            
+            // Re-add click listener for enlistment
+            newServiceBtn.addEventListener('click', () => attemptEnlistment(service));
         });
     } catch (error) {
         console.error('Error setting up enlistment hover effects:', error);
@@ -1588,7 +1681,6 @@ async function setupEnlistmentHoverEffects() {
 }
 
 function highlightCharacteristicsForService(service, bonuses) {
-    console.log(`Highlighting for ${service} with bonuses:`, bonuses);
     if (!currentCharacter || !currentCharacter.characteristics) return;
     
     const characteristics = currentCharacter.characteristics;
@@ -1597,7 +1689,6 @@ function highlightCharacteristicsForService(service, bonuses) {
     const qualifyingChars = {};
     bonuses.forEach(({ char, req, bonus }) => {
         const charValue = characteristics[char] || 0;
-        console.log(`Checking ${char}: value=${charValue}, req=${req}, bonus=${bonus}`);
         if (charValue >= req) {
             if (!qualifyingChars[char]) {
                 qualifyingChars[char] = [];
@@ -1615,7 +1706,6 @@ function highlightCharacteristicsForService(service, bonuses) {
         const charBox = document.getElementById(`bottom-${char}-value`);
         if (charBox) {
             const charStatBox = charBox.closest('.char-stat');
-            console.log(`${char} qualifies! Char-stat box found:`, !!charStatBox);
             if (charStatBox) {
                 // Determine highlight class based on bonuses
                 let highlightClass;
@@ -1746,6 +1836,12 @@ async function attemptVoluntaryDeparture(preference) {
             if (result) {
                 rollTarget.textContent = result.target || '-';
                 rollBonuses.textContent = result.modifier || '0';
+                
+                // Calculate and display success percentage for reenlistment in outcome box
+                const target = parseInt(result.target) || 0;
+                const modifier = parseInt(result.modifier) || 0;
+                const successPercentage = calculateSuccessPercentage(target, modifier);
+                rollOutcome.textContent = Math.round(successPercentage) + '%';
                 
                 // Show the outcome
                 let outcomeText = `Roll: ${result.roll} - ${result.status_text}`;

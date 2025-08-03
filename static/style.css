@@ -1695,7 +1695,7 @@ body {
 
 .roll-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     grid-template-rows: 1fr;
     gap: var(--space-lg);
     flex: 1;
@@ -1736,40 +1736,41 @@ body {
     font-size: clamp(20px, 5vw, 32px);
     font-weight: bold;
     text-shadow: 0 0 8px currentColor;
+    text-align: center;
 }
 
+
 .roll-button-box {
-    border-color: var(--color-success);
-    background: linear-gradient(135deg, var(--color-bg) 0%, rgba(0, 255, 0, 0.1) 100%);
+    border-color: #90EE90;
+    background: var(--color-bg);
+}
+
+/* Hide choice button container by default */
+.choice-box-hidden {
+    display: none !important;
 }
 
 .roll-button-box:hover {
-    border-color: var(--color-success);
-    box-shadow: 0 0 20px var(--color-success);
-    transform: translateY(-2px);
+    border-color: #90EE90;
+    box-shadow: 0 0 15px #90EE90;
 }
 
 .roll-btn {
     background: transparent;
     border: none;
-    color: var(--color-success);
-    font-family: var(--font-display);
-    font-size: clamp(14px, 3vw, 18px);
+    color: #90EE90;
+    font-family: var(--font-mono);
+    font-size: clamp(20px, 5vw, 32px);
     font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
     cursor: pointer;
     padding: var(--space-md);
     border-radius: var(--border-radius);
     transition: var(--transition);
     width: 100%;
-    text-shadow: 0 0 5px currentColor;
 }
 
 .roll-btn:hover {
-    color: var(--color-accent);
-    text-shadow: 0 0 10px currentColor;
-    transform: scale(1.05);
+    color: #90EE90;
 }
 
 .roll-btn:active {
