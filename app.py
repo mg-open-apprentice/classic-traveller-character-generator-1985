@@ -1047,6 +1047,20 @@ def api_get_seed():
     global GLOBAL_SEED
     return jsonify({"success": True, "seed": GLOBAL_SEED})
 
+@app.route('/api/ui_config', methods=['GET'])
+def api_ui_config():
+    """
+    Get UI configuration including characteristic quality thresholds
+    """
+    try:
+        config = {
+            "characteristic_quality": chargen.get_characteristic_quality_thresholds(),
+            "defaults": chargen.get_game_defaults()
+        }
+        return jsonify({"success": True, "config": config})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == '__main__':
     print(f"Classic Traveller Character Generator starting with seed: {GLOBAL_SEED}")
     print("To use a different seed, run: python app.py --seed <number>")

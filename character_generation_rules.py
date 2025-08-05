@@ -2161,6 +2161,60 @@ def calculate_enlistment_metrics(character_record: dict[str, Any]) -> dict[str, 
         "metrics": metrics
     }
 
+def get_game_defaults() -> dict[str, Any]:
+    """
+    Get default game constants from Classic Traveller rules
+    
+    Returns:
+        Dictionary with game default values
+    """
+    return {
+        "starting_age": 18,
+        "starting_credits": 0,
+        "starting_terms": 0
+    }
+
+def get_characteristic_quality_thresholds() -> dict[str, Any]:
+    """
+    Get characteristic quality thresholds and corresponding CSS classes
+    
+    Returns:
+        Dictionary with thresholds and CSS class mappings
+    """
+    return {
+        "thresholds": [
+            {"min": 11, "max": 15, "class": "char-excellent", "label": "Excellent"},
+            {"min": 9, "max": 10, "class": "char-good", "label": "Good"},
+            {"min": 6, "max": 8, "class": "char-average", "label": "Average"},
+            {"min": 3, "max": 5, "class": "char-poor", "label": "Poor"},
+            {"min": 0, "max": 2, "class": "char-bad", "label": "Bad"}
+        ],
+        "default_class": "char-average",
+        "all_classes": ["char-bad", "char-poor", "char-average", "char-good", "char-excellent"]
+    }
+
+def get_characteristic_quality_class(value: int) -> str:
+    """
+    Get the CSS class for a characteristic value
+    
+    Args:
+        value: The characteristic value (0-15)
+        
+    Returns:
+        CSS class name for the value
+    """
+    thresholds = get_characteristic_quality_thresholds()["thresholds"]
+    
+    for threshold in thresholds:
+        if threshold["min"] <= value <= threshold["max"]:
+            return threshold["class"]
+    
+    # Fallback for values outside normal range
+    if value >= 15:
+        return "char-excellent"
+    else:
+        return "char-bad"
+
 if __name__ == "__main__":
     """
     Module guard - this code only runs when the module is executed directly

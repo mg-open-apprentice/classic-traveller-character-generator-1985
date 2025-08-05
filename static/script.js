@@ -42,6 +42,7 @@ function calculateSuccessPercentage(target, modifier) {
 document.addEventListener('DOMContentLoaded', function() {
     initializeDOMElements();
     setupEventListeners();
+    loadUIConfig();
     loadCurrentCharacter();
 });
 
@@ -235,8 +236,14 @@ function clearUIState() {
     // Clear age and terms
     const charAge = document.getElementById('char-age');
     const charTerms = document.getElementById('char-terms');
-    if (charAge) charAge.textContent = '18';
-    if (charTerms) charTerms.textContent = '0';
+    if (charAge) {
+        const defaultAge = uiConfig?.defaults?.starting_age || 18;
+        charAge.textContent = defaultAge.toString();
+    }
+    if (charTerms) {
+        const defaultTerms = uiConfig?.defaults?.starting_terms || 0;
+        charTerms.textContent = defaultTerms.toString();
+    }
     
     // Clear UPP display
     const uppString = document.getElementById('upp-string');
@@ -278,7 +285,9 @@ function clearUIState() {
         const element = document.getElementById(`bottom-${char}-value`);
         if (element) {
             element.textContent = '-';
-            element.classList.remove('char-bad', 'char-poor', 'char-average', 'char-good', 'char-excellent');
+            if (uiConfig && uiConfig.characteristic_quality) {
+                element.classList.remove(...uiConfig.characteristic_quality.all_classes);
+            }
         }
         
         // Reset main characteristic panel buttons to "?" state
@@ -509,7 +518,10 @@ function updateCharacterDisplay() {
         }
         charService.textContent = serviceText;
     }
-    if (charAge) charAge.textContent = `Age ${currentCharacter.age || 18}`;
+    if (charAge) {
+        const defaultAge = uiConfig?.defaults?.starting_age || 18;
+        charAge.textContent = `Age ${currentCharacter.age || defaultAge}`;
+    }
     if (charTerms) {
         const terms = currentCharacter.terms_served || 0;
         const rank = currentCharacter.rank || 0;
@@ -747,7 +759,9 @@ function updateCharacteristicsDisplay() {
             } else if (element) {
                 element.textContent = '-';
                 // Remove color classes when no value
-                element.classList.remove('char-bad', 'char-poor', 'char-average', 'char-good', 'char-excellent');
+                if (uiConfig && uiConfig.characteristic_quality) {
+                    element.classList.remove(...uiConfig.characteristic_quality.all_classes);
+                }
             }
         });
     } else {
@@ -1664,21 +1678,41 @@ function updateBottomCharacteristics(charName, value) {
     }
 }
 
+// Global UI configuration loaded from backend
+let uiConfig = null;
+
+async function loadUIConfig() {
+    try {
+        const response = await fetch('/api/ui_config');
+        const data = await response.json();
+        if (data.success) {
+            uiConfig = data.config;
+        } else {
+            console.error('Failed to load UI config:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading UI config:', error);
+    }
+}
+
 function applyCharacteristicColor(element, value) {
-    // Remove existing color classes
-    element.classList.remove('char-bad', 'char-poor', 'char-average', 'char-good', 'char-excellent');
-    
-    // Apply color based on value (Bad to Good progression)
-    if (value >= 11) {
-        element.classList.add('char-excellent'); // 11+: Gold
-    } else if (value >= 9) {
-        element.classList.add('char-good'); // 9-10: Silver
-    } else if (value >= 6) {
-        element.classList.add('char-average'); // 6-8: Green
-    } else if (value >= 3) {
-        element.classList.add('char-poor'); // 3-5: Orange
-    } else {
-        element.classList.add('char-bad'); // 0-2: Red
+    // Use backend-provided configuration if available
+    if (uiConfig && uiConfig.characteristic_quality) {
+        const qualityConfig = uiConfig.characteristic_quality;
+        
+        // Remove all existing color classes
+        element.classList.remove(...qualityConfig.all_classes);
+        
+        // Find the appropriate threshold
+        for (const threshold of qualityConfig.thresholds) {
+            if (value >= threshold.min && value <= threshold.max) {
+                element.classList.add(threshold.class);
+                return;
+            }
+        }
+        
+        // If no threshold matches, use default class
+        element.classList.add(qualityConfig.default_class);
     }
 }
 
