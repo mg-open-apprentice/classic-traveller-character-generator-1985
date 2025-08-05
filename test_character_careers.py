@@ -10,16 +10,18 @@ Usage: python test_character_careers.py
 
 import character_generation_rules as chargen
 
-def test_career_happy_path(service_name, expected_commission=True):
+def test_career_happy_path(service_name, expected_commission=True, low_education=False):
     """
     Test a complete career progression with favorable dice rolls
     
     Args:
         service_name: Name of the service to test
         expected_commission: Whether this service has commissions
+        low_education: Whether to test with EDU < 8 (can't use Education table)
     """
+    edu_suffix = " (LOW EDU)" if low_education else ""
     print(f"\n{'='*60}")
-    print(f"TESTING {service_name.upper()} CAREER - HAPPY PATH")
+    print(f"TESTING {service_name.upper()} CAREER - HAPPY PATH{edu_suffix}")
     print(f"{'='*60}")
     
     # Store original dice function
@@ -34,12 +36,16 @@ def test_career_happy_path(service_name, expected_commission=True):
         character = chargen.create_character_record()
         character["name"] = f"Test {service_name} Character"
         
-        # Set reasonable characteristics (8 is decent for most purposes)
-        for char_name in ["strength", "dexterity", "endurance", "intelligence", "education", "social"]:
+        # Set characteristics based on test type
+        education_value = 6 if low_education else 8
+        for char_name in ["strength", "dexterity", "endurance", "intelligence", "social"]:
             character["characteristics"][char_name] = 8
+        character["characteristics"]["education"] = education_value
         
         print(f"Created character: {character['name']}")
-        print(f"Characteristics: STR=8, DEX=8, END=8, INT=8, EDU=8, SOC=8")
+        print(f"Characteristics: STR=8, DEX=8, END=8, INT=8, EDU={education_value}, SOC=8")
+        if low_education:
+            print("NOTE: Low education (EDU<8) - cannot use Education skill table")
         
         # Test Term 1
         print(f"\n--- TERM 1 ---")
@@ -85,7 +91,13 @@ def test_career_happy_path(service_name, expected_commission=True):
         print(f"Skill rolls available: {skill_rolls}")
         while character.get("skill_roll_eligibility", 0) > 0:
             print("Rolling for skill...")
-            character = chargen.resolve_skill(rng, character, "service")  # Use service table
+            # Test different skill tables based on education
+            if low_education:
+                # Cannot use education table, use service table
+                character = chargen.resolve_skill(rng, character, "service")
+            else:
+                # Can use education table, test it
+                character = chargen.resolve_skill(rng, character, "education")
             remaining = character.get("skill_roll_eligibility", 0)
             print(f"Skills remaining: {remaining}")
         
@@ -118,39 +130,94 @@ def test_career_happy_path(service_name, expected_commission=True):
                 print("Career ended - would proceed to mustering out")
                 return character
         
-        # Test Term 2 if career continues
-        terms_served = character.get("terms_served", 0)
-        print(f"\nTerms completed: {terms_served}")
+        # Continue career for up to 7 terms
+        max_terms = 7
+        current_term = 2
         
-        if terms_served >= 1:
-            print(f"\n--- TERM 2 ---")
+        while current_term <= max_terms:
+            terms_served = character.get("terms_served", 0)
+            if terms_served < current_term - 1:
+                break  # Career ended (discharged or injured)
             
-            # Repeat career cycle for term 2
-            print("Survival check (Term 2)...")
+            print(f"\n--- TERM {current_term} ---")
+            
+            # Survival check
+            print(f"Survival check (Term {current_term})...")
             character = chargen.check_survival(rng, character)
             survival = character.get("survival_outcome")
             print(f"Survival result: {survival}")
             
-            if survival != "injured":
-                # Skip commission (already commissioned)
-                if expected_commission and character.get("commissioned", False):
-                    print("Checking promotion (Term 2)...")
-                    character = chargen.check_promotion(rng, character)
-                    rank = character.get("rank", 0)
-                    print(f"Rank after promotion attempt: {rank}")
-                
-                # Skills for term 2
-                skill_rolls = character.get("skill_roll_eligibility", 0)
-                print(f"Skill rolls available (Term 2): {skill_rolls}")
-                while character.get("skill_roll_eligibility", 0) > 0:
+            if survival == "injured":
+                print("Character injured - career ended")
+                break
+            
+            # Commission/Promotion (if applicable)
+            if expected_commission and character.get("commissioned", False):
+                print(f"Checking promotion (Term {current_term})...")
+                character = chargen.check_promotion(rng, character)
+                rank = character.get("rank", 0)
+                print(f"Rank after promotion attempt: {rank}")
+            
+            # Skills
+            skill_rolls = character.get("skill_roll_eligibility", 0)
+            print(f"Skill rolls available (Term {current_term}): {skill_rolls}")
+            while character.get("skill_roll_eligibility", 0) > 0:
+                if low_education:
                     character = chargen.resolve_skill(rng, character, "service")
-                
-                # Aging for term 2
-                character = chargen.check_ageing(rng, character)
-                
-                # Final reenlistment
-                print("Final reenlistment attempt...")
-                character = chargen.attempt_reenlistment(rng, character, "discharge")  # Choose to leave
+                else:
+                    character = chargen.resolve_skill(rng, character, "education")
+            
+            # Aging
+            old_age = character.get("age", 18)
+            character = chargen.check_ageing(rng, character)
+            new_age = character.get("age", 18)
+            print(f"Age: {old_age} -> {new_age}")
+            
+            # Reenlistment decision
+            terms_completed = character.get("terms_served", 0)
+            if current_term >= max_terms:
+                print(f"Reached maximum terms ({max_terms}) - must leave")
+                character = chargen.attempt_reenlistment(rng, character, "discharge")
+                break
+            elif terms_completed >= 5:
+                # From term 5+, can choose retirement
+                print(f"Reenlistment attempt (Term {current_term}) - choosing retirement...")
+                character = chargen.attempt_reenlistment(rng, character, "retire")
+            else:
+                # Before term 5, must choose reenlist or discharge
+                if current_term < 4:
+                    print(f"Reenlistment attempt (Term {current_term}) - choosing to continue...")
+                    character = chargen.attempt_reenlistment(rng, character, "reenlist")
+                else:
+                    print(f"Reenlistment attempt (Term {current_term}) - choosing to leave...")
+                    character = chargen.attempt_reenlistment(rng, character, "discharge")
+            
+            # Check if career continues
+            latest_reenlistment = None
+            for event in reversed(character.get("career_history", [])):
+                if event.get("event_type") == "reenlistment_attempt":
+                    latest_reenlistment = event
+                    break
+            
+            if latest_reenlistment and not latest_reenlistment.get("continue_career", False):
+                print(f"Career ended after term {current_term}")
+                break
+            
+            current_term += 1
+        
+        # Mustering out phase
+        print(f"\n--- MUSTERING OUT ---")
+        final_terms = character.get("terms_served", 0)
+        print(f"Career completed with {final_terms} terms of service")
+        
+        # Test mustering out benefits
+        if hasattr(chargen, 'muster_out_character'):
+            print("Processing mustering out benefits...")
+            character = chargen.muster_out_character(rng, character)
+            benefits = character.get("mustering_out_benefits", {})
+            print(f"Mustering out complete - benefits received: {len(benefits.get('rolls', []))} rolls")
+        else:
+            print("Mustering out function not found - skipping benefits")
         
         return character
         
@@ -180,12 +247,25 @@ def print_final_character_summary(character, service_name):
     print(f"Skills: {len(character.get('skills', {}))}")
     print(f"Phase: {character.get('current_phase', 'Unknown')}")
     print(f"Career events: {len(character.get('career_history', []))}")
+    
+    # Show mustering out results if available
+    benefits = character.get("mustering_out_benefits")
+    if benefits:
+        rolls = benefits.get("rolls", [])
+        print(f"Mustering out rolls: {len(rolls)}")
+        cash = benefits.get("cash", 0)
+        items = benefits.get("items", [])
+        print(f"Final cash: {cash} credits")
+        print(f"Final items: {len(items)} items")
+    else:
+        print("Mustering out: Not completed")
 
 def main():
     """Run all career tests"""
     print("CLASSIC TRAVELLER CAREER TESTING")
     print("Using dice override: all 2d6 rolls = 11")
-    print("Testing happy path progression for all services")
+    print("Testing 7-term career progression with mustering out for all services")
+    print("Testing both normal education (EDU=8) and low education (EDU=6) characters")
     
     # Test all 6 services
     services_to_test = [
@@ -200,9 +280,15 @@ def main():
     results = {}
     
     for service_name, has_commission in services_to_test:
-        character = test_career_happy_path(service_name, has_commission)
-        results[service_name] = character
-        print_final_character_summary(character, service_name)
+        # Test normal education first
+        character = test_career_happy_path(service_name, has_commission, low_education=False)
+        results[f"{service_name} (Normal EDU)"] = character
+        print_final_character_summary(character, f"{service_name} (Normal EDU)")
+        
+        # Test low education
+        character_low_edu = test_career_happy_path(service_name, has_commission, low_education=True)
+        results[f"{service_name} (Low EDU)"] = character_low_edu
+        print_final_character_summary(character_low_edu, f"{service_name} (Low EDU)")
     
     # Final summary
     print(f"\n{'='*60}")
@@ -211,7 +297,7 @@ def main():
     
     for service_name, character in results.items():
         status = "✅ PASSED" if character else "❌ FAILED"
-        print(f"{service_name:12} {status}")
+        print(f"{service_name:20} {status}")
 
 if __name__ == "__main__":
     main()

@@ -1923,10 +1923,9 @@ async function setupReenlistmentOptions(choiceText, choiceBtn) {
             }
         } else {
             console.error('Failed to get reenlistment options:', data.error);
-            // Fallback to old logic
-            if (choiceText && currentCharacter) {
-                const termsServed = currentCharacter.terms_served || 0;
-                choiceText.textContent = termsServed >= 4 ? 'Retire' : 'Leave';
+            // Fallback - backend should provide this via API
+            if (choiceText) {
+                choiceText.textContent = 'Leave'; // Generic fallback only
             }
             if (choiceBtn) {
                 choiceBtn.onclick = () => {
@@ -1938,10 +1937,9 @@ async function setupReenlistmentOptions(choiceText, choiceBtn) {
         }
     } catch (error) {
         console.error('Error getting reenlistment options:', error);
-        // Fallback to old logic
-        if (choiceText && currentCharacter) {
-            const termsServed = currentCharacter.terms_served || 0;
-            choiceText.textContent = termsServed >= 4 ? 'Retire' : 'Leave';
+        // Fallback - backend should provide this via API
+        if (choiceText) {
+            choiceText.textContent = 'Leave'; // Generic fallback only
         }
         if (choiceBtn) {
             choiceBtn.onclick = () => {

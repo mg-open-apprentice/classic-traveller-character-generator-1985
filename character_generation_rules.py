@@ -124,7 +124,7 @@ def create_character_record() -> dict[str, Any]:
         "current_phase": "1.1",  # Text-based decimal notation for term.phase (e.g., "4.6")
         "phase_history": [],  # Track completed phases with their IDs
         # New simplified readiness flags per state-control-rules.md
-        "rdy_for_survival_check": False,
+        "rdy_for_survival_check": True,  # New characters start ready for survival after enlistment
         "rdy_for_commission_check": False,
         "rdy_for_promotion_check": False,
         "rdy_for_ageing_check": False,
@@ -136,12 +136,22 @@ def create_character_record() -> dict[str, Any]:
 # =============================================================================
 
 PHASE_NAMES = {
+    # Phase 0 - Pre-enlistment
+    0: {
+        1: "character_created",
+        2: "characteristics_generated", 
+        3: "service_choice",
+        4: "enlistment_result"
+    },
+    # Phase 1+ - Career terms
     1: "survival",
     2: "commission", 
     3: "promotion",
     4: "skills",
     5: "ageing",
-    6: "reenlistment"
+    6: "reenlistment",
+    7: "mustering_out",
+    8: "character_complete"
 }
 
 def get_current_term_number(character_record: dict[str, Any]) -> int:
@@ -171,11 +181,17 @@ def get_current_phase_info(character_record: dict[str, Any]) -> Tuple[int, int, 
         term_str, phase_str = current_phase.split(".")
         term_num = int(term_str)
         phase_num = int(phase_str)
-        phase_name = PHASE_NAMES.get(phase_num, f"unknown_phase_{phase_num}")
+        
+        # Handle phase 0 (pre-enlistment) differently
+        if term_num == 0:
+            phase_name = PHASE_NAMES[0].get(phase_num, f"unknown_phase_0.{phase_num}")
+        else:
+            phase_name = PHASE_NAMES.get(phase_num, f"unknown_phase_{phase_num}")
+        
         return term_num, phase_num, phase_name
     except (ValueError, AttributeError):
-        # Fallback to first phase of first term
-        return 1, 1, "survival"
+        # Fallback to character creation phase
+        return 0, 1, "character_created"
 
 def advance_to_next_phase(character_record: dict[str, Any], completed_phase_data: dict = None) -> str:
     """
@@ -206,20 +222,81 @@ def advance_to_next_phase(character_record: dict[str, Any], completed_phase_data
     character_record.setdefault("phase_history", []).append(phase_entry)
     
     # Determine next phase
-    if phase_num < 6:
+    if term_num == 0:
+        # Phase 0 (pre-enlistment) progression
+        if phase_num < 4:
+            next_phase_num = phase_num + 1
+            next_term_num = 0
+        else:
+            # After phase 0.4 (enlistment), move to term 1 phase 1 (survival)
+            next_phase_num = 1
+            next_term_num = 1
+    elif phase_num < 6:
         # Move to next phase in same term
         next_phase_num = phase_num + 1
         next_term_num = term_num
+    elif phase_num == 6:
+        # After reenlistment, either continue to next term or end career
+        continue_career = completed_phase_data and completed_phase_data.get("continue_career", False)
+        if continue_career:
+            next_phase_num = 1
+            next_term_num = term_num + 1
+        else:
+            # End career, move to mustering out
+            next_phase_num = 7
+            next_term_num = term_num
+    elif phase_num == 7:
+        # After mustering out, character is complete
+        next_phase_num = 8
+        next_term_num = term_num
     else:
-        # Move to first phase of next term
-        next_phase_num = 1
-        next_term_num = term_num + 1
+        # Character is complete, no further progression
+        next_phase_num = phase_num
+        next_term_num = term_num
     
     # Update current phase
     new_phase_id = f"{next_term_num}.{next_phase_num}"
     character_record["current_phase"] = new_phase_id
     
     return new_phase_id
+
+# =============================================================================
+# PHASE 0 (PRE-ENLISTMENT) FUNCTIONS
+# =============================================================================
+
+def advance_to_characteristics_generation(character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Advance from phase 0.1 (character_created) to phase 0.2 (characteristics_generated)
+    """
+    advance_to_next_phase(character_record, {
+        "action": "character_creation_complete",
+        "name": character_record.get("name", "Unknown"),
+        "character_id": character_record.get("character_id", "unknown")
+    })
+    return character_record
+
+def advance_to_service_choice(character_record: dict[str, Any]) -> dict[str, Any]:
+    """
+    Advance from phase 0.2 (characteristics_generated) to phase 0.3 (service_choice)
+    """
+    advance_to_next_phase(character_record, {
+        "action": "characteristics_generated",
+        "method": "rolled",  # Could be "rolled", "assigned", etc.
+        "upp_string": get_upp_string(character_record)
+    })
+    return character_record
+
+def set_service_choice(character_record: dict[str, Any], chosen_service: str) -> dict[str, Any]:
+    """
+    Record service choice and advance from phase 0.3 to phase 0.4 (enlistment_result)
+    """
+    character_record["service_choice"] = chosen_service
+    advance_to_next_phase(character_record, {
+        "action": "service_selection",
+        "chosen_service": chosen_service,
+        "reason": "player_preference"
+    })
+    return character_record
 
 def reset_to_phase(character_record: dict[str, Any], term: int, phase: int) -> str:
     """
@@ -467,14 +544,14 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     if success:
         # Successfully enlisted in chosen service
         character_record["career"] = service_choice
-        enlistment_result["outcome"] = "enlisted"
+        enlistment_result["outcome"] = f"{service_choice} enlisted"
         enlistment_result["assigned_service"] = service_choice
     else:
         # Failed enlistment, drafted into random service
         drafted_service = get_draft_service(random_generator)
         character_record["career"] = drafted_service
         character_record["drafted"] = True
-        enlistment_result["outcome"] = "drafted"
+        enlistment_result["outcome"] = f"{drafted_service} drafted"
         enlistment_result["assigned_service"] = drafted_service
     
     # Per state-control-rules.md: After Enlistment/Draft, ready for survival
@@ -494,12 +571,15 @@ def attempt_enlistment(random_generator: random.Random, character_record: dict[s
     # Add the enlistment attempt to the character's history
     character_record["career_history"].append(enlistment_result)
     
-    # Phase progression: Enlistment leads directly to survival phase (1.1)
+    # Phase progression: From 0.4 (enlistment_result) to 1.1 (survival)
     advance_to_next_phase(character_record, {
-        "action": "enlistment",
-        "service_attempted": service_choice,
-        "result": "enlisted" if success else "drafted",
-        "assigned_service": enlistment_result["assigned_service"]
+        "action": "enlistment_attempt",
+        "chosen_service": service_choice,
+        "assigned_service": enlistment_result["assigned_service"],
+        "outcome": enlistment_result["outcome"],
+        "roll": roll,
+        "target": target,
+        "success": success
     })
     
     return character_record
