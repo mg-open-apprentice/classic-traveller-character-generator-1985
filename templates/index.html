@@ -181,8 +181,8 @@
                     <h3>PHASE: AGEING - Ageing Process</h3>
                     <p>Add 4 years to your character's age</p>
                 </div>
-                <div class="ageing-content">
-                    <button class="btn ageing-btn" id="add-years-btn">
+                <div class="ageing-grid">
+                    <button class="ageing-btn" id="add-years-btn">
                         +4 Years
                     </button>
                 </div>
@@ -281,6 +281,12 @@
                     </div>
                 </div>
                 
+                <!-- Recent Roll Display -->
+                <div class="recent-roll-display" id="recent-roll-display">
+                    <span class="status-label">Last Roll: </span>
+                    <span id="recent-roll-text">Ready to begin...</span>
+                </div>
+                
                 <!-- Outcome Display Area -->
                 <div class="outcome-display" id="outcome-display" style="display: none;">
                     <div class="outcome-header">
@@ -325,14 +331,6 @@
                     </div>
                 </div>
                 
-            </div>
-        </div>
-        
-        <!-- Bottom Status Bar -->
-        <div class="bottom-status-bar">
-            <div class="recent-roll-display" id="recent-roll-display">
-                <span class="status-label">Last Roll: </span>
-                <span id="recent-roll-text">Ready to begin...</span>
             </div>
         </div>
     </div>

@@ -1273,6 +1273,15 @@ async function performAgeing() {
             // Update character data
             currentCharacter = data.character;
             
+            // Update recent roll display
+            const result = data.ageing_result;
+            if (result) {
+                const rollDetails = `${result.roll} vs aging threshold ${result.target}`;
+                const outcome = result.effects && result.effects.length > 0 ? 
+                    result.effects.join(', ') : 'No effects';
+                updateRecentRollDisplay('Aging', outcome, rollDetails);
+            }
+            
             // Update character display
             updateCharacterDisplay();
             updateButtonStates();
@@ -1428,6 +1437,10 @@ async function performPromotionRoll() {
             // Show the outcome
             rollOutcome.textContent = outcome;
             
+            // Update recent roll display
+            const rollDetails = `${result.roll}+${result.modifier} vs ${result.target}`;
+            updateRecentRollDisplay('Promotion', outcome, rollDetails);
+            
             // Update character display
             updateCharacterDisplay();
             
@@ -1498,6 +1511,10 @@ async function performReenlistRoll() {
             
             // Show the outcome
             rollOutcome.textContent = outcome;
+            
+            // Update recent roll display
+            const rollDetails = `${result.roll}+${result.modifier} vs ${result.target}`;
+            updateRecentRollDisplay('Reenlistment', outcome, rollDetails);
             
             // Update character display
             updateCharacterDisplay();
@@ -1586,6 +1603,18 @@ async function performMusterOut(cashRolls) {
         
         // Update current character
         currentCharacter = data.character;
+        
+        // Update recent roll display with actual mustering out benefits
+        const benefits = data.character.mustering_out_benefits;
+        if (benefits) {
+            const cash = benefits.cash || 0;
+            const items = benefits.items || [];
+            const benefitsList = items.length > 0 ? items.join(', ') : 'none';
+            const cashText = cash > 0 ? `${cash} credits` : 'no credits';
+            updateRecentRollDisplay('Mustered Out', `${cashText}, ${benefitsList}`, 'Career complete');
+        } else {
+            updateRecentRollDisplay('Mustered Out', 'Career complete', 'No benefits received');
+        }
         
         // Hide muster out panel
         hideAllPanels();
@@ -1927,6 +1956,15 @@ async function attemptEnlistment(service) {
         const data = await response.json();
         if (data.success) {
             currentCharacter = data.character;
+            
+            // Update recent roll display
+            const result = data.enlistment_result;
+            if (result) {
+                const outcome = result.success ? 'ENLISTED' : 'DRAFTED';
+                const rollDetails = `${result.roll}+${result.modifier} vs ${result.target}`;
+                updateRecentRollDisplay('Enlistment', outcome, rollDetails);
+            }
+            
             updateCharacterDisplay();
             updateUIState();
         }
