@@ -47,6 +47,9 @@ instance/
 # Logs
 *.log
 
+# Generated character files
+characters/*.json
+
 # Node.js (if accidentally added)
 node_modules/
 package-lock.json
